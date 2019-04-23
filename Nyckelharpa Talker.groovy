@@ -24,7 +24,9 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
- *	Apr 21, 2019 v2.1.4AH Fix missing NEXT Button on pageone, add nextPage: to dynamic page 1
+ *	Apr 23, 2019 v0.0.1 Fix user device did not have chime caused error.
+ *						verify all devices have chime during input editing
+ *	Apr 21, 2019 v0.0.0 Fix missing NEXT Button on pageone, add nextPage: to dynamic page 1
  * 	Apr 21, 2019 v1.0.4AH set as single instance remove label
  * 	Apr 21, 2019 v1.0.4AH All keypad messages in one place for easy setup. Produce arm and disarm messages
  * 	Apr 20, 2019 v1.0.4AH subscribe to hsmAlert events for pin entry messages
@@ -51,7 +53,7 @@ definition(
 
 def version()
 	{
-	return "1.0.4AH";
+	return "0.0.1";
 	}
 
 preferences {
@@ -124,6 +126,17 @@ def pageOne()
 def pageOneVerify() 				//edit page one info, go to pageTwo when valid
 	{
 	def error_data = ""
+	if (theSoundChimes && theTTS)
+		{
+		theTTS.each
+			{
+			if (!it.hasCommand("chime"))
+				error_data="All TTS devices do not have Chime command, set 'Sound TTS Chimes' Off"
+			}	
+		}		
+	if (error_data != "")
+		{}
+	else	
 	if (theStartTime>"" && theEndTime>"")
 		{}
 	else
@@ -135,7 +148,7 @@ def pageOneVerify() 				//edit page one info, go to pageTwo when valid
 
 	if (error_data!="")
 		{
-		state.error_data=error_data.trim()
+		state.error_data='<b>'+error_data.trim()+'</b>'
 		pageOne()
 		}
 	else
