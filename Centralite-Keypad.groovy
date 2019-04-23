@@ -37,7 +37,7 @@
  *  Jul 12, 2017 in sendStatustoDevice light Night button not HomeStay button (no such mode in SmartHome) 		
  */
 metadata {
-	definition (name: "Centralite Keypad", namespace: "mitchpond", author: "Mitch Pond", vid: "generic-motion") {
+	definition (name: "Centralitex Keypad", namespace: "mitchpond", author: "Mitch Pond", vid: "generic-motion") {
 		capability "SecurityKeypad"
 		capability "Battery"
 		capability "Configuration"
