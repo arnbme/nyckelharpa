@@ -20,6 +20,7 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  * 
+ *	Apr 23, 2019 v0.0.2	cleanup pin entry and panic logic
  *	Apr 22, 2019 v0.0.1	Add pushover support
  *	Apr 22, 2019 v0.0.0	Rename SHM Delay to Nyckelharpa change version to 0.0.0 prerelease
  *	Apr 20, 2019 v2.2.9AH Cleanup some grunge
@@ -156,7 +157,7 @@ preferences {
 
 def version()
 	{
-	return "0.0.1";
+	return "0.0.2";
 	}
 def main()
 	{
@@ -263,12 +264,14 @@ def globalsPage()
 				title: "Real Keypads used to arm and disarm SHM"
 			input "globalPanic", "bool", required: true, defaultValue: true,
 				title: "Keypad Panic Key when available is Monitored. No Panic key? Set this flag on, add a User Profile, Pin Usage: Panic. Default: On/True"
+			input "globalSimContact", "capability.contactSensor", required: true,
+				title: "Simulated Contact Sensor used for Panic (Must Monitor in HSM Contacts)"
 			input "globalPinMsgs", "bool", required: false, defaultValue: true, submitOnChange: true,
 				title: "Log pin entries. Default: On/True"
 			if (globalPinMsgs)
 				{
 				input "globalPinLog", "bool", required: false, defaultValue:true,
-					title: "Log Pin to Notifications?"
+					title: "Log Pin to log.trace?"
 				input "globalPinPush", "bool", required: false, defaultValue:true,
 					title: "Send Pin Pushover Notification?"
 				input "globalPinPhone", "phone", required: false, 
@@ -279,7 +282,7 @@ def globalsPage()
 			if (globalBadPinMsgs)
 				{
 				input "globalBadPinLog", "bool", required: false, defaultValue:true,
-					title: "Log Bad Pins to Notifications?"
+					title: "Log Bad Pins to log.trace?"
 				input "globalBadPinPush", "bool", required: false, defaultValue:true,
 					title: "Send Bad Pin Push Notification?"
 				input "globalBadPinPhone", "phone", required: false, 
@@ -321,7 +324,6 @@ def initialize()
 	if (!globalDisable)
 		{
 		subscribe(globalKeypadDevices, 'codeEntered',  keypadCodeHandler)
-//		subscribe (location, "mode", keypadModeHandler)
 		if (globalPanic)
 			{
 		    subscribe (globalKeypadDevices, "contact.open", keypadPanicHandler)
@@ -670,17 +672,18 @@ def keypadCodeHandler(evt)
 			}	
 		}	
 
-	if (!globalRboyDth)		//Nov 3, 2018 rBoy DTH already issues the acknowledgement
+//	if (!globalRboyDth)		//Nov 3, 2018 rBoy DTH already issues the acknowledgement
 		keypad.acknowledgeArmRequest(modeEntered) 		//keypad demands a followup light setting or all lights blink
 	acknowledgeArmRequest(modeEntered,keypad);
-	unschedule(execRoutine)		//Attempt to handle rearming/disarming during exit delay by unscheduling any pending away tasks 
 //	atomicState.badpins=0		//reset badpin count
+	def HSMarmModes=['disarm','armHome','armNight','armAway']
 	def armModes=['Home','Stay','Night','Away']
-	def message = keypad.displayName + "set HSM State to " + armModes[modeEntered] + "with pin for " + userName
+	def message = keypad.displayName + "set HSM State to " + HSMarmModes[modeEntered] + "with pin for " + userName
 	def aMap = [data: [codeEntered: codeEntered, armMode: armModes[modeEntered]]]
 	def mf
 	def am
 	execRoutine(aMap.data)
+	sendLocationEvent(name: "hsmSetArm", value: HSMarmModes[modeEntered])
 	doPinNotifications(message,itext)
 
 //	Process remainder of UserRoutinePiston settings
@@ -788,7 +791,6 @@ def ackResponseHandler(response, data)
 	}
 
 def execRoutine(aMap) 
-//	Execute default SmartHome Monitor routine, setting ST AlarmStatus and SHM Mode
 	{
 	def armMode = aMap.armMode
 	def kMap = [mode: armMode, dtim: now()]	//save mode dtim any keypad armed/disarmed the system for use with
@@ -799,148 +801,23 @@ def execRoutine(aMap)
 	if (armMode == 'Home')					
 		{
 		keypadLightHandler(kbMap)
-//		setLocationMode(globalOff)	//set the mode
-		sendLocationEvent(name: "hsmSetArm", value: "disarm")
 		}
 	else
 	if (armMode == 'Away')
 		{
 		keypadLightHandler(kbMap)
-//		setLocationMode(globalAway)
-		sendLocationEvent(name: "hsmSetArm", value: "armAway")
 		} 
 	else
 	if (armMode == 'Stay')
 		{
 		keypadLightHandler(kbMap)
-//		setLocationMode(globalStay)
-		sendLocationEvent(name: "hsmSetArm", value: "armHome")
 		}
 	else
 	if (armMode == 'Night')
 		{
 		keypadLightHandler(kbMap)
-//		setLocationMode(globalNight)
-		sendLocationEvent(name: "hsmSetArm", value: "armNight")
 		}
 	atomicState.kMap=kMap					//Nyckelharpa Contact DoorOpens and MotionSensor active functions
-	}
-
-def keypadModeHandler(evt)		//react to all SHM Mode changes
-	{
-	if (globalDisable)
-		{return false}			//just in case
-	def	theMode=evt.value		//Used to set the keypad button/icon lights		
-	def theStatus=false			//used to set SHM Alarm State
-	def heStatus=false			//used to compare to hsmStatus (Alarm State)
-	def heSetArm=false			//used to set hsmstatus 
-/*	deprecated in HE done by HSM Apr 16, 2019		
-	if (globalFixMode)			//if global fix mode use data allowing for user defined modes
-		{
-		def it=findChildAppByName('Nyckelharpa ModeFix')
-		if (it?.getInstallationState()!='COMPLETE')
-			logdebug "keypadModeHandler: Modefix is not fully installed, please adjust data then save"
-		else
-		if (it.offDefault == theMode)
-			{
-			theStatus='off'
-			theMode='Home'
-			heStatus='disarmed'
-			heSetArm='disarm'
-			}
-		else
-		if (it.awayDefault == theMode)
-			{
-			theStatus='away'
-			theMode='Away'
-			heStatus='armedAway'
-			heSetArm='armAway'
-			}
-		else
-		if (it.offModes.contains(theMode))
-			{
-			theStatus='off'
-			theMode='Home'
-			heStatus='disarmed'
-			heSetArm='disarm'
-			}
-		else 
-		if (it.awayModes.contains(theMode))
-			{
-			theStatus='away'
-			theMode='Away'
-			heStatus='armedAway'
-			heSetArm='armAway'
-			}
-		else 
-		if (it.stayModes.contains(theMode))
-			{
-			theStatus='stay'
-			theMode='Stay'
-			heStatus='armedStay'
-			heSetArm='armStay'
-			}
-		else
-		if (it.nightModes.contains(theMode))
-			{
-			theStatus='night'
-			theMode='Night'
-			heStatus='armedNight'
-			heSetArm='armNight'
-			}
-		}
-	logdebug "keypadModeHandler GlobalFix:${globalFixMode} theMode: $theMode theStatus: $theStatus"
-/*
-	if (globalKeypadControl)			//when we are controlling keypads, set lights
-		{
-		if (theMode=='Home' || theMode=='Away' || theMode=='Night' || theMode=='Stay')
-			{
-			def kMap=atomicState.kMap
-			def kDtim=now()
-			def kMode
-			logdebug "keypadModeHandler KeypadControl entered theMode: ${theMode} AtomicState.kMap: ${kMap}"
-			def setKeypadLights=true
-			if (kMap)
-				{
-				kDtim=kMap.dtim
-				kMode=kMap.mode
-//				logdebug "keypadModeHandler ${evt} ${theMode} ${kMode}"
-				if (theMode==kMode)
-					{
-					logdebug "Keypad lights are OK, no messages sent"
-					setKeypadLights=false
-					}
-				}
-
-//			Reset the keypad lights and mode, keep time when atomicState previously set, time is last time real keypad set mode		
-			if (setKeypadLights)
-				{
-				kMap = [mode: theMode, dtim: kDtim]			//save mode dtim any keypad armed/disarmed the system for use with
-				atomicState.kMap=kMap						//Nyckelharpa Contact DoorOpens and MotionSensor active functions
-				logdebug "keypadModeHandler issuing keypadlightHandler ${evt} ${evt.value}"
-//				keypadLightHandler(evt)
-				def fakeEvt = [value: theMode]					
-				keypadLightHandler(fakeEvt)
-				}
-			}
-		else
-			{
-			logdebug "keypadModeHandler mode $theMode cannot be used to set the keypad lights"
-			}
-		}	
-/*	deprecated in HE done by HSM Apr 16, 2019	
-//	When SHM alarm state does not match the requested SHM alarm state, change it
-	if (theStatus)
-		{
-//		def alarm = location.currentState("alarmSystemStatus")	//get ST alarm status
-//		def alarmstatus = alarm.value
-		def alarmstatus = location.hsmStatus	//get HE alarm status
-		if (alarmstatus != heStatus && heSetArm)
-//			setSHM(theStatus)
-			sendLocationEvent(name: "hsmSetArm", value: heSetArm)
-		}	
-*/
-	qsse_status_mode(theStatus,theMode)
 	}
 
 def keypadLightHandler(evt)						//set the Keypad lights
@@ -1015,8 +892,10 @@ def keypadPanicHandler(evt)
 	logdebug "keypadPanicHandler entered, ${evt}" 
 	if (globalDisable || !globalPanic)
 		{return false}			//just in case
+			
 	def alarmstatus = location.hsmStatus	//get HE alarm status	
 	def keypad=evt.getDevice()				//set the keypad name
+	doPanicNotifications(keypad)			//get messages out 
 	def panic_map=[data:[cycles:5, keypad: keypad.name]]
 	logdebug "keypadPanicHandler status alarmstatus: ${alarmstatus} panic map: ${panic_map} keypad: ${keypad.name}" 
 	if (alarmstatus.substring(0,5) != 'armed')
@@ -1050,102 +929,24 @@ def keypadPanicExecute(panic_map)						//Panic mode requested
 			runIn(2, keypadPanicExecute,newpanic_map)
 			return false
 			}
-		}
-
-//	prepare panic message, issued later		
-	def message = "PANIC issued by $panic_map.keypad "
-	if (global911 > ""  || globalPolice)
-		{
-		def msg_emergency
-		if (global911 > "")
+		else
 			{
-			msg_emergency= ", call Police at ${global911}"
+			log.error "System did not arm in 10 seconds, unable to create an intrusion"
+			return false
 			}
-		if (globalPolice)
-			{
-			if (msg_emergency==null)
-				{
-				msg_emergency= ", call Police at ${globalPolice}"
-				}
-			else
-				{
-				msg_emergency+= " or ${globalPolice}"
-				}
-			}
-		message+=msg_emergency
 		}
-	else
-		{
-		message+=" by (Nyckelharpa App)"
-		}
-		
-//	find a delay profile for use with panic
-	logdebug "keypadPanicExecute searching for Delay profile"
 
-	def childApps = getChildApps()		//gets all completed child apps
-	def delayApp  = false	
-	childApps.find 						//change from each to find to speed up the search
-		{
-		if (!delayApp && it.getName()=="Nyckelharpa Contact")	
-			{
-			logdebug "keypadPanicExecute found Delay profile"
-			delayApp=true		
-			if (alarmstatus.substring(0,5) != 'armed')
-
-				{
-				message+=" System did not arm in 10 seconds, unable to issue Panic intrusion"
-				it.doNotifications(message)		//issue messages as per child profile
-				}
-			else	
-				{
-				it.doNotifications(message)		//issue messages as per child profile
-				it.thesimcontact.close()		//trigger an intrusion		
-				it.thesimcontact.open()
-//				it.thesimcontact.close([delay: 4000])	//delay not available in HE
-				it.thesimcontact.close()
-				qsse_status_mode(false,"**Panic**")
-
-				}
-			return true							//this ends the **find** loop does not return to system
-			}
-		else	
-			{return false}						//this continues the **find** loop does not return
-		}
-	if (!delayApp)
-		{
-		message +=' Unable to create instrusion, no delay profile found'
-		sendNotificationEvent(message)				//log to notification we are toast
-		}
+	globalSimContact.close()		//trigger an intrusion		
+	globalSimContact.open()
+	runIn(4,closeSimContact)
+	qsse_status_mode(false,"**Panic**")
 	}
 
-//	Directly set the SHM alarm status input must be off, away or stay	
-/*def setSHM(state)
+def	closeSimContact()
 	{
-	if (state=='off'|state=='away'||state=='stay')
-		{
-		def event = [name:"alarmSystemStatus", value: state, 
-    		displayed: true, description: "System Status is ${state}"]
-    	sendLocationEvent(event)
-    	}
-    }
-*/
-
-/*
-atempted to use this to trigger panic but it does not fire the subscribed event
-and may create chaos when multiple keypad devices are defined
-def panicContactOpen() {
-	logdebug "Enter panicContactOpen $globalKeypadDevices"
-    sendEvent(name: "contact", value: "open", displayed: true, isStateChange: true, Device: globalKeypadDevices)
-    runIn(3, "panicContactClose")
-}
-
-def panicContactClose()
-	{
-	logdebug "Enter panicContactClose"
-	sendEvent(name: "contact", value: "closed", displayed: true, isStateChange: true, Device: globalKeypadDevices)
+	globalSimContact.close()			
 	}
-*/
-
+	
 //	Process response from async execution of WebCore Piston
 def getResponseHandler(response, data)
 	{
@@ -1425,14 +1226,11 @@ def fire_piston(it, modeEntered, keypad, thepiston, textmode)
 // log, send notification, SMS message for pin entry, base code from Nyckelharpa Contact	
 def doPinNotifications(localmsg, it)
 	{
-//	logdebug "doPinNotifications entered ${localmsg} ${it}"
+	logdebug "doPinNotifications entered ${localmsg} ${it}"
 	if (it?.pinMsgOverride)
 		{
-//		logdebug "Pin msg override being used"
-
 		if (it.UserPinLog)
 			{
-//			logdebug "sent to system log"
 			sendNotificationEvent(localmsg)
 			}
 		if (it.UserPinPush)
@@ -1443,7 +1241,6 @@ def doPinNotifications(localmsg, it)
 		if (it.UserPinPhone)
 			{
 			def phones = it.UserPinPhone.split("[;#]")
-//			logdebug "$phones"
 			for (def i = 0; i < phones.size(); i++)
 				{
 				sendSmsMessage(phones[i], localmsg)
@@ -1453,11 +1250,8 @@ def doPinNotifications(localmsg, it)
 	else
 	if (globalPinMsgs)	
 		{
-//		logdebug "global Pin msg settings being used"
-
 		if (globalPinLog)
 			{
-//			logdebug "log to notification log"
 			sendNotificationEvent(localmsg)
 			}
 		if (globalPinPush)
@@ -1468,26 +1262,17 @@ def doPinNotifications(localmsg, it)
 		if (globalPinPhone)
 			{
 			def phones = globalPinPhone.split("[;#]")
-	//		logdebug "$phones"
 			for (def i = 0; i < phones.size(); i++)
 				{
 				sendSmsMessage(phones[i], localmsg)
 				}
 			}
 		}
-/*	else
-	if (globalPinMsgs && globalPinMsgs==false)	
-		{}
-	else
-		{
-		logdebug "default pin msg logic used, log to notifications"
-		sendNotificationEvent(localmsg)		//log to notification when no settings available
-		}
-*/	}
+	}
 	
 def doBadPinNotifications(localmsg, it)
 	{
-//	logdebug "doBadPinNotifications entered ${localmsg} ${it}"
+	logdebug "doBadPinNotifications entered ${localmsg} ${it}"
 	if (globalBadPinLog)
 		{
 		sendNotificationEvent(localmsg)
@@ -1503,6 +1288,57 @@ def doBadPinNotifications(localmsg, it)
 		for (def i = 0; i < phones.size(); i++)
 			{
 			sendSmsMessage(phones[i], localmsg)
+			}
+		}
+	}
+
+def doPanicNotifications(keypad)
+	{	
+	logdebug "doPanicNotifications entered ${localmsg}"
+	def message = "PANIC issued by $keypad "
+	if (global911 > ""  || globalPolice)
+		{
+		def msg_emergency
+		if (global911 > "")
+			{
+			msg_emergency= ", call Police at ${global911}"
+			}
+		if (globalPolice)
+			{
+			if (msg_emergency==null)
+				{
+				msg_emergency= ", call Police at ${globalPolice}"
+				}
+			else
+				{
+				msg_emergency+= " or ${globalPolice}"
+				}
+			}
+		message+=msg_emergency
+		}
+	else
+		{
+		message+=" by (Nyckelharpa App)"
+		}
+		
+	sendNotificationEvent(message)
+	if (sendPushMessage)
+		sendPushMessage.deviceNotification(message)
+	if (globalPinPhone)
+		{
+		def phones = globalPinPhone.split("[;#]")
+		for (def i = 0; i < phones.size(); i++)
+			{
+			sendSmsMessage(phones[i], message)
+			}
+		}
+	else
+	if (globalBadPinPhone)
+		{
+		def phones = globalBadPinPhone.split("[;#]")
+		for (def i = 0; i < phones.size(); i++)
+			{
+			sendSmsMessage(phones[i], message)
 			}
 		}
 	}
@@ -1575,4 +1411,3 @@ def sendNotificationEvent(txt)				//ST sendNotificationEvent command not support
 	{
 	log.trace ("${txt}")
     }
-	
