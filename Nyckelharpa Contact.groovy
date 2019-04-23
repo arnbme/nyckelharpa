@@ -23,6 +23,7 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *	Apr 22, 2019 v0.0.1	Remove local simcontact use global simcontact
  *	Apr 22, 2019 v0.0.0	Rename SHM Delay child to Nyckelharpa Contact change version to 0.0.0 prerelease
  *	Apr 21, 2019 v2.1.4AH remove uneeded entry delay time settings
  *	Apr 21, 2019 v2.1.4AH Fix missing NEXT Button on pageone and multiple page twos, add nextPage: to dynamic pages
@@ -204,8 +205,8 @@ def pageOne()
 			}
 		section
 			{	
-			input "thesimcontact", "capability.contactSensor", required: true,
-				title: "Simulated Contact Sensor (Must Monitor in SmartHome)"
+//			input "thesimcontact", "capability.contactSensor", required: true,
+//				title: "Simulated Contact Sensor (Must Monitor in SmartHome)"
 			input "contactname", "text", required: false, 
 				title: "(Optional!) Contact Name: When Real Contact Sensor is rejected as simulated, enter 4 to 8 alphanumeric characters from the IDE Device Type field to force accept device", submitOnChange: true
 			}
@@ -287,7 +288,7 @@ def pageOneVerify() 				//edit page one info, go to pageTwo when valid
 			}
 		}	
 
-	if (thesimcontact)
+/*	if (thesimcontact)
 		{
 		if (thesimcontact.typeName.matches("(.*)(?i)keypad(.*)"))
 			{
@@ -304,7 +305,7 @@ def pageOneVerify() 				//edit page one info, go to pageTwo when valid
 			error_data+="The 'Simulated Contact Sensor' is real. Please select a differant simulated contact sensor or tap 'Remove'\n\n"
 			}
 		}	
-	if (error_data!="")
+*/	if (error_data!="")
 		{
 		state.error_data=error_data.trim()
 		pageOne()
@@ -345,42 +346,6 @@ def iscontactUnique()
 		}
 	return unique
 	}
-
-def issimcontactUnique()
-	{
-	def unique = true
-	def children = parent?.getChildApps()
-	children.each
-		{ child ->
-		def childLabel = child.getLabel()
-		if (child.getName()!="Nyckelharpa Contact")	
-			{}
-		else
-		if (child.thesimcontact.getId() == thesimcontact.getId() &&
-		    child.getId() != app.getId())
-			{
-			unique=false
-			}
-		}
-	return unique
-	}
-
-/*  cant make this work in java
-def isUnique(contact)
-	{
-	def unique = true
-	def children = parent?.getChildApps()
-	children.each
-		{ child ->
-		if (child.${contact}.getId() == ${contact}.getId() &&
-		    child.getId() != app.getId())
-			{
-			unique=false
-			}
-		}
-	return unique
-	}
-*/	
 
 def pageTwo()
 	{
@@ -778,9 +743,8 @@ def soundalarm(data)
 			}
 		else	
 			{
-			thesimcontact.close()		//must use a live simulated sensor or this fails in Simulator
-			logdebug "alarm triggered"	
-			thesimcontact.open()
+			parent.globalSimContact.close()		
+			parent.globalSimContact.open()
 			parent.qsse_status_mode(false,"**Intrusion**")
 			}
 //		Aug 19, 2017 issue optional intrusion notificaion messages
@@ -820,10 +784,14 @@ def soundalarm(data)
 				}
 			doNotifications(message)	
 			}	
-//		thesimcontact.close([delay: 4000])	//failing in HE
-		thesimcontact.close()
+		runIn(4,closeSimContact)
 		}
 	unschedule(soundalarm)					//kill any lingering tasks caused by using overwrite false on runIn
+	}
+
+def	closeSimContact()
+	{
+	globalSimContact.close()			
 	}
 
 /******** Monitor for Open Doors when SmarthHome is initially Armed *********/
