@@ -1,4 +1,6 @@
- /*
+/**
+ *  Update Url:   https://raw.githubusercontent.com/arnbme/nyckelharpa/master/Nyckelharpa%20Modefix.groovy
+ * 
  *  Nyckelharpa ModeFix 
  *  Functions: Fix the mode when it is invalid, generally caused when using Dashboard to switch modes
  * 

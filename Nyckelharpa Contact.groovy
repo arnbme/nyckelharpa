@@ -1,4 +1,6 @@
 /**
+ *  Update Url:   https://raw.githubusercontent.com/arnbme/nyckelharpa/master/Nyckelharpa%20Contact.groovy
+ * 
  *  Nyckelharpa Contact sensor monitor 
  *	Functions: 
  *		Simulate contact entry delay missing from SmartHome.					
@@ -201,7 +203,7 @@ def pageOne()
 			input "logDebugs", "bool", required: false, defaultValue:false,
 				title: "Log debugging messages? Normally off/false"
 			input "thecontact", "capability.contactSensor", required: true, 
-				title: "Monitored Contact Sensor (Must monitor in HSM)", submitOnChange: true
+				title: "Monitored Contact Sensor (Must also monitor in HSM)", submitOnChange: true
 			}
 		section
 			{	

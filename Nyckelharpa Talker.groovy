@@ -1,4 +1,6 @@
 /**
+ *  Update Url:   https://raw.githubusercontent.com/arnbme/nyckelharpa/master/Nyckelharpa%20Talker.groovy
+ * 
  *  Nyckelharpa Talker
  *  Supplements Big Talker adding speech when Nyckelharpa enters the Exit or Entry delay time period
  *		For LanNouncer Device: Chime, TTS text, Chime
