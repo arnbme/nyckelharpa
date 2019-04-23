@@ -201,7 +201,7 @@ def pageOne()
 			input "logDebugs", "bool", required: false, defaultValue:false,
 				title: "Log debugging messages? Normally off/false"
 			input "thecontact", "capability.contactSensor", required: true, 
-				title: "Monitored Contact Sensor", submitOnChange: true
+				title: "Monitored Contact Sensor (Must monitor in HSM)", submitOnChange: true
 			}
 		section
 			{	
