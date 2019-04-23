@@ -675,8 +675,8 @@ def keypadCodeHandler(evt)
 	acknowledgeArmRequest(modeEntered,keypad);
 	unschedule(execRoutine)		//Attempt to handle rearming/disarming during exit delay by unscheduling any pending away tasks 
 //	atomicState.badpins=0		//reset badpin count
-	def armModes=['Home','Stay','Night','Away']
-	def message = keypad.displayName + "\nset mode to " + armModes[modeEntered] + "\nwith pin for " + userName
+	def armModes=['disarmed','Home','Night','Away']
+	def message = keypad.displayName + "set HSM State to " + armModes[modeEntered] + "with pin for " + userName
 	def aMap = [data: [codeEntered: codeEntered, armMode: armModes[modeEntered]]]
 	def mf
 	def am
@@ -1475,15 +1475,15 @@ def doPinNotifications(localmsg, it)
 				}
 			}
 		}
-	else
+/*	else
 	if (globalPinMsgs && globalPinMsgs==false)	
 		{}
 	else
 		{
-//		logdebug "default pin msg logic used, log to notifications"
+		logdebug "default pin msg logic used, log to notifications"
 		sendNotificationEvent(localmsg)		//log to notification when no settings available
 		}
-	}
+*/	}
 	
 def doBadPinNotifications(localmsg, it)
 	{
