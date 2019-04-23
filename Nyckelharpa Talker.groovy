@@ -249,7 +249,6 @@ def TalkerHandler(evt)
 			msgout=theEntryMsg.replaceAll("%nn",delaydatax)
 		else
 			msgout=theEntryMsg
-		log.debug msgout	
 		if (theTTS)
 			{
 			if (theSoundChimes)
@@ -305,7 +304,6 @@ def TalkerHandler(evt)
 
 def ttsDelay(map)
 	{
-	log.debug "ttsDelay entered: ${map.tts}"
 	theTTS.speak(map.tts)
 	}
 
