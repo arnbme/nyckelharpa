@@ -25,6 +25,7 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *	Apr 22, 2019 v0.0.2	Adjust motion sensor logic for HSM
  *	Apr 22, 2019 v0.0.1	Remove local simcontact use global simcontact
  *	Apr 22, 2019 v0.0.0	Rename SHM Delay child to Nyckelharpa Contact change version to 0.0.0 prerelease
  *	Apr 21, 2019 v2.1.4AH remove uneeded entry delay time settings
@@ -162,7 +163,7 @@ preferences {
 
 def version()
 	{
-	return "2.1.4H";
+	return "0.0.2";
 	}
 	
 def pageZeroVerify()
@@ -207,15 +208,16 @@ def pageOne()
 			}
 		section
 			{	
-//			input "thesimcontact", "capability.contactSensor", required: true,
-//				title: "Simulated Contact Sensor (Must Monitor in SmartHome)"
 			input "contactname", "text", required: false, 
 				title: "(Optional!) Contact Name: When Real Contact Sensor is rejected as simulated, enter 4 to 8 alphanumeric characters from the IDE Device Type field to force accept device", submitOnChange: true
 			}
 		section
 			{
 			input "themotionsensors", "capability.motionSensor", required: false, multiple: true,
-				title: "(Optional!) Ignore these Motion Sensors during exit delay, and when the Real Contact Sensor opens during entry delay. These sensors are monitored in Alarm State: Away  (Remove from SmartHome Security Armed (Away) Monitoring)"
+				title: "(Optional!) These motion sensors trigger before before the real contact registers as open, creating an unwanted intrusion. These sensors are monitored in Alarm State: Away  (Remove from HSM Away monitoring)"
+			if (themotionsensors)
+				input "themotiondelay", "number", required: true, range: "0..3", defaultValue: 0,
+					title: "Motion sensor entry wait time in seconds from 0 to 3, default:0. Maximum seconds before contact must open."
 			}	
 
 		if (thecontact)
@@ -360,12 +362,12 @@ def pageTwo()
 				paragraph "${state.error_data}"
 				state.remove("error_data")
 				}
-			input "themotiondelay", "number", required: true, range: "0..10", defaultValue: 0,
-				title: "When arming in away mode optional motion sensor entry delay time in seconds from 0 to 10, default:0. Usually not needed. Fixes a motion sensor reacting to door movement before contact sensor registers as open. Only when needed, suggested initial value is 5."
+			input "themotiondelay", "number", required: true, range: "0..5", defaultValue: 0,
+				title: "Motion sensor entry wait time in seconds from 0 to 5, default:0. Maximum seconds before contact must open."
 			input "thesiren", "capability.alarm", required: false, multiple: true,
 				title: "Beep these devices on entry delay (Optional)"
 			input "thebeepers", "capability.tone", required: false, multiple: true,
-				title: "Beep/Chime these devices when real contact sensor opens, and Alarm State is Off (Optional)"
+				title: "Beep/Chime these devices when real contact sensor opens, and Alarm State is disarmed (Optional)"
 			}
 		}
 	}	
@@ -632,6 +634,7 @@ def doorOpensHandler(evt)
 	def alarmstatus = location.hsmStatus	//get HE alarm status
 	if (alarmstatus == 'disarmed' || alarmstatus=='allDisarmed')
 		thebeepers?.beep()
+//	Nyclelharpa parent does the armed processing		
 	}	
 
 def prepare_to_soundalarm(shmtruedelay)

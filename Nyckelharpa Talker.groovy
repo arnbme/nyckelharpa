@@ -26,6 +26,7 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *	Apr 24, 2019 v0.0.2 Restore ArmCancel message code.
  *	Apr 23, 2019 v0.0.1 Fix user device did not have chime caused error.
  *						verify all devices have chime during input editing
  *	Apr 21, 2019 v0.0.0 Fix missing NEXT Button on pageone, add nextPage: to dynamic page 1
@@ -45,7 +46,7 @@ definition(
     name: "Nyckelharpa Talker",
     namespace: "arnbme",
     author: "Arn Burkhoff",
-    description: "(${version()}) Speak during Nyckelharpa Exit and Entry Delay",
+    description: "(${version()}) Nyckelharpa Talker",
     category: "My Apps",
     parent: "arnbme:Nyckelharpa",
     iconUrl: "https://www.arnb.org/IMAGES/hourglass.png",
@@ -55,7 +56,7 @@ definition(
 
 def version()
 	{
-	return "0.0.1";
+	return "0.0.2";
 	}
 
 preferences {
@@ -314,6 +315,14 @@ def TalkerHandler(evt)
 			{theTTS.speak(msgout)}					
 		if (theSpeakers)
 			{theSpeakers.playTextAndResume(msgout,theVolume)}
+		}
+	else
+	if (evt.value=="ArmCancel" && delaydata>"")
+		{
+		if (theTTS)
+			{theTTS.speak(delaydata)}					
+		if (theSpeakers)
+			{theSpeakers.playTextAndResume(delaydata,theVolume)}
 		}
 	}
 

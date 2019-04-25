@@ -22,6 +22,7 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  * 
+ *	Apr 24, 2019 v0.0.3	allow force rearm if second arm request within 30 minutes of last open doors failure
  *	Apr 23, 2019 v0.0.2	cleanup pin entry and panic logic
  *	Apr 22, 2019 v0.0.1	Add pushover support
  *	Apr 22, 2019 v0.0.0	Rename SHM Delay to Nyckelharpa change version to 0.0.0 prerelease
@@ -159,7 +160,7 @@ preferences {
 
 def version()
 	{
-	return "0.0.2";
+	return "0.0.3";
 	}
 def main()
 	{
@@ -290,20 +291,27 @@ def globalsPage()
 				input "globalBadPinPhone", "phone", required: false, 
 					title: "Send Invalid Bad Pin text message to this number. For multiple SMS recipients, separate phone numbers with a pound sign(#), or semicolon(;)"
 				}
-
+			paragraph "When entering contacts below, remove from HSM. When arming fails to complete you may rearm with open contacts, by rearming withing 2 minutes"
 			input "globalAwayContacts", "capability.contactSensor", required: false, submitOnChange: true, multiple: true,
-				title: "(Optional!) Contact Sensors that must be closed prior to arming Away from a Keypad"
+				title: "(Optional!) Contact Sensors that must be closed prior to arming Away from a Keypad. Remove from HSM!"
 			if (globalAwayContacts)
 				{
 				input (name: "globalAwayNotify", type:"enum", required: false, options: ["Pushover Msg", "SMS","Talk"],multiple:true,
-					title: "How to notify contact is open when arming Away")
+					title: "How to notify contact is open when arming/armed Away")
 				}
-			input "globalStayContacts", "capability.contactSensor", required: false, submitOnChange: true, multiple:true,
-				title: "(Optional!) Contact sensors that must be closed prior to arming Home (Stay) or Night from a Keypad."
-			if (globalStayContacts)
+			input "globalHomeContacts", "capability.contactSensor", required: false, submitOnChange: true, multiple:true,
+				title: "(Optional!) Contact sensors that must be closed prior to arming Home (Stay) from a Keypad. Remove from HSM!"
+			if (globalHomeContacts)
 				{
-				input (name: "globalStayNotify", type:"enum", required: false, options: ["PushOver Msg", "SMS","Talk"],multiple:true,
-					title: "How to notify contact is open arming Stay")
+				input (name: "globalHomeNotify", type:"enum", required: false, options: ["PushOver Msg", "SMS","Talk"],multiple:true,
+					title: "How to notify contact is open arming/armed Stay")
+				}
+			input "globalNightContacts", "capability.contactSensor", required: false, submitOnChange: true, multiple:true,
+				title: "(Optional!) Contact sensors that must be closed prior to arming Night from a Keypad. Remove from HSM!"
+			if (globalNightContacts)
+				{
+				input (name: "globalNightNotify", type:"enum", required: false, options: ["PushOver Msg", "SMS","Talk"],multiple:true,
+					title: "How to notify contact is open arming/armed Night")
 				}
 			input "sendPushMessage", "capability.notification", title: "Devices receiving Pushover notifications", multiple: true, required: false
 			}
@@ -336,18 +344,19 @@ def initialize()
 				it.disableInvalidPinLogging(true)
 			}
 		}
-	subscribe(location, "hsmStatus", verify_version)
-	verify_version("dummy_evt")
+//	subscribe(location, "hsmStatus", verify_version)	//kill for now
+//	verify_version("dummy_evt")
 	}	
 
 def uninstalled()
 	{
+/*	
 	globalKeypadDevices?.each
 		{
 		if (it.hasCommand("disableInvalidPinLogging"))
 			it.disableInvalidPinLogging(false)
 		}
-	}
+*/	}
 
 //  --------------------------Keypad support added Mar 02, 2018 V2-------------------------------
 /*				Basic location modes are Home, Night, Away. This can be very confusing
@@ -651,32 +660,29 @@ def keypadCodeHandler(evt)
 
 //	Oct 21, 2018 verify contacts are closed prior to arming or exit delay
 //	Message sensor, sensor open, Arming cancelled
-	if (modeEntered > 0)
+	if (modeEntered == 0)
+		{}
+	else	
+	if (modeEntered == 3 && globalAwayContacts)
 		{
-		logdebug "checking for open contacts"
-		if (modeEntered == 3)
-			{
-			if (globalAwayContacts)
-				{
-				if (!checkOpenContacts(globalAwayContacts, globalAwayNotify, keypad))
-					{
-					return
-					}
-				}
-			}
-		else
-		if (globalStayContacts)
-			{
-			if(!checkOpenContacts(globalStayContacts, globalStayNotify, keypad))
-				{
-				return
-				}
-			}	
+		if (!checkOpenContacts(globalAwayContacts, globalAwayNotify, keypad))
+			return
+		}
+	else
+	if (modeEntered == 2 && globalHomeContacts)
+		{
+		if(!checkOpenContacts(globalHomeCotacts, globalHomeNotify, keypad))
+			return
 		}	
-
+	else
+	if (modeEntered == 1 && globalNightContacts)
+		{
+		if(!checkOpenContacts(globalNightContacts, globalNightNotify, keypad))
+			return
+		}	
 //	if (!globalRboyDth)		//Nov 3, 2018 rBoy DTH already issues the acknowledgement
 		keypad.acknowledgeArmRequest(modeEntered) 		//keypad demands a followup light setting or all lights blink
-	acknowledgeArmRequest(modeEntered,keypad);
+//	acknowledgeArmRequest(modeEntered,keypad);			//Used with Internet keypad only	
 //	atomicState.badpins=0		//reset badpin count
 	def HSMarmModes=['disarm','armHome','armNight','armAway']
 	def armModes=['Home','Stay','Night','Away']
@@ -684,6 +690,7 @@ def keypadCodeHandler(evt)
 	def aMap = [data: [codeEntered: codeEntered, armMode: armModes[modeEntered]]]
 	def mf
 	def am
+	globalSimContact.close()			
 	execRoutine(aMap.data)
 	sendLocationEvent(name: "hsmSetArm", value: HSMarmModes[modeEntered])
 	doPinNotifications(message,itext)
@@ -902,7 +909,7 @@ def keypadPanicHandler(evt)
 	logdebug "keypadPanicHandler status alarmstatus: ${alarmstatus} panic map: ${panic_map} keypad: ${keypad.name}" 
 	if (alarmstatus.substring(0,5) != 'armed')
 		{
-		unschedule(execRoutine)				//Kill any delayed arm/disarm requests 
+//		unschedule(execRoutine)				//Kill any delayed arm/disarm requests 
 		setLocationMode('Night')
 		sendLocationEvent(name: "hsmSetArm", value: "armNight")
 		runIn(1, keypadPanicExecute,panic_map)
@@ -957,6 +964,7 @@ def getResponseHandler(response, data)
 	}
 
 	
+//	this routine is currently not being executed killed the subscribe
 def verify_version(evt)		//evt needed to stop error whne coming from subscribe to alarm change
 	{
 	logdebug "verify_version entered ${evt.getProperties().toString()}"
@@ -1072,7 +1080,7 @@ def verify_version(evt)		//evt needed to stop error whne coming from subscribe t
 	if (!daexitdelay)
 		return false
 
-	def locevent = [name:"shmdelaytalk", value: "exitDelayNkypd", isStateChange: true,
+	def locevent = [name:"Nyckelharpatalk", value: "exitDelayNkypd", isStateChange: true,
 		displayed: true, descriptionText: "Issue exit delay talk event", linkText: "Issue exit delay talk event",
 		data: vchildmindelay]
 
@@ -1347,8 +1355,12 @@ def doPanicNotifications(keypad)
 
 def checkOpenContacts (contactList, notifyOptions, keypad)
 	{
+	def checkOpenReturn=false
+	def lastDoorsDtim=0
+	if (atomicState?.doorsdtim)
+		lastDoorsDtim=atomicState?.doorsdtim	//last time doors failed
 	def contactmsg=''
-	logdebug "checkOpenContacts entered $contactList $notifyOptions $keypad"
+	logdebug "checkOpenContacts entered $contactList $notifyOptions $keypad lastDoorsDtim: $lastDoorsDtim"
 	contactList.each
 		{
 //		logdebug "${it} ${it.currentContact}"
@@ -1356,11 +1368,19 @@ def checkOpenContacts (contactList, notifyOptions, keypad)
 			{
 			if (contactmsg == '')
 				{
-//				if (!globalRboyDth)		//Nov 3, 2018 rBoy DTH already issues the acknowledgement
-//					keypad.sendInvalidKeycodeResponse()
-				keypad.beep(2)
-				keypad.acknowledgeArmRequest(4)				//always issue badpin very long beep
-				contactmsg = 'Arming cancelled. Close '+it.displayName
+				if ((now() - lastDoorsDtim) > 30000)	//1 minutes = 60000 milliseconds	
+					{
+					keypad.beep(2)								//fail for open doors
+					keypad.acknowledgeArmRequest(4)				//always issue badpin very long beep
+					contactmsg = 'System not armed. Close contact '+it.displayName
+					atomicState.doorsdtim=now()
+					}
+				else
+					{
+					atomicState.doorsdtim=0
+					contactmsg = 'Arming forced. Open Contact '+it.displayName
+					checkOpenReturn = true
+					}				
 				}
 			else
 				contactmsg += ', '+it.displayName
@@ -1370,7 +1390,6 @@ def checkOpenContacts (contactList, notifyOptions, keypad)
 		{
 		notifyOptions.each
 			{
-//			logdebug "$it"
 			if (it=='Notification log')
 				{
 				sendNotificationEvent(contactmsg)
@@ -1393,13 +1412,13 @@ def checkOpenContacts (contactList, notifyOptions, keypad)
 			else
 			if (it=='Talk')
 				{
-				def loceventcan = [name:"shmdelaytalk", value: "ArmCancel", isStateChange: true,
+				def loceventcan = [name:"Nyckelharpatalk", value: "ArmCancel", isStateChange: true,
 					displayed: true, descriptionText: "Issue exit delay talk event", linkText: "Issue exit delay talk event",
 					data: contactmsg]	
 				sendLocationEvent(loceventcan)
 				}
 			}
-		return false
+		return checkOpenReturn
 		}
 	return true	
 	}
