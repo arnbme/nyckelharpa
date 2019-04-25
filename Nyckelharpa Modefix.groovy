@@ -348,13 +348,23 @@ def alarmStatusHandler(evt)
 		{
 		if (theAlarm=="armedAway")
 			{
-			parent.globalKeypadDevices.setArmedAway()
+			if (parent.globalKeypadDevices)
+				parent.globalKeypadDevices.setArmedAway()
 			ttsArmed(theAlarm)
 			}
 		else 
 		if (theAlarm != lastAlarm)
 			{
-			parent.globalKeypadDevices.setExitDelay(evt.jsonData.seconds)
+			if (parent.globalAwayContacts)
+				{
+				if (!parent.checkOpenContacts(parent.globalAwayContacts, parent.globalAwayNotify, false))
+					{
+					sendLocationEvent(name: 'hsmSetArm', value: 'disarm')
+					return
+					}
+				}
+			if (parent.globalKeypadDevices)
+				parent.globalKeypadDevices.setExitDelay(evt.jsonData.seconds)
 			ttsExit(evt.jsonData.seconds)
 			}
 		if (!awayModes.contains(theMode))
@@ -367,19 +377,31 @@ def alarmStatusHandler(evt)
 		{
 		if (theAlarm=="armedNight")
 			{
-			parent.globalKeypadDevices.each
+			if (parent.globalKeypadDevices)
 				{
-				if (['3400','3400-G'].contains(it.data.model))
-					it.setArmedNight()
-				else	
-					it.setArmedStay()			//non Centralite keypads have 3 mode lights, light partial
+				parent.globalKeypadDevices.each
+					{
+					if (['3400','3400-G'].contains(it.data.model))
+						it.setArmedNight()
+					else	
+						it.setArmedStay()			//non Centralite keypads have 3 mode lights, light partial
+					}
 				}
 			ttsArmed(theAlarm)
 			}
 		else
 		if (theAlarm != lastAlarm)
 			{
-			parent.globalKeypadDevices.setExitDelay(evt.jsonData.seconds)
+			if (parent.globalNightContacts)
+				{
+				if (!parent.checkOpenContacts(parent.globalNightContacts, parent.globalNightNotify, false))
+					{
+					sendLocationEvent(name: 'hsmSetArm', value: 'disarm')
+					return
+					}
+				}
+			if (parent.globalKeypadDevices)
+				parent.globalKeypadDevices.setExitDelay(evt.jsonData.seconds)
 			ttsExit(evt.jsonData.seconds)
 			}
 		if (!nightModes.contains(theMode))
@@ -393,7 +415,16 @@ def alarmStatusHandler(evt)
 		{
 		if (theAlarm=="armedHome")
 			{
-			parent.globalKeypadDevices.setArmedStay()
+			if (parent.globalHomeContacts)
+				{
+				if (!parent.checkOpenContacts(parent.globalHomeContacts, parent.globalHomeNotify, false))
+					{
+					sendLocationEvent(name: 'hsmSetArm', value: 'disarm')
+					return
+					}
+				}
+			if (parent.globalKeypadDevices)
+				parent.globalKeypadDevices.setArmedStay()
 			ttsArmed(theAlarm)
 			}
 		else

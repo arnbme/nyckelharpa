@@ -1361,6 +1361,7 @@ def checkOpenContacts (contactList, notifyOptions, keypad)
 	if (atomicState?.doorsdtim)
 		lastDoorsDtim=atomicState?.doorsdtim	//last time doors failed
 	def contactmsg=''
+	def duration = now() -lastDoorsDtim		
 	logdebug "checkOpenContacts entered $contactList $notifyOptions $keypad lastDoorsDtim: $lastDoorsDtim"
 	contactList.each
 		{
@@ -1369,10 +1370,13 @@ def checkOpenContacts (contactList, notifyOptions, keypad)
 			{
 			if (contactmsg == '')
 				{
-				if ((now() - lastDoorsDtim) > 15000)	//1 minutes = 60000 milliseconds	
+				if (duration > 15000 || duration < 3000)	
 					{
-					keypad.beep(2)								//fail for open doors
-					keypad.acknowledgeArmRequest(4)				//always issue badpin very long beep
+					if (keypad)										//keypad is false when non keypad arming
+						{
+						keypad.beep(2)								//fail for open doors
+						keypad.acknowledgeArmRequest(4)				//always issue badpin very long beep
+						}
 					contactmsg = 'Arming Canceled. '+it.displayName
 					atomicState.doorsdtim=now()
 					}
