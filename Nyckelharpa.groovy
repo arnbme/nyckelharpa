@@ -660,7 +660,7 @@ def keypadCodeHandler(evt)
 		}
 
 //	Oct 21, 2018 verify contacts are closed prior to arming or exit delay
-//	Message sensor, sensor open, Arming cancelled
+//	Message sensor, sensor open, Arming canceled
 	if (modeEntered == 0)
 		{}
 	else	
