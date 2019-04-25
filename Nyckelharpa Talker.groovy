@@ -26,6 +26,7 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *	Apr 25, 2019 v0.0.3 When HSM cancels arming deu to open doors set keypad to off (for 100% accuracy should be last state).
  *	Apr 24, 2019 v0.0.2 Restore ArmCancel message code.
  *	Apr 23, 2019 v0.0.1 Fix user device did not have chime caused error.
  *						verify all devices have chime during input editing
@@ -239,8 +240,14 @@ def alertHandler(evt)
 		parent.globalKeypadDevices.setEntryDelay(evt.jsonData.seconds)
 		TalkerHandler([value: 'entryDelay', data: evt.jsonData.seconds])
 		}
+	else
+	if (evt.value == 'arming' && parent.globalKeypadDevices)		//failed to alert due to open contact
+		{
+		runInMillis(500, delaysetDisarmed)
+		runInMillis(1200, delayBeep)
+		}
 	}
-	
+
 def TalkerHandler(evt)
 	{
 	logdebug("TalkerHandler entered, event: ${evt.value} ${evt?.data}")
@@ -330,6 +337,16 @@ def ttsDelay(map)
 	{
 	theTTS.speak(map.tts)
 	}
+
+def delayBeep()
+	{
+	parent.globalKeypadDevices.beep(2)		
+	}	
+
+def delaysetDisarmed()
+	{
+	parent.globalKeypadDevices.setDisarmed()
+	}	
 
 def logdebug(txt)
 	{

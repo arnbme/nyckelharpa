@@ -22,6 +22,7 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  * 
+ *	Apr 25, 2019 v0.0.4	Improve arming faild and forced arming messages
  *	Apr 24, 2019 v0.0.3	allow force rearm if second arm request within 30 minutes of last open doors failure
  *	Apr 23, 2019 v0.0.2	cleanup pin entry and panic logic
  *	Apr 22, 2019 v0.0.1	Add pushover support
@@ -160,7 +161,7 @@ preferences {
 
 def version()
 	{
-	return "0.0.3";
+	return "0.0.4";
 	}
 def main()
 	{
@@ -1368,17 +1369,17 @@ def checkOpenContacts (contactList, notifyOptions, keypad)
 			{
 			if (contactmsg == '')
 				{
-				if ((now() - lastDoorsDtim) > 30000)	//1 minutes = 60000 milliseconds	
+				if ((now() - lastDoorsDtim) > 15000)	//1 minutes = 60000 milliseconds	
 					{
 					keypad.beep(2)								//fail for open doors
 					keypad.acknowledgeArmRequest(4)				//always issue badpin very long beep
-					contactmsg = 'System not armed. Close contact '+it.displayName
+					contactmsg = 'Arming Canceled. '+it.displayName
 					atomicState.doorsdtim=now()
 					}
 				else
 					{
 					atomicState.doorsdtim=0
-					contactmsg = 'Arming forced. Open Contact '+it.displayName
+					contactmsg = 'Arming Forced. '+it.displayName
 					checkOpenReturn = true
 					}				
 				}
@@ -1388,6 +1389,9 @@ def checkOpenContacts (contactList, notifyOptions, keypad)
 		}
 	if (contactmsg>'')
 		{
+		contactmsg += 'is open.'
+		if (checkOpenReturn==false)
+			contactmsg += ' Rearming within 15 seconds will force arming'
 		notifyOptions.each
 			{
 			if (it=='Notification log')
