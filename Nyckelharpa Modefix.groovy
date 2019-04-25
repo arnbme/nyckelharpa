@@ -20,6 +20,7 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *	Apr 22, 2019 	v0.0.1	Handle force arming from dashboard setting vs keypad
  *	Apr 22, 2019 	v0.0.0	Rename SHM Delay Modfix to Nyckelharpa Modefix change version to 0.0.0 prerelease
  *	Apr 20, 2019 	V0.1.8AH Move sendevent for arm and disarm message here, keypad control in one place
  *	Apr 20, 2019 	V0.1.8AH Move sendevent for exit message here, handle double arming issue with AtomicState
@@ -73,7 +74,7 @@ preferences {
 
 def version()
 	{
-	return "0.0.0";
+	return "0.0.1";
 	}
 
 def pageOne(error_msg)
@@ -328,11 +329,13 @@ def initialize()
 
 def alarmStatusHandler(evt)
 	{
+	logdebug "alarmStatusHandler entered"
 	def theAlarm = evt.value as String				//curent alarm state
 	def lastAlarm = atomicState?.hsmstate
 	atomicState.hsmstate=theAlarm
 	def theMode = location.currentMode as String	//warning without string parameter it wont match
-	logdebug "ModeFix alarmStatusHandler entered, HSM state: ${theAlarm}, lastAlarm: ${lastAlarm} Mode: ${theMode} "
+	lastDoorsDtim=parent.getAtomicdoorsdtim()			//set in Nyckelharpa checkOpenContacts
+	logdebug "ModeFix alarmStatusHandler entered, HSM state: ${theAlarm}, lastAlarm: ${lastAlarm} Mode: ${theMode} lastDoorsDtim $lastDoorsDtim"
 //	Fix the mode to match the Alarm State. 
 	if (theAlarm=="disarmed" || theAlarm=="allDisarmed")
 		{
@@ -357,11 +360,12 @@ def alarmStatusHandler(evt)
 			{
 			if (parent.globalAwayContacts)
 				{
-				if (!parent.checkOpenContacts(parent.globalAwayContacts, parent.globalAwayNotify, false))
+				if (lastDoorsDtim > 0 && !parent.checkOpenContacts(parent.globalAwayContacts, parent.globalAwayNotify, false))
 					{
 					sendLocationEvent(name: 'hsmSetArm', value: 'disarm')
 					return
 					}
+				parent.killAtomicdoorsdtim()		
 				}
 			if (parent.globalKeypadDevices)
 				parent.globalKeypadDevices.setExitDelay(evt.jsonData.seconds)
@@ -399,6 +403,7 @@ def alarmStatusHandler(evt)
 					sendLocationEvent(name: 'hsmSetArm', value: 'disarm')
 					return
 					}
+				parent.killAtomicdoorsdtim()		
 				}
 			if (parent.globalKeypadDevices)
 				parent.globalKeypadDevices.setExitDelay(evt.jsonData.seconds)
@@ -422,6 +427,7 @@ def alarmStatusHandler(evt)
 					sendLocationEvent(name: 'hsmSetArm', value: 'disarm')
 					return
 					}
+				parent.killAtomicdoorsdtim()		
 				}
 			if (parent.globalKeypadDevices)
 				parent.globalKeypadDevices.setArmedStay()

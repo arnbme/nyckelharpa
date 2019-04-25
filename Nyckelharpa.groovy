@@ -1431,6 +1431,24 @@ def checkOpenContacts (contactList, notifyOptions, keypad)
 	return true	
 	}
 
+/*	used by Nyckelharpa Modefix to get atomicState.doorsdtim	*/
+def getAtomicdoorsdtim()
+	{
+//	logdebug "getAtomicdoorsdtim was entered"
+	def lastDoorsDtim=0
+	if (atomicState?.doorsdtim)
+		lastDoorsDtim=atomicState.doorsdtim	//last time doors failed
+	return lastDoorsDtim
+	}
+
+/*	used by Nyckelharpa Modefix to kill forced rearm	*/
+def killAtomicdoorsdtim()
+	{
+//	logdebug "killAtomicdoorsdtim was entered"
+	atomicState.doorsdtim=now()-600000			//now - 10minutes
+	}
+
+	
 def logdebug(txt)
 	{
    	if (logDebugs)
