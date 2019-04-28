@@ -22,6 +22,8 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  * 
+ *	Apr 28, 2019 v0.0.5	use NCKL Panic Contact no longer necessary to specify contact sensor
+ *	Apr 27, 2019 v0.0.5	Create and use simulated contacts in HSM arming, control here for arming override
  *	Apr 25, 2019 v0.0.4	Improve arming faild and forced arming messages
  *	Apr 24, 2019 v0.0.3	allow force rearm if second arm request within 30 minutes of last open doors failure
  *	Apr 23, 2019 v0.0.2	cleanup pin entry and panic logic
@@ -161,7 +163,7 @@ preferences {
 
 def version()
 	{
-	return "0.0.4";
+	return "0.0.5";
 	}
 def main()
 	{
@@ -268,8 +270,8 @@ def globalsPage()
 				title: "Real Keypads used to arm and disarm HSM"
 			input "globalPanic", "bool", required: true, defaultValue: true,
 				title: "Keypad Panic Key when available is Monitored. No Panic key? Set this flag on, add a User Profile, Pin Usage: Panic. Default: On/True"
-			input "globalSimContact", "capability.contactSensor", required: true,
-				title: "Simulated Contact Sensor used for Panic (Must Monitor in HSM Contacts)"
+//			input "globalSimContact", "capability.contactSensor", required: true,
+//				title: "Simulated Contact Sensor (Must Monitor in HSM Contacts)"
 			input "globalPinMsgs", "bool", required: false, defaultValue: true, submitOnChange: true,
 				title: "Log pin entries. Default: On/True"
 			if (globalPinMsgs)
@@ -292,28 +294,35 @@ def globalsPage()
 				input "globalBadPinPhone", "phone", required: false, 
 					title: "Send Invalid Bad Pin text message to this number. For multiple SMS recipients, separate phone numbers with a pound sign(#), or semicolon(;)"
 				}
-			paragraph "When entering contacts below, remove from HSM. When arming fails to complete you may rearm with open contacts, by rearming withing 2 minutes"
+			paragraph "<b>When entering contacts below, remove from HSM Intrusion-(armState) Open/Close Sensors. When arming fails due to an open or broken contact, you may force arm by rearming within 15 seconds. Note: HSM does not permit arming when a required closed contact sensor is open or broken.</b>"
 			input "globalAwayContacts", "capability.contactSensor", required: false, submitOnChange: true, multiple: true,
-				title: "(Optional!) Contact Sensors that must be closed prior to arming Away from a Keypad. Remove from HSM!"
+				title: "(Optional!) Contact Sensors that must be closed prior to arming Away. Remove from HSM!"
 			if (globalAwayContacts)
 				{
 				input (name: "globalAwayNotify", type:"enum", required: false, options: ["Pushover Msg", "SMS","Talk"],multiple:true,
-					title: "How to notify contact is open when arming/armed Away")
+					title: "How to notify contact is open when arming Away")
 				}
 			input "globalHomeContacts", "capability.contactSensor", required: false, submitOnChange: true, multiple:true,
-				title: "(Optional!) Contact sensors that must be closed prior to arming Home (Stay) from a Keypad. Remove from HSM!"
+				title: "(Optional!) Contact sensors that must be closed prior to arming Home (Stay). Remove from HSM!"
 			if (globalHomeContacts)
 				{
 				input (name: "globalHomeNotify", type:"enum", required: false, options: ["PushOver Msg", "SMS","Talk"],multiple:true,
-					title: "How to notify contact is open arming/armed Stay")
+					title: "How to notify contact is open arming Home (Stay)")
 				}
 			input "globalNightContacts", "capability.contactSensor", required: false, submitOnChange: true, multiple:true,
-				title: "(Optional!) Contact sensors that must be closed prior to arming Night from a Keypad. Remove from HSM!"
+				title: "(Optional!) Contact sensors that must be closed prior to arming Night. Remove from HSM!"
 			if (globalNightContacts)
 				{
 				input (name: "globalNightNotify", type:"enum", required: false, options: ["PushOver Msg", "SMS","Talk"],multiple:true,
-					title: "How to notify contact is open arming/armed Night")
+					title: "How to notify contact is open arming Night")
 				}
+//			if (!state.configured)
+//				{
+//				state.configured = true
+				input "globalChildPrefix", "text", title:"Simulated Device Prefix. Simulated device names start with this 	prefix.\n\nThe prefix must start with a letter and the only supported characters are letters, numbers and hyphens.\n\nThis setting can't be changed once you leave this screen. Each unique device specified in '(Optional!) Contact sensors that must be closed' above, creates a simulated device that must be specified in HSM Open/Close contacts",
+					description: "Simulated Device Prefix",
+					defaultValue: 'NCKL', required: true
+//				}
 			input "sendPushMessage", "capability.notification", title: "Devices receiving Pushover notifications", multiple: true, required: false
 			}
 		}
@@ -347,17 +356,59 @@ def initialize()
 		}
 //	subscribe(location, "hsmStatus", verify_version)	//kill for now
 //	verify_version("dummy_evt")
+
+/*
+ *		Maintain Child Devices
+ *			One for each unique contact device, plus a panic contact device
+ */ 
+ 	if (globalAwayContacts)
+		{
+		subscribe(globalAwayContacts,"contact.open", openDoorHandler)
+		subscribe(globalAwayContacts,"contact.closed", closeDoorHandler)
+		globalAwayContacts?.each
+			{
+			addNewChildDevice(it, 'Virtual Contact Sensor')
+			}
+		}
+ 	if (globalHomeContacts)
+		{
+		subscribe(globalHomeContacts,"contact.open", openDoorHandler)
+		subscribe(globalHomeContacts,"contact.closed", closeDoorHandler)
+		globalHomeContacts?.each
+			{
+			addNewChildDevice(it, 'Virtual Contact Sensor')
+			}
+		}
+ 	if (globalNightContacts)
+		{
+		subscribe(globalNightContacts,"contact.open", openDoorHandler)
+		subscribe(globalNightContacts,"contact.closed", closeDoorHandler)
+		globalNightContacts?.each
+			{
+			addNewChildDevice(it, 'Virtual Contact Sensor')
+			}
+		}
+	def dvc = [name: "Panic Contact", id: "Panic Id", label: "Panic Contact"]
+	addNewChildDevice(dvc, 'Virtual Contact Sensor')
 	}	
 
 def uninstalled()
 	{
-/*	
-	globalKeypadDevices?.each
+	globalAwayContacts?.each
 		{
-		if (it.hasCommand("disableInvalidPinLogging"))
-			it.disableInvalidPinLogging(false)
+		deleteOldChildDevice(it)
 		}
-*/	}
+	globalHomeContacts?.each
+		{
+		deleteOldChildDevice(it)
+		}
+	globalNightContacts?.each
+		{
+		deleteOldChildDevice(it)
+		}
+	def dvc = [name: "Panic Contact", id: "Panic Id", label: "Panic Contact"]
+	deleteOldChildDevice(dvc)
+	}
 
 //  --------------------------Keypad support added Mar 02, 2018 V2-------------------------------
 /*				Basic location modes are Home, Night, Away. This can be very confusing
@@ -691,7 +742,8 @@ def keypadCodeHandler(evt)
 	def aMap = [data: [codeEntered: codeEntered, armMode: armModes[modeEntered]]]
 	def mf
 	def am
-	globalSimContact.close()			
+//	globalSimContact.close()
+	closePanicContact()
 	execRoutine(aMap.data)
 	sendLocationEvent(name: "hsmSetArm", value: HSMarmModes[modeEntered])
 	doPinNotifications(message,itext)
@@ -945,17 +997,19 @@ def keypadPanicExecute(panic_map)						//Panic mode requested
 			return false
 			}
 		}
-
-	globalSimContact.close()		//trigger an intrusion		
-	globalSimContact.open()
-	runIn(4,closeSimContact)
+	closePanicContact()
+	openPanicContact()
+	runIn(4,closePanicContact)
+//	globalSimContact.close()		//trigger an intrusion		
+//	globalSimContact.open()
+//	runIn(4,closeSimContact)
 	qsse_status_mode(false,"**Panic**")
 	}
 
-def	closeSimContact()
-	{
-	globalSimContact.close()			
-	}
+//def	closeSimContact()
+//	{
+//	globalSimContact.close()			
+//	}
 	
 //	Process response from async execution of WebCore Piston
 def getResponseHandler(response, data)
@@ -1354,6 +1408,10 @@ def doPanicNotifications(keypad)
 		}
 	}
 
+/*
+ *  Sanity note: Routine checks the real contacts, but forces the monitored simulated contact closed
+ *	There appears to be no need to change the status of the simulated contact to open
+ */ 
 def checkOpenContacts (contactList, notifyOptions, keypad)
 	{
 	def checkOpenReturn=false
@@ -1362,6 +1420,7 @@ def checkOpenContacts (contactList, notifyOptions, keypad)
 		lastDoorsDtim=atomicState?.doorsdtim	//last time doors failed
 	def contactmsg=''
 	def duration = now() -lastDoorsDtim		
+	def evt
 	logdebug "checkOpenContacts entered $contactList $notifyOptions $keypad lastDoorsDtim: $lastDoorsDtim"
 	contactList.each
 		{
@@ -1385,10 +1444,19 @@ def checkOpenContacts (contactList, notifyOptions, keypad)
 					atomicState.doorsdtim=0
 					contactmsg = 'Arming Forced. '+it.displayName
 					checkOpenReturn = true
+					evt = [value: "close", displayName: "${globalChildPrefix}-${it.name}", deviceId: "${it.id}"]
+					closeDoorHandler(evt)
 					}				
 				}
 			else
+				{			
 				contactmsg += ', '+it.displayName
+				if (checkOpenReturn)
+					{
+					evt = [value: "close", displayName: "${globalChildPrefix}-${it.name}", deviceId: "${it.id}"]
+					closeDoorHandler(evt)
+					}
+				}	
 			}
 		}
 	if (contactmsg>'')
@@ -1458,3 +1526,76 @@ def sendNotificationEvent(txt)				//ST sendNotificationEvent command not support
 	{
 	log.trace ("${txt}")
     }
+    
+/* 
+ *	This maintains the child contact devices	
+ *   ST addChildDevice(String typeName, String deviceNetworkId, hubId, Map properties)
+ *   HE addChildDevice(String typeName, String deviceNetworkId, Map properties = [:]) this does not work needs null hubid!
+ */
+def addNewChildDevice(deviceData, deviceType) {
+	if (getChildDevice("$globalChildPrefix${deviceData.id}"))
+		return
+	log.debug "addNewChildDevice for $globalChildPrefix${deviceData.name} as a ${deviceType}"
+	try {		
+		addChildDevice("hubitat",
+			"${deviceType}",
+			"${globalChildPrefix}${deviceData.id}", null,
+			[
+				name: "$globalChildPrefix-${deviceData.name}",
+				label: "$globalChildPrefix-${deviceData.label ?: deviceData.name}",
+				completedSetup: true
+			])
+	}
+	catch (e) 
+		{
+		if ("$e".contains("UnknownDeviceTypeException"))
+			log.warn "Device Type Handler Not Installed: ${deviceType}"
+		else 
+			log.error "$e"
+		}
+	}
+	
+def deleteOldChildDevice(deviceData) 
+	{
+	log.debug "deleteChildDevice for $globalChildPrefix ${deviceData.name}"
+	if (getChildDevice("$globalChildPrefix${deviceData.id}"))
+     	deleteChildDevice("$globalChildPrefix${deviceData.id}")
+	}
+	
+def closeDoorHandler(evt)
+	{
+	logdebug "closeDoorHandler entered ${evt?.displayName} ${evt?.value} ${evt?.deviceId}"
+	getChildDevice("$globalChildPrefix${evt.deviceId}").close()
+	if (location.hsmStatus=='disarmed' || location.hsmStatus == 'allDisarmed')
+		{
+		def locevent = [name:"Nyckelharpatalk", value: "contactClosedMsg", isStateChange: true,
+			displayed: true, descriptionText: "${evt.displayName} is closed", linkText: "${evt.displayName} is closed",
+			data: "${evt.displayName}"]	
+		sendLocationEvent(locevent)
+		}
+	}	
+	
+def openDoorHandler(evt)
+	{
+	logdebug "openDoorHandler entered ${evt?.displayName} ${evt?.value} ${evt?.deviceId}"
+	getChildDevice("$globalChildPrefix${evt.deviceId}").open()		//open the child device
+	if (location.hsmStatus=='disarmed' || location.hsmStatus == 'allDisarmed')
+		{
+		def locevent = [name:"Nyckelharpatalk", value: "contactOpenMsg", isStateChange: true,
+			displayed: true, descriptionText: "${evt.displayName} is open", linkText: "${evt.displayName} is open",
+			data: "${evt.displayName}"]	
+		sendLocationEvent(locevent)
+		}
+	}
+
+def closePanicContact()
+	{
+	evt = [value: "close", displayName: "${globalChildPrefix}-Panic Contact", deviceId: "Panic Id"]
+	closeDoorHandler(evt)	
+	}
+
+def openPanicContact()
+	{
+	evt = [value: "close", displayName: "${globalChildPrefix}-Panic Contact", deviceId: "Panic Id"]
+	openDoorHandler(evt)	
+	}

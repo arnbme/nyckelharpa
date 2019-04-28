@@ -20,8 +20,10 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
- *	Apr 22, 2019 	v0.0.1	Handle force arming from dashboard setting vs keypad
+ *	Apr 28, 2019 	v0.0.2	fix forced arming for Home and Night modes
+ *	Apr 25, 2019 	v0.0.1	Handle force arming from dashboard setting vs keypad, requires delay time be < 0 using 1
  *	Apr 22, 2019 	v0.0.0	Rename SHM Delay Modfix to Nyckelharpa Modefix change version to 0.0.0 prerelease
+ *	renamed to Nyckelharpa from SHM Delay Modefix, version reset to 0.0.0
  *	Apr 20, 2019 	V0.1.8AH Move sendevent for arm and disarm message here, keypad control in one place
  *	Apr 20, 2019 	V0.1.8AH Move sendevent for exit message here, handle double arming issue with AtomicState
  *	Apr 17, 2019 	V0.1.8H Add code to run system off HSM armStates, caused double armingAway state, double TTS
@@ -74,7 +76,7 @@ preferences {
 
 def version()
 	{
-	return "0.0.1";
+	return "0.0.2";
 	}
 
 def pageOne(error_msg)
@@ -140,15 +142,15 @@ def pageOne(error_msg)
 */			}	
 		section ("Alarm State: Armed (Home) aka Stay")
 			{
-			input "stayModes", "mode", required: true, multiple: true, defaultValue: "Stay", submitOnChange: true,
+			input "homeModes", "mode", required: true, multiple: true, defaultValue: "Stay", submitOnChange: true,
 				title: "Valid Modes for Armed Home"
-			input "stayDefault", "mode", required: true, defaultValue: "Stay",
+			input "homeDefault", "mode", required: true, defaultValue: "Stay",
 				title: "Default Mode for Armed Home"
-/*			stayModes.each
+/*			homeModes.each
 				{
-				input "stayExit${it.value}", "bool", required: true, defaultValue: false,
+				input "homeExit${it.value}", "bool", required: true, defaultValue: false,
 					title: "Create Exit Delay for Armed (Home) ${it.value} mode"
-				input "stayEntry${it.value}", "bool", required: true, defaultValue: true,
+				input "homeEntry${it.value}", "bool", required: true, defaultValue: true,
 					title: "Create Entry Delay for Armed (Home) ${it.value} mode"
 				}	
 */			}	
@@ -367,10 +369,13 @@ def alarmStatusHandler(evt)
 					}
 				parent.killAtomicdoorsdtim()		
 				}
-			if (parent.globalKeypadDevices)
-				parent.globalKeypadDevices.setExitDelay(evt.jsonData.seconds)
-			ttsExit(evt.jsonData.seconds)
-			}
+			if (evt.jsonData.seconds)
+				{
+				if (parent.globalKeypadDevices)
+					parent.globalKeypadDevices.setExitDelay(evt.jsonData.seconds)
+				ttsExit(evt.jsonData.seconds)
+				}
+			}	
 		if (!awayModes.contains(theMode))
 			{
 			setLocationMode(awayDefault)
@@ -396,54 +401,61 @@ def alarmStatusHandler(evt)
 		else
 		if (theAlarm != lastAlarm)
 			{
-			if (parent.globalNightContacts)
+			if (parent.globalHomeContacts)
 				{
-				if (!parent.checkOpenContacts(parent.globalNightContacts, parent.globalNightNotify, false))
+				if (lastDoorsDtim > 0 && !parent.checkOpenContacts(parent.globalNightContacts, parent.globalNightNotify, false))
 					{
 					sendLocationEvent(name: 'hsmSetArm', value: 'disarm')
 					return
 					}
 				parent.killAtomicdoorsdtim()		
 				}
-			if (parent.globalKeypadDevices)
-				parent.globalKeypadDevices.setExitDelay(evt.jsonData.seconds)
-			ttsExit(evt.jsonData.seconds)
-			}
+			if (evt.jsonData.seconds)
+				{
+				if (parent.globalKeypadDevices)
+					parent.globalKeypadDevices.setExitDelay(evt.jsonData.seconds)
+				ttsExit(evt.jsonData.seconds)
+				}
+			}	
 		if (!nightModes.contains(theMode))
 			{
 			setLocationMode(nightDefault)
 			}
-		}
+		}	
 	else
 //	This is equivalent to ST Stay mode		
-	if (theAlarm=="armedHome" || theAlarm == "armingHome")
+	if (theAlarm=="armedHome" || theAlarm=="armingHome")
 		{
 		if (theAlarm=="armedHome")
 			{
+			if (parent.globalKeypadDevices)
+				parent.globalKeypadDevices.setArmedStay()
+			ttsArmed(theAlarm)
+			}
+		else 
+		if (theAlarm != lastAlarm)
+			{
 			if (parent.globalHomeContacts)
 				{
-				if (!parent.checkOpenContacts(parent.globalHomeContacts, parent.globalHomeNotify, false))
+				if (lastDoorsDtim > 0 && !parent.checkOpenContacts(parent.globalHomeContacts, parent.globalHomeNotify, false))
 					{
 					sendLocationEvent(name: 'hsmSetArm', value: 'disarm')
 					return
 					}
 				parent.killAtomicdoorsdtim()		
 				}
-			if (parent.globalKeypadDevices)
-				parent.globalKeypadDevices.setArmedStay()
-			ttsArmed(theAlarm)
-			}
-		else
-		if (theAlarm != lastAlarm)
+			if (evt.jsonData.seconds)
+				{
+				if (parent.globalKeypadDevices)
+					parent.globalKeypadDevices.setExitDelay(evt.jsonData.seconds)
+				ttsExit(evt.jsonData.seconds)
+				}
+			}	
+		if (!homeModes.contains(theMode))
 			{
-			parent.globalKeypadDevices.setExitDelay(evt.jsonData.seconds)
-			ttsExit(evt.jsonData.seconds)
+			setLocationMode(homeDefault)
 			}
-		if (!stayModes.contains(theMode))
-			{
-			setLocationMode(stayDefault)
-			}
-		}
+		}	
 	else
 		{
 		log.error "ModeFix alarmStatusHandler Unknown alarm mode: ${theAlarm}"
@@ -454,11 +466,14 @@ def alarmStatusHandler(evt)
 def ttsExit(delay)
 	{
 	logdebug "ttsExit delay: $delay"
-	def locevent = [name:"Nyckelharpatalk", value: "exitDelay", isStateChange: true,
-		displayed: true, descriptionText: "Issue exit delay talk event", linkText: "Issue exit delay talk event",
-		data: delay]	
-	sendLocationEvent(locevent)
-	}
+	if (delay > 1)		//in order to get arming requests vs armed requests set mode time to 1 vs 0
+		{
+		def locevent = [name:"Nyckelharpatalk", value: "exitDelay", isStateChange: true,
+			displayed: true, descriptionText: "Issue exit delay talk event", linkText: "Issue exit delay talk event",
+			data: delay]	
+		sendLocationEvent(locevent)
+		}
+	}	
 
 def ttsDisarmed()
 	{

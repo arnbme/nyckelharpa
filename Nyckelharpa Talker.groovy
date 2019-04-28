@@ -26,7 +26,8 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
- *	Apr 25, 2019 v0.0.3 When HSM cancels arming deu to open doors set keypad to off (for 100% accuracy should be last state).
+ *	Apr 28, 2019 v0.0.4 Add open contacts messages
+ *	Apr 25, 2019 v0.0.3 When HSM cancels arming due to open doors set keypad to off (for 100% accuracy should be last state).
  *	Apr 24, 2019 v0.0.2 Restore ArmCancel message code.
  *	Apr 23, 2019 v0.0.1 Fix user device did not have chime caused error.
  *						verify all devices have chime during input editing
@@ -105,6 +106,14 @@ def pageOne()
 				}
 			input "logDebugs", "bool", required:true, defaultValue:false,
 				title: "Log debugging messages? Normally off/false"
+			input "theContactOpenMsg", "string", required: false, title: "Contact Open message, issued when system is disarmed: %device replaced with device name", 
+				defaultValue: "%device is now open"
+			input "theOpenMsgChimes", "bool", defaultValue: true, required: false,
+				title: "Sound TTS Chimes with Open message Default: On/True"
+			input "theContactClosedMsg", "string", required: false, title: "Contact Closed message, issued when system is disarmed: %device replaced with device name", 
+				defaultValue: "%device is now closed"
+			input "theClosedMsgChimes", "bool", defaultValue: false, required: false,
+				title: "Sound TTS Chimes with Close message Default: Off/False"
 			input "theExitMsgKypd", "string", required: false, title: "Exit message: %nn replaced with delay seconds", 
 				defaultValue: "Alarm system is arming in %nn seconds. Please exit the facility"
 			input "theEntryMsg", "string", required: false, title: "Entry message: %nn replaced with delay seconds", 
@@ -176,6 +185,24 @@ def pageTwo(error_data)
 			chimetxt=''
 		section
 			{
+			if (theContactOpenMsg)
+				{
+				if (theOpenMsgChimes)
+					paragraph "The Open Contact Message:\n(Chime) ${theContactMsg}"
+				else
+					paragraph "The Open Contact Message:\n${theContactMsg}"
+				}	
+			else	
+				paragraph "The Open Contact Message is not defined"
+			if (theContactClosedMsg)
+				{
+				if (theClosedMsgChimes)
+					paragraph "The Closed Contact Message:\n(Chime) ${theContactMsg}"
+				else
+					paragraph "The Closed Contact Message:\n${theContactMsg}"
+				}	
+			else	
+				paragraph "The Closed Contact Message is not defined"
 			if (theExitMsgKypd)
 				paragraph "The Exit Delay Message:\n${chimetxt}${theExitMsgKypd}"
 			else	
@@ -251,7 +278,7 @@ def alertHandler(evt)
 def TalkerHandler(evt)
 	{
 	logdebug("TalkerHandler entered, event: ${evt.value} ${evt?.data}")
-	def delaydata=evt?.data			//get the delay time 
+	def delaydata=evt?.data			//get the delay time or whatever was passed for message 
 	def msgout
 
 //	1.0.3 Nov 4, 2018 check time values for quiet
@@ -306,6 +333,48 @@ def TalkerHandler(evt)
 			}
 		}
 	else
+	if (evt.value=="contactOpenMsg" && theContactOpenMsg>"")
+		{
+		msgout=theContactOpenMsg
+		def delaydatax=delaydata as String		//throws casting error if not done
+		msgout=msgout.replaceAll("%device",delaydatax)
+		if (theTTS)
+			{
+			if (theOpenMsgChimes)
+				{
+				theTTS.chime()
+				runInMillis(1800, ttsDelay, [data: [tts: msgout]])
+				}
+			else		
+				{theTTS.speak(msgout)}
+			}
+		if (theSpeakers)
+			{
+			theSpeakers.playTextAndResume(msgout,theVolume)
+			}
+		}
+	else
+	if (evt.value=="contactClosedMsg" && theContactClosedMsg>"")
+		{
+		msgout=theContactClosedMsg
+		def delaydatax=delaydata as String		//throws casting error if not done
+		msgout=msgout.replaceAll("%device",delaydatax)
+		if (theTTS)
+			{
+			if (theClosedMsgChimes)
+				{
+				theTTS.chime()
+				runInMillis(1800, ttsDelay, [data: [tts: msgout]])
+				}
+			else		
+				{theTTS.speak(msgout)}
+			}
+		if (theSpeakers)
+			{
+			theSpeakers.playTextAndResume(msgout,theVolume)
+			}
+		}
+	else
 	if (evt.value=="disarm" && theDisarmMsg>"")
 		{
 		if (theTTS)
@@ -330,6 +399,11 @@ def TalkerHandler(evt)
 			{theTTS.speak(delaydata)}					
 		if (theSpeakers)
 			{theSpeakers.playTextAndResume(delaydata,theVolume)}
+		}
+	else
+		{
+		if (!['ArmCancel','armed','disarm','contactClosedMsg', 'contactOpenMsg', 'exitDelay', 'entryDelay'].contains(evt.value)) 
+			log.warn "Nyckelharpa Talker, Unknown request: ${evt.value}"
 		}
 	}
 

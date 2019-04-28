@@ -25,9 +25,12 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *	Apr 28, 2019 v0.0.3	Disable motion sensor logic for first true beta release
+ *	Apr 28, 2019 v0.0.3	Eliminate globalSimContact, use child Panic Contact
  *	Apr 22, 2019 v0.0.2	Adjust motion sensor logic for HSM
  *	Apr 22, 2019 v0.0.1	Remove local simcontact use global simcontact
  *	Apr 22, 2019 v0.0.0	Rename SHM Delay child to Nyckelharpa Contact change version to 0.0.0 prerelease
+ *  Convert to Nyckelharpa Contact from SHM Delay Child, reset version number
  *	Apr 21, 2019 v2.1.4AH remove uneeded entry delay time settings
  *	Apr 21, 2019 v2.1.4AH Fix missing NEXT Button on pageone and multiple page twos, add nextPage: to dynamic pages
  *	Apr 20, 2019 v2.1.4AH move entry tones and talker request to delay talker module
@@ -154,16 +157,14 @@ preferences {
 	page(name: "pageZeroVerify")
 	page(name: "pageZero", nextPage: "pageZeroVerify")
 	page(name: "pageOne", nextPage: "pageOneVerify")
-	page(name: "pageOneVerify",nextPage: "pageTwo")
-	page(name: "pageTwo", nextPage: "pageTwoVerify")
-	page(name: "pageTwoVerify",nextPage: "pageThree")
+	page(name: "pageOneVerify",nextPage: "pageThree")
 //	page(name: "pageThree", nextPage: "pageThreeVerify")
 	page(name: "pageThree")
 	}
 
 def version()
 	{
-	return "0.0.2";
+	return "0.0.3";
 	}
 	
 def pageZeroVerify()
@@ -213,11 +214,20 @@ def pageOne()
 			}
 		section
 			{
-			input "themotionsensors", "capability.motionSensor", required: false, multiple: true,
+			input "themotionsensors", "capability.motionSensor", required: false, multiple: true, submitOnChange: true,
 				title: "(Optional!) These motion sensors trigger before before the real contact registers as open, creating an unwanted intrusion. These sensors are monitored in Alarm State: Away  (Remove from HSM Away monitoring)"
 			if (themotionsensors)
-				input "themotiondelay", "number", required: true, range: "0..3", defaultValue: 0,
-					title: "Motion sensor entry wait time in seconds from 0 to 3, default:0. Maximum seconds before contact must open."
+				{
+				input "themotiondelay", "number", required: true, range: "250..5000", defaultValue: 500,
+					title: "Maximum milliseconds from 250 to 5000 before contact must open, or alarm triggers."
+				}
+			}
+		section
+			{
+			input "thesiren", "capability.alarm", required: false, multiple: true,
+				title: "Beep these alarm devices on entry delay (Optional)"
+			input "thebeepers", "capability.tone", required: false, multiple: true,
+				title: "Beep/Chime these devices when real contact sensor opens, and Alarm State is disarmed (Optional)"
 			}	
 
 		if (thecontact)
@@ -260,20 +270,13 @@ def pageOneVerify() 				//edit page one info, go to pageTwo when valid
 	else	
 		{
 		ok_names = ok_names + ")(.*)"
-//		logdebug "contact name field not provided"
 		}
+
 	if (thecontact)
 		{
-/*		logdebug "editing contact name ${thecontact.typeName}"
-		def txt = "xfinity 3400 Keypad xyz"		//test code for failing match group test 
-		def m
-		if ((m = txt =~ /(.*)(?i)(keypad)(.*)/)) {
-		  logdebug "m $m"	
-		  def match = m.group(1)			//fails with error message here
-		  logdebug "MATCH=$match"}
-*/		if (thecontact.typeName.matches("(.*)(?i)(keypad)(.*)"))
+		if (thecontact.typeName.matches("(.*)(?i)(keypad)(.*)"))
 			{
-			error_data+="Device: ${thecontact.displayName} is not a valid real contact sensor! Please select a differant device or tap 'Remove'\n\n"
+			error_data+="Device: ${thecontact.displayName} is not a valid contact sensor! Please select a differant device or tap 'Remove'\n\n"
 			}
 		else
 		if ((thecontact.typeName.matches("(.*)(?i)simulated(.*)") ||
@@ -281,17 +284,27 @@ def pageOneVerify() 				//edit page one info, go to pageTwo when valid
 		    thecontact?.currentState("battery") == null && thecontact?.currentState("batteryStatus") == null) &&
 		    !thecontact.typeName.matches(ok_names))
 			{
-			error_data+="The 'Real Contact Sensor' appears to be simulated. Please select a differant real contact sensor, or enter data into Contact Name field, or tap 'Remove'\n\n"
-/*			error_data="'${thecontact.displayName}' is simulated. Please select a differant real contact sensor or tap 'Remove'"
-				for some reason the prior line is not seen as a string
-*/			}
+			error_data+="The ${thecontact.displayName} appears to be simulated. Please select a differant contact sensor, force it by entering data into Contact Name field, or tap 'Remove'\n\n"
+			}
 		else
 		if (!iscontactUnique())			
 			{
-			error_data+="The 'Real Contact Sensor' is already in use. Please select a differant real contact sensor or tap 'Remove'\n\n"
+			error_data+="The ${thecontact.displayName} is already used. Please select a differant contact sensor or tap 'Remove'\n\n"
 			}
 		}	
 
+	if (thesiren)
+		{
+		thesiren.each
+			{
+			if (it.hasCommand("beep") || (it.hasCommand("siren") && it.hasCommand("off")))
+				{}
+			else
+				{
+				error_data+="Entry Delay Beep Device: ${it.displayName} unable to create a beep with this device. Please remove the device from sirens.\n\n"
+				}	
+			}
+		}	
 /*	if (thesimcontact)
 		{
 		if (thesimcontact.typeName.matches("(.*)(?i)keypad(.*)"))
@@ -311,14 +324,14 @@ def pageOneVerify() 				//edit page one info, go to pageTwo when valid
 		}	
 */	if (error_data!="")
 		{
-		state.error_data=error_data.trim()
+		state.error_data='<b>'+error_data.trim()+'</b>'
 		pageOne()
 		}
 	else
 		{
 		if (pageTwoWarning!=null)			
-			{state.error_data=error_data.trim()}
-		pageTwo()
+			{state.error_data='<b>'+error_data.trim()+'</b>'}
+		pageThree()
 		}
 	}	
 
@@ -349,64 +362,6 @@ def iscontactUnique()
 			}
 		}
 	return unique
-	}
-
-def pageTwo()
-	{
-	dynamicPage(name: "pageTwo", title: "Entry and Exit Data", install: false, uninstall: true, nextPage: "pageTwoVerify")
-		{
-		section("") 
-			{
-			if (state.error_data)
-				{
-				paragraph "${state.error_data}"
-				state.remove("error_data")
-				}
-			input "themotiondelay", "number", required: true, range: "0..5", defaultValue: 0,
-				title: "Motion sensor entry wait time in seconds from 0 to 5, default:0. Maximum seconds before contact must open."
-			input "thesiren", "capability.alarm", required: false, multiple: true,
-				title: "Beep these devices on entry delay (Optional)"
-			input "thebeepers", "capability.tone", required: false, multiple: true,
-				title: "Beep/Chime these devices when real contact sensor opens, and Alarm State is disarmed (Optional)"
-			}
-		}
-	}	
-
-def pageTwoVerify() 				//edit page one info, go to pageTwo when valid
-	{
-	def error_data=""
-	if (thekeypad)
-		{
-		thekeypad.each		//fails when not defined as multiple contacts
-			{
-//			logdebug "Current Arm Mode: ${it.currentarmMode} ${it.getManufacturerName()}"
-			if (!it.hasCommand("setEntryDelay"))
-				{
-				error_data="Keypad: ${it.displayName} does not support entry tones. Please remove the device from keypads.\n\n"
-				}
-			}
-		}	
-	if (thesiren)
-		{
-		thesiren.each		//fails when not defined as multiple contacts
-			{
-			if (it.hasCommand("beep") || (it.hasCommand("siren") && it.hasCommand("off")))
-				{}
-			else
-				{
-				error_data+="Entry Delay Beep Device: ${it.displayName} unable to create a beep with this device. Please remove the device from sirens.\n\n"
-				}	
-			}
-		}	
-	if (error_data!="")
-		{
-		state.error_data=error_data.trim()
-		pageTwo()
-		}
-	else 
-		{
-		pageThree()
-		}
 	}
 
 
@@ -467,28 +422,25 @@ def initialize()
 	{
 	subscribe(location, "hsmStatus", alarmStatusHandler)
 	subscribe(thecontact, "contact.open", doorOpensHandler)
-	subscribe(thecontact, "contact.closed", contactClosedHandler)	//open door monitor
-	if (themotionsensors)
-		{
-		subscribe(themotionsensors, "motion.active", motionActiveHandler)
-		}
+	subscribe(thecontact, "contact.closed", contactClosedHandler)	
+//	if (themotionsensors)	//disable for initial cut to production
+//		{
+//		subscribe(themotionsensors, "motion.active", motionActiveHandler)
+//		}
 	}	
 
-
-/******** Common Routine monitors the alarm state for changes ********/
 
 def alarmStatusHandler(evt)
 	{
 	if (parent.globalDisable)
 		return false
 	logdebug "AlarmStatusHandler ${evt?.value} ${evt?.description} ${evt?.name} ${evt?.date.time} ${evt?.data}" 	
-	
-	if (evt?.value=="disarmed")
+	if (evt.value=="disarmed" || evt.value=="allDisarmed")
 		{
 		unschedule(soundalarm)		//kill any lingering future tasks for delay or monitor
 		killit()					//kill any lingering future tasks for delay or monitor
 		}
-	else
+/*	else
 		{
 		if (countopenContacts()==0)
 			{
@@ -499,9 +451,8 @@ def alarmStatusHandler(evt)
 			new_monitor(false)
 			}
 		}
-	}	
+*/	}	
 	
-// log, send notification, SMS message	
 def doNotifications(message)
 	{
 	def localmsg=message+" at  ${location.name}"	
@@ -524,108 +475,21 @@ def doNotifications(message)
 		}
 	}	
 
-/******** SmartHome Entry Delay Logic ********/
 
+//	A motion sensor shows motion, kill alert if door opens in motion delay time
 def motionActiveHandler(evt)
 	{
+	return false
 	if (parent.globalDisable)
 		return false
-//	A motion sensor shows motion
-	def triggerDevice = evt.getDevice()
-	logdebug "motionActiveHandler called: $evt by device : ${triggerDevice.displayName}"
-
-//	if not in Away mode, ignore all motion sensor activity
-//	When alarm was set less than exit delay time, ignore the motion sensor activity
-//	else
-//	Entry delay alarm if contact sensor was not opened within entry delay time
-
-	def myEvents = getLocationEventsSince("hsmStatus", new Date() - 30, [max:1])
-	def alarmstatus=myEvents[0].value
-	if (alarmstatus != "armedAway")
+	if (location.hsmStatus != "armedAway")
 		{return false}
-	def lastupdt = myEvents[0].unixTime
-	def alarmSecs = Math.round( lastupdt / 1000)
-
-//	get current time in seconds
-	def currT = now()
-	def currSecs = Math.round(currT / 1000)	//round back to seconds
-
-//	get status of associated contact sensor
-//	def curr_contact = thecontact.currentContact (will be open or closed) not currently in use
-
-	def kSecs=0					//if defined in if statment it is lost after the if
-	def kMap
-	if (parent?.globalKeypadControl)
-		{
-		kMap=parent?.atomicState.kMap
-		kSecs = Math.round(kMap.dtim / 1000)
-		}
-//	if (parent?.globalKeypadControl && kMap.mode=="Away" && theexitdelay > 0 && 
-	if (parent.globalKeypadControl && theexitdelay > 0 && 
-		alarmSecs - kSecs > 4 && currSecs - alarmSecs < theexitdelay)
-		{
-//		logdebug "motionActiveHandler return1"
-		return false
-		}
+	logdebug "motionActiveHandler entered: device : ${evt.displayName}"
+	if (!themotiondelay || themotiondelay < 1)			//insufficient time to properly set
+		soundalarm([motion: evt.displayName])
 	else
-	if (!parent?.globalKeypadControl && theexitdelay > 0 && currSecs - alarmSecs < theexitdelay)
-		{
-//		logdebug "motionActiveHandler return2"
-		return false
-		}
-	else
-		{
-//		process motion sensor event that may occur during an entrydelay		
-//		get the last 10 contact sensor events, then find the time the contact was last opened, if open not found: soundalarm
-		def events=thecontact.events()
-		def esize=events.size()
-		def i = 0
-//		logdebug "motionActiveHandler scanning events ${esize}"
-		def open_seconds=999999
-		for(i; i < esize; i++)
-			{
-			if (events[i].value == "open"){
-				open_seconds = Math.round((now() - events[i].date.getTime())/1000)
-				logdebug("value: ${events[i].value} now: ${now()} startTime: ${events[i].date.getTime()} seconds ${open_seconds}")
-				break;
-				}
-			}	
-//		logdebug "motionActiveHandler scan done ${esize} ${open_seconds}"
-		if (open_seconds>theentrydelay)
-			{
-					
-			def aMap = [data: [lastupdt: lastupdt, shmtruedelay: false, motion: triggerDevice.displayName]]
-			if (themotiondelay > 0)
-				{
-				def now = new Date()
-				def runTime = new Date(now.getTime() + (themotiondelay * 1000))
-				runOnce(runTime, waitfordooropen, [data: aMap]) 
-				}
-			else
-				{
-				logdebug "*****testing duplicate sensor flag*******"
-				if (parent?.globalDuplicateMotionSensors)
-					{
-					logdebug "*****Calling checkOtherDelayProfile*******"
-					if (checkOtherDelayProfiles(thecontact, triggerDevice, theentrydelay))
-						{return false}
-					}
-				}
-			logdebug "Away Mode: Intrusion caused by followed motion sensor at ${aMap.data.lastupdt}"
-			soundalarm(aMap.data)
-			}
-		}	
-
+		runInMillis(themotiondelay, soundalarm, [data: [motion: evt.displayName]]) 
 	}	
-		
-
-def entryTTS()
-	{
-	def locevent = [name:"Nyckelharpatalk", value: "entryDelay", isStateChange: true,
-    		displayed: true, descriptionText: "Issue entry delay talk event", linkText: "Issue entry delay talk event",
-    		data: theentrydelay]
-    sendLocationEvent(locevent)
-	}
 
 def doorOpensHandler(evt)
 	{
@@ -634,125 +498,22 @@ def doorOpensHandler(evt)
 	def alarmstatus = location.hsmStatus	//get HE alarm status
 	if (alarmstatus == 'disarmed' || alarmstatus=='allDisarmed')
 		thebeepers?.beep()
-//	Nyclelharpa parent does the armed processing		
 	}	
 
-def prepare_to_soundalarm(shmtruedelay)
-	{
-//	def alarm = location.currentState("alarmSystemStatus")
-//	def alarmstatus = alarm?.value
-//	def lastupdt = alarm?.date.time
-	def myEvents = getLocationEventsSince("hsmStatus", new Date() - 30, [max:1])
-	def alarmstatus = myEvents[0].value
-//	def lastupdt = myEvents[0].unixTime
-
-	logdebug "Prepare to sound alarm entered $shmtruedelay"
-//	When keypad is defined: Issue an entrydelay for the delay on keypad. Keypad beeps
-	if (parent?.globalKeypadControl)
-		{
-		parent.globalKeypadDevices.each()
-			{
-			if (it.hasCommand("setEntryDelay"))
-				{
-				if (shmtruedelay)
-					{it.setEntryDelay(theentrydelay, [delay: 2000])}
-				else
-					{it.setEntryDelay(theentrydelay)}
-				}
-			}
-		parent.qsse_status_mode(false,"Entry%20Delay")
-		}	
-	else
-		{
-		if (settings.thekeypad)
-			{
-			if (shmtruedelay)
-				{thekeypad.setEntryDelay(theentrydelay, [delay: 2000])}
-			else
-				{thekeypad.setEntryDelay(theentrydelay)}
-			}
-		}
-//		when siren is defined: wait 2 seconds allowing people to get through door, then blast a siren warning beep
-//		Aug 31, 2017 add simulated beep when no beep command
-	if (settings.thesiren)
-		runIn(2, delayBeep)
-/*		{
-		thesiren.each		//fails when not defined as multiple contacts
-			{
-			if (it.hasCommand("beep"))
-				{
-				it.beep([delay: 2000])
-				runIn(2, delayBeep), [data: [it: "${it}"]])
-				}
-			else
-				{
-				it.off([delay: 2500])		//double off the siren to hopefully shut it
-				it.siren([delay: 2000])	
-				it.off([delay: 2250])
-				}
-			}
-		}	
-*/
-//		Trigger Alarm in theentrydelay seconds by opening the virtual sensor.
-//		Do not delay alarm when additional triggers occur by using overwrite: false
-	def now = new Date()
-	def runTime = new Date(now.getTime() + (theentrydelay * 1000))
-	runOnce(runTime, soundalarm, [data: [lastupdt: lastupdt, shmtruedelay: shmtruedelay], overwrite: false]) 
-	def locevent = [name:"Nyckelharpatalk", value: "entryDelay", isStateChange: true,
-    		displayed: true, descriptionText: "Issue entry delay talk event", linkText: "Issue entry delay talk event",
-    		data: theentrydelay]
-    sendLocationEvent(locevent)
-//	logdebug "sent location event for Nyckelharpatalk"
-	}
-
-//	wait for door to open in themotiondelay seconds 
-def waitfordooropen(evt)
-	{
-	logdebug "waitfordooropen entered ${evt}"
-	soundalarm (evt.data)
-	}
-
-//	Sound the Alarm 
 def soundalarm(data)
 	{
-//	def alarm2 = location.currentState("alarmSystemStatus")
-//	def alarmstatus2 = alarm2.value
-//	def lastupdt = alarm2.date.time
+	logdebug "soundalarm entered: $data"
 	def myEvents = getLocationEventsSince("hsmStatus", new Date() - 30, [max:1])
 	def alarmstatus2 = myEvents[0].value
 	def lastupdt = myEvents[0].unixTime
-//	logdebug "soundalarm called: $alarmstatus2 $data ${data.lastupdt} $lastupdt"
-	logdebug "soundalarm called: $data ${data.lastupdt} $lastupdt"
-//	if (alarmstatus2=="off" && !data.shmtruedelay) 
-	if (alarmstatus2=="disarmed" && !data.shmtruedelay) 
+	if (alarmstatus2=="disarmed") 
 		{}
 	else
 	if (data.lastupdt==lastupdt)		//if this does not match, the system was set off then rearmed in delay period
 		{
-		if (data.shmtruedelay)
-			{
-			logdebug "soundalarm rearming in mode ${data.shmtruedelay}"
-//				name:'alarmSystemStatus',
-//				value: data.shmtruedelay,
-			def event = [
-				name:'hsmSetArm',
-				value: data.shmtruedelay,
-				displayed: true,
-				description: "Nyckelharpa True Delay ReArm in $data.shmtruedelay",
-				data: "shmtruedelay_rearm"]
-			sendLocationEvent(event)	//change alarmstate to stay	
-			thesimcontact.close([delay: 2000])
-			logdebug "true entry delay alarm rearmed"	
-			thesimcontact.open([delay:2000])
-			parent.qsse_status_mode(false,"**Intrusion**")
-			}
-		else	
-			{
-			parent.globalSimContact.close()		
-			parent.globalSimContact.open()
-			parent.qsse_status_mode(false,"**Intrusion**")
-			}
-//		Aug 19, 2017 issue optional intrusion notificaion messages
+		parent.openPanicContact()
+		parent.closePanicContact()
+		parent.qsse_status_mode(false,"**Intrusion**")
 		if (parent?.globalIntrusionMsg)
 			{
 //			logdebug "sending global intrusion message "
@@ -796,7 +557,7 @@ def soundalarm(data)
 
 def	closeSimContact()
 	{
-	globalSimContact.close()			
+	parent.closePanicContact()			
 	}
 
 /******** Monitor for Open Doors when SmarthHome is initially Armed *********/
@@ -848,7 +609,7 @@ def contactClosedHandler(evt)
 		return false
 	logdebug "contactClosedHandler called: $evt.value"
 	if (countopenContacts()==0)
-		killit()
+		killit()					//stop open door messages
 	}
 
 def checkStatus()
@@ -993,6 +754,7 @@ def checkOtherDelayProfiles(baseContact, baseMotion, baseEntryDelay)
 
 	return ignoreSensor			//return to caller
 	}
+
 
 def logdebug(txt)
 	{
