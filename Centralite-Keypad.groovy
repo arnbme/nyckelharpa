@@ -12,6 +12,11 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *  Apr 29, 2019 Arn Burkhoff added commands setExitNight setExitStay, capability Alarm.
+ *  						both command does not work when attempting to issue strobe and siren event with a delay
+ *							decided to just go with sound on both
+ *							When Panic entered, internally issue both command, but system reissues it. Maybe good for ST
+ *  Apr 24, 2019 Mitch Pond fixed Temperature and converted module to HE structure 
  *  Apr 22, 2019 changed battery back to % from volts for users. Temperature is still very wrong 
  *  Mar 31, 2019 routine disarm and others issued multiple times. fixed in other modules 
  *  Mar 31, 2019 routine disarm threw an error caused by HE sending a delay value, add delay parm that is ignored
@@ -39,6 +44,7 @@
 metadata {
 	definition (name: "Centralitex Keypad", namespace: "mitchpond", author: "Mitch Pond", vid: "generic-motion") {
 		capability "SecurityKeypad"
+		capability "Alarm"
 		capability "Battery"
 		capability "Configuration"
         capability "Motion Sensor"
@@ -59,12 +65,14 @@ metadata {
 		command "setArmedAway"
 		command "setArmedStay"
 		command "setArmedNight"
-		command "setExitDelay", ['number']
-		command "setEntryDelay", ['number']
-		command "testCmd"
+		command "setExitDelay", ['number']		//this is really setExitAway
+		command "setExitStay", ['number']
+		command "setExitNight", ['number']
+		command "setEntryDelay", ['number']		//issue same hardware command as Beep
+		command "testCmd", ['number']
 		command "sendInvalidKeycodeResponse"
 		command "acknowledgeArmRequest",['number']
-//		Hubitat Commands V1.0.1
+//		Hubitat HSM Issued Commands V1.0.1
 		command "disarm"
 		command "armAway"
 		command "armHome"
@@ -80,6 +88,8 @@ metadata {
 				defaultValue: 0, displayDuringSetup: false)
 		input ("beepLength", "number", title: "Enter length of beep in seconds",
 				defaultValue: 1, displayDuringSetup: false)
+		input ("sirenSecs", "number", title: "Enter length of Alarm sound in seconds 0 to 255",
+				defaultValue: 255, displayDuringSetup: false)
                 
         input ("motionTime", "number", title: "Time in seconds for Motion to become Inactive (Default:10, 0=disabled)",	defaultValue: 10, displayDuringSetup: false)
         input ("logdebugs", "bool", title: "Log debugging messages", defaultValue: false, displayDuringSetup: false)
@@ -88,6 +98,22 @@ metadata {
 
 }
 
+// Statuses:
+// 00 - Command: setDisarmed   Centralite all icons off / Iris Off button on
+// 01 - Command: setArmedStay  lights Centralite Stay button / Iris Partial
+// 02 - Command: setArmedNight lights Centralite Night button / Iris does nothing
+// 03 - Command: setArmedAway  lights Centralite Away button / Iris ON 
+// 04 - Panic Sound, uses seconds for duration (seems same as 05 Beep command on Iris, max 255)
+// 05 - Command: Beep and SetEntryDelay Fast beep (1 per second, uses seconds for duration, max 255) Appears to keep the status lights as it was, used for entry delay command
+// 06 - Amber status blink (Runs forever until Off or some command issued)
+// 07 - ? 
+// 08 - Command: setExitStay  Exit delay Slow beep (1 per second, accelerating to 2 beep per second for the last 10 seconds) - With red flashing status - lights Stay icon/Iris Partial Uses seconds 
+// 09 - Command: setExitNight Exit delay Slow beep (1 per second, accelerating to 2 beep per second for the last 10 seconds) - With red flashing status - lights Night icon/ Uses seconds  (does nothing on Iris)
+// 10 - Command: setExitDelay Exit delay Slow beep (1 per second, accelerating to 2 beep per second for the last 10 seconds) - With red flashing status - lights Away Uses/Iris ON seconds
+// 11 - ?
+// 12 - ?
+// 13 - ?
+
 // parse events into attributes
 def parse(String description) {
 	logdebug "Parsing '${description}'";
@@ -95,47 +121,48 @@ def parse(String description) {
 	
 	//------Miscellaneous Zigbee message------//
 	if (description?.startsWith('catchall:')) {
-
-		//logdebug zigbee.parse(description);
-
-		def message = zigbee.parse(description);
-		
+		def message = zigbee.parseDescriptionAsMap(description);
+		//------ZDO packets - drop ------//
+		if (message.profileId == '0000') return []
 		//------Profile-wide command (rattr responses, errors, etc.)------//
-		if (message?.isClusterSpecific == false) {
+		else if (message?.isClusterSpecific == false) {
 			//------Default response------//
-			if (message?.command == 0x0B) {
-				if (message?.data[1] == 0x81) 
+			if (message?.command == '0B') {
+				if (message?.data[1] == '81') 
 					log.error "Device: unrecognized command: "+description;
-				else if (message?.data[1] == 0x80) 
+				else if (message?.data[1] == '80') 
 					log.error "Device: malformed command: "+description;
 			}
 			//------Read attributes responses------//
-			else if (message?.command == 0x01) {
-				if (message?.clusterId == 0x0402) {
+			else if (message?.command == '01') {
+				if (message?.clusterId == '0402') {
 					logdebug "Device: read attribute response: "+description;
 
 					results = parseTempAttributeMsg(message)
 				}}
 			else 
-				log.warn "Unhandled profile-wide command: "+description;
+				log.info "Unhandled profile-wide command: "+description;
 		}
 		//------Cluster specific commands------//
 		else if (message?.isClusterSpecific) {
+			//------Poll Control - drop------//
+			if (message?.clusterId == '0020') return []
 			//------IAS ACE------//
-			if (message?.clusterId == 0x0501) {
-				if (message?.command == 0x07) {
+			else if (message?.clusterId == '0501') {
+				if (message?.command == '07') {
                 	motionON()
 				}
-                else if (message?.command == 0x04) {
+                else if (message?.command == '04') {
                 	results = createEvent(name: "button", value: "pushed", data: [buttonNumber: 1], descriptionText: "$device.displayName panic button was pushed", isStateChange: true)
+					both()	
                     panicContact()
                 }
-				else if (message?.command == 0x00) {
+				else if (message?.command == '00') {
 					results = handleArmRequest(message)
 					logtrace results
 				}
 			}
-			else log.warn "Unhandled cluster-specific command: "+description
+			else log.warn "Unhandled cluster-specific command: "+message
 		}
 	}
 	//------IAS Zone Enroll request------//
@@ -206,10 +233,7 @@ private formatLocalTime(time, format = "EEE, MMM d yyyy @ h:mm:ss.SSS a z") {
 }
 
 private parseReportAttributeMessage(String description) {
-	Map descMap = (description - "read attr - ").split(",").inject([:]) { map, param ->
-		def nameAndValue = param.split(":")
-		map += [(nameAndValue[0].trim()):nameAndValue[1].trim()]
-	}
+	descMap = zigbee.parseDescriptionAsMap(description)
 	//logdebug "Desc Map: $descMap"
 
 	def results = []
@@ -343,7 +367,7 @@ private getBatteryResult(rawValue) {
 		result.descriptionText = "${linkText} battery has too much power (${volts} volts)."
 	}
 	else {
-		def minVolts = 2.5
+		def minVolts = 2.6
 		def maxVolts = 3.0
 		def pct = (volts - minVolts) / (maxVolts - minVolts)
 //		result.value = Math.min(100, (int) pct * 100)
@@ -351,7 +375,7 @@ private getBatteryResult(rawValue) {
 		descriptionText = "${linkText} battery was ${result.value}% $volts volts"
 		result.descriptionText = descriptionText
 		logdebug "$result"
-//      result.value=rawValue
+        result.value=rawValue
 		}
 //	sendNotificationEvent "${result.descriptionText}"
 //	sendNotificationEvent (descriptionText)
@@ -376,7 +400,7 @@ private Map getTemperatureResult(value) {
 		def v = value as int
 		value = v + offset
 	}
-	def descriptionText = "${linkText} was ${value}Â°${temperatureScale}"
+	def descriptionText = "${linkText} was ${value}�${temperatureScale}"
 	return [
 		name: 'temperature',
 		value: value,
@@ -386,7 +410,7 @@ private Map getTemperatureResult(value) {
 
 //------Command handlers------//
 private handleArmRequest(message){
-	def keycode = new String(message.data[2..-2] as byte[],'UTF-8')
+	def keycode = new String(message.data[2..-2].join().decodeHex(),"UTF-8")
 	def reqArmMode = message.data[0]
 	//state.lastKeycode = keycode
 	logdebug "Received arm command with keycode/armMode: ${keycode}/${reqArmMode}"
@@ -415,9 +439,6 @@ def createCodeEntryEvent(keycode, armMode) {
 				isStateChange: true, displayed: false)
 }
 
-//
-//The keypad seems to be expecting responses that are not in-line with the HA 1.2 spec. Maybe HA 1.3 or Zigbee 3.0??
-//
 private sendStatusToDevice(armModex='') {
 	logdebug 'Entering sendStatusToDevice armModex: '+armModex+', Device.armMode: '+device.currentValue('armMode',true)  	
 	def armMode=null
@@ -449,23 +470,6 @@ private sendStatusToDevice(armModex='') {
     }
 }
 
-
-// Statuses:
-// 00 - Disarmed
-// 01 - Armed Stay
-// 02 - Armed Night
-// 03 - Armed Away
-// 04 - ?
-// 05 - Fast beep (1 per second)
-// 05 - Entry delay (Uses seconds) Appears to keep the status lights as it was
-// 06 - Amber status blink (Ignores seconds)
-// 07 - ?
-// 08 - Red status blink  //lights home stay button
-// 09 - ?
-// 10 - Exit delay Slow beep (2 per second, accelerating to 1 beep per second for the last 10 seconds) - With red flashing status - Uses seconds
-// 11 - ?
-// 12 - ?
-// 13 - ?
 
 private sendRawStatus(status, secs = 00) {
 	def seconds=secs as Integer
@@ -538,6 +542,38 @@ def setExitDelay(delay) {
 //	setModeHelper("exitDelay", 0)
 	sendRawStatus(10, delay)  // Exit delay
 }
+
+def setExitNight(delay) {
+	sendRawStatus(9, delay)		//Night delay
+	}
+
+def setExitStay(delay) {
+	sendRawStatus(8, delay)		//Stay Delay
+	}
+
+/*
+ *	Alarm Capability Commands
+ */
+
+def both()
+	{
+	siren()
+//	runIn(2,"strobe")		//no matter what I tried could not get siren and strobe to work together,
+//								works from device screen using separate commands, choose sound over blinking
+	}
+def off()
+	{
+	setDisarmed()
+	}
+def siren()
+	{
+	def secs = sirenSecs as Integer
+	sendRawStatus(4, secs)	//issue alarm command sounds the same as beep		
+	}
+def strobe() 
+	{
+	sendRawStatus(6)			//blinks Iris light, not sure on Centralite
+	}
 
 private setModeHelper(String armMode, delay) {
 	logdebug "In setmodehelper armMode: $armMode delay: $delay"
@@ -620,7 +656,7 @@ private byte[] reverseArray(byte[] array) {
 }
 //------------------------//
 
-private testCmd(){
+private testCmd(cmd=5,time=15){
 	//logtrace zigbee.parse('catchall: 0104 0501 01 01 0140 00 4F2D 01 00 0000 07 00 ')
 	//beep(10)
 	//test exit delay
@@ -634,9 +670,14 @@ private testCmd(){
     
 	//logdebug 		//temperature reporting  
     
-	return zigbee.readAttribute(0x0020,0x01) + 
-		    zigbee.readAttribute(0x0020,0x02) +
-		    zigbee.readAttribute(0x0020,0x03)
+//	return zigbee.readAttribute(0x0020,0x01) + 
+//		    zigbee.readAttribute(0x0020,0x02) +
+//		    zigbee.readAttribute(0x0020,0x03)
+//	if (cmd < 12)
+		sendRawStatus(cmd as Integer, time as Integer)		
+//    List cmds = ["raw 0x501 {09 01 03 ${zigbee.convertToHexString(cmd as Integer,2)}${zigbee.convertToHexString(time as Integer,2)}}",
+//    			 "send 0x${device.deviceNetworkId} 1 1", 'delay 100']
+//	cmds
 }
 
 private discoverCmds(){
@@ -662,4 +703,3 @@ def logtrace(txt)
    	if (logtraces)
    		log.trace ("${txt}")
     }
-

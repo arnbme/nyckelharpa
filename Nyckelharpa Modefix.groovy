@@ -20,6 +20,7 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *	Apr 29, 2019 	v0.0.3	adjust for newly added setExitNight and setExitStay keypad DTH commands
  *	Apr 28, 2019 	v0.0.2	fix forced arming for Home and Night modes
  *	Apr 25, 2019 	v0.0.1	Handle force arming from dashboard setting vs keypad, requires delay time be < 0 using 1
  *	Apr 22, 2019 	v0.0.0	Rename SHM Delay Modfix to Nyckelharpa Modefix change version to 0.0.0 prerelease
@@ -76,7 +77,7 @@ preferences {
 
 def version()
 	{
-	return "0.0.2";
+	return "0.0.3";
 	}
 
 def pageOne(error_msg)
@@ -413,7 +414,16 @@ def alarmStatusHandler(evt)
 			if (evt.jsonData.seconds)
 				{
 				if (parent.globalKeypadDevices)
-					parent.globalKeypadDevices.setExitDelay(evt.jsonData.seconds)
+					{
+					parent.globalKeypadDevices.each
+						{
+						if (['3400','3400-G'].contains(it.data.model))
+							it.setExitNight(evt.jsonData.seconds)
+						else	
+							it.setExitStay(evt.jsonData.seconds) //non Centralite keypads have 3 mode lights, light partial
+						}
+//					parent.globalKeypadDevices.setExitDelay(evt.jsonData.seconds)
+					}
 				ttsExit(evt.jsonData.seconds)
 				}
 			}	
@@ -447,7 +457,7 @@ def alarmStatusHandler(evt)
 			if (evt.jsonData.seconds)
 				{
 				if (parent.globalKeypadDevices)
-					parent.globalKeypadDevices.setExitDelay(evt.jsonData.seconds)
+					parent.globalKeypadDevices.setExitStay(evt.jsonData.seconds)
 				ttsExit(evt.jsonData.seconds)
 				}
 			}	
