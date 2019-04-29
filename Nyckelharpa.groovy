@@ -22,7 +22,7 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  * 
- *	Apr 28, 2019 v0.0.6	When arming Panic, close all child contacts
+ *	Apr 28, 2019 v0.0.6	When arming Panic, close all child contacts, stop talker speaking panic is closed
  *	Apr 28, 2019 v0.0.5	use NCKL Panic Contact no longer necessary to specify contact sensor
  *	Apr 27, 2019 v0.0.5	Create and use simulated contacts in HSM arming, control here for arming override
  *	Apr 25, 2019 v0.0.4	Improve arming faild and forced arming messages
@@ -1595,12 +1595,10 @@ def openDoorHandler(evt)
 
 def closePanicContact()
 	{
-	evt = [value: "close", displayName: "${globalChildPrefix}-Panic Contact", deviceId: "Panic Id"]
-	closeDoorHandler(evt)	
+	getChildDevice("${globalChildPrefix}Panic Id").close()
 	}
 
 def openPanicContact()
 	{
-	evt = [value: "close", displayName: "${globalChildPrefix}-Panic Contact", deviceId: "Panic Id"]
-	openDoorHandler(evt)	
+	getChildDevice("${globalChildPrefix}Panic Id").open()
 	}
