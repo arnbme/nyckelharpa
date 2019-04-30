@@ -565,9 +565,17 @@ def off()
 	}
 def siren()
 	{
-    List cmds = ["raw 0x501 {19 01 04 07 00 01 01}",
-    			 "send 0x${device.deviceNetworkId} 1 1", 'delay 100']
-	cmds
+/*	device.data.model not available in ST
+ *  siren command does not work on Centralite 3400 not sure on 3400-G
+ */ 
+	if (device.data.model == '3400')		
+		beep(255)							
+	else
+		{
+    	List cmds = ["raw 0x501 {19 01 04 07 00 01 01}",
+    	 "send 0x${device.deviceNetworkId} 1 1", 'delay 100']
+		cmds
+		}
 	}
 def strobe() 
 	{
