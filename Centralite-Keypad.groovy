@@ -87,8 +87,6 @@ metadata {
 				defaultValue: 0, displayDuringSetup: false)
 		input ("beepLength", "number", title: "Enter length of beep in seconds",
 				defaultValue: 1, displayDuringSetup: false)
-		input ("sirenSecs", "number", title: "Enter length of Alarm sound in seconds 0 to 255",
-				defaultValue: 255, displayDuringSetup: false)
                 
         input ("motionTime", "number", title: "Time in seconds for Motion to become Inactive (Default:10, 0=disabled)",	defaultValue: 10, displayDuringSetup: false)
         input ("logdebugs", "bool", title: "Log debugging messages", defaultValue: false, displayDuringSetup: false)
@@ -374,7 +372,7 @@ private getBatteryResult(rawValue) {
 		descriptionText = "${linkText} battery was ${result.value}% $volts volts"
 		result.descriptionText = descriptionText
 		logdebug "$result"
-        result.value=rawValue
+//      result.value=rawValue
 		}
 //	sendNotificationEvent "${result.descriptionText}"
 //	sendNotificationEvent (descriptionText)
