@@ -12,6 +12,8 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *	Apr 30, 2019 HSM hijacked command setExitDelay to send all HSM delay to keypad
+ *								avoid confusion by changing ours to setExitAway
  *  Apr 29, 2019 Arn Burkhoff Updated siren and off commands
  *  Apr 29, 2019 Arn Burkhoff added commands setExitNight setExitStay, capability Alarm.
  *							When Panic entered, internally issue siren command
@@ -64,19 +66,15 @@ metadata {
 		command "setArmedAway"
 		command "setArmedStay"
 		command "setArmedNight"
-		command "setExitDelay", ['number']		//this is really setExitAway
+		command "setExitAway", ['number']		//this was setExitDelay in ST
 		command "setExitStay", ['number']
 		command "setExitNight", ['number']
 		command "setEntryDelay", ['number']		//issue same hardware command as Beep
 		command "testCmd", ['number']
 		command "sendInvalidKeycodeResponse"
 		command "acknowledgeArmRequest",['number']
-//		Hubitat HSM Issued Commands V1.0.1
-		command "disarm"
-		command "armAway"
-		command "armHome"
-		command "armNight"
-		command "entry", ['number']
+//		HSM commands		
+		command "armNight"						//not set as part of device capabilities
 		
 		fingerprint endpointId: "01", profileId: "0104", deviceId: "0401", inClusters: "0000,0001,0003,0020,0402,0500,0B05", outClusters: "0019,0501", manufacturer: "CentraLite", model: "3400", deviceJoinName: "Xfinity 3400-X Keypad"
 		fingerprint endpointId: "01", profileId: "0104", deviceId: "0401", inClusters: "0000,0001,0003,0020,0402,0500,0501,0B05,FC04", outClusters: "0019,0501", manufacturer: "CentraLite", model: "3405-L", deviceJoinName: "Iris 3405-L Keypad"

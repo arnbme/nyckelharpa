@@ -20,6 +20,8 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *	Apr 30, 2019 	v0.0.4	HSM hijacked command setExitDelay to send all HSM delay to keypad
+ *								avoid confusion by changing ours to setExitAway
  *	Apr 29, 2019 	v0.0.3	adjust for newly added setExitNight and setExitStay keypad DTH commands
  *	Apr 28, 2019 	v0.0.2	fix forced arming for Home and Night modes
  *	Apr 25, 2019 	v0.0.1	Handle force arming from dashboard setting vs keypad, requires delay time be < 0 using 1
@@ -77,7 +79,7 @@ preferences {
 
 def version()
 	{
-	return "0.0.3";
+	return "0.0.4";
 	}
 
 def pageOne(error_msg)
@@ -342,7 +344,8 @@ def alarmStatusHandler(evt)
 //	Fix the mode to match the Alarm State. 
 	if (theAlarm=="disarmed" || theAlarm=="allDisarmed")
 		{
-		parent.globalKeypadDevices.setDisarmed()
+		if (parent.globalKeypadDevices)
+			parent.globalKeypadDevices.setDisarmed()
 		ttsDisarmed()
 		if (!offModes.contains(theMode))
 			{
@@ -373,7 +376,8 @@ def alarmStatusHandler(evt)
 			if (evt.jsonData.seconds)
 				{
 				if (parent.globalKeypadDevices)
-					parent.globalKeypadDevices.setExitDelay(evt.jsonData.seconds)
+//					parent.globalKeypadDevices.setExitDelay(evt.jsonData.seconds)
+					parent.globalKeypadDevices.setExitAway(evt.jsonData.seconds)
 				ttsExit(evt.jsonData.seconds)
 				}
 			}	
@@ -422,7 +426,6 @@ def alarmStatusHandler(evt)
 						else	
 							it.setExitStay(evt.jsonData.seconds) //non Centralite keypads have 3 mode lights, light partial
 						}
-//					parent.globalKeypadDevices.setExitDelay(evt.jsonData.seconds)
 					}
 				ttsExit(evt.jsonData.seconds)
 				}
