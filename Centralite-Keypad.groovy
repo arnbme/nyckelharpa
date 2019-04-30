@@ -12,10 +12,9 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *  Apr 29, 2019 Arn Burkhoff Updated siren and off commands
  *  Apr 29, 2019 Arn Burkhoff added commands setExitNight setExitStay, capability Alarm.
- *  						both command does not work when attempting to issue strobe and siren event with a delay
- *							decided to just go with sound on both
- *							When Panic entered, internally issue both command, but system reissues it. Maybe good for ST
+ *							When Panic entered, internally issue siren command
  *  Apr 24, 2019 Mitch Pond fixed Temperature and converted module to HE structure 
  *  Apr 22, 2019 changed battery back to % from volts for users. Temperature is still very wrong 
  *  Mar 31, 2019 routine disarm and others issued multiple times. fixed in other modules 
@@ -154,7 +153,7 @@ def parse(String description) {
 				}
                 else if (message?.command == '04') {
                 	results = createEvent(name: "button", value: "pushed", data: [buttonNumber: 1], descriptionText: "$device.displayName panic button was pushed", isStateChange: true)
-					both()	
+					siren()	
                     panicContact()
                 }
 				else if (message?.command == '00') {
@@ -558,17 +557,19 @@ def setExitStay(delay) {
 def both()
 	{
 	siren()
-//	runIn(2,"strobe")		//no matter what I tried could not get siren and strobe to work together,
-//								works from device screen using separate commands, choose sound over blinking
 	}
 def off()
 	{
-	setDisarmed()
+    List cmds = ["raw 0x501 {19 01 04 00 00 01 01}",
+    			 "send 0x${device.deviceNetworkId} 1 1", 'delay 100']
+	cmds
+//	setDisarmed()
 	}
 def siren()
 	{
-	def secs = sirenSecs as Integer
-	sendRawStatus(4, secs)	//issue alarm command sounds the same as beep		
+    List cmds = ["raw 0x501 {19 01 04 07 00 01 01}",
+    			 "send 0x${device.deviceNetworkId} 1 1", 'delay 100']
+	cmds
 	}
 def strobe() 
 	{
@@ -674,10 +675,13 @@ private testCmd(cmd=5,time=15){
 //		    zigbee.readAttribute(0x0020,0x02) +
 //		    zigbee.readAttribute(0x0020,0x03)
 //	if (cmd < 12)
-		sendRawStatus(cmd as Integer, time as Integer)		
+//		sendRawStatus(cmd as Integer, time as Integer)		
 //    List cmds = ["raw 0x501 {09 01 03 ${zigbee.convertToHexString(cmd as Integer,2)}${zigbee.convertToHexString(time as Integer,2)}}",
 //    			 "send 0x${device.deviceNetworkId} 1 1", 'delay 100']
 //	cmds
+    List cmds = ["raw 0x501 {19 01 04 07 00 01 01}",
+    			 "send 0x${device.deviceNetworkId} 1 1", 'delay 100']
+	cmds
 }
 
 private discoverCmds(){
