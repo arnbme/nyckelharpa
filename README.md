@@ -28,11 +28,10 @@ Nyckepharpa is a user created Hubitat Home Security Monitor (HSM) extension, pro
 <a name="features"></a>
 ## 2. Features
 
-* Optionally, and under user control, forces HSM arming when a contact is open.<br /> 
-Why is this needed? It's 1AM, you want to arm the system for night, but a contact is broken. You are away from home, forgot to arm the system, and when you try, oops the back door is open. 
-
-* Sets the HSM mode when the HSM arm state changes. (HSM aleady sets HSM arm state when mode changes)
-
+* Under user control, forces HSM arming when a contact is open.<br /> 
+Why is this needed? HSM does not arm the system when a contact is open. Examples:<br />It's 1AM, you want to arm the system for night, but a contact is broken.<br /> 
+You are away from home, forgot to arm the system, and when you try, oops the back door is open. 
+* Adjusts HSM's mode when HSM's arm state changes. (HSM adjusts HSM's arm state when the mode changes)
 * Provides an easy to use security related message control center with output to TTS, Speakers, Pushover, and SMS
 
 * Keypads: Centralite V2 and V3, and Iris V2 devices may use a ported version of Mitch Pond's Keypad DH making he keypad function as it did in SmartThings with the SHM Delay App, and it uses an easy to use Pin maintenance module with available use count, time. and devices restrictions.
