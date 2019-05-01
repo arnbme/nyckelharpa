@@ -22,6 +22,8 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  * 
+ *	Apr 30, 2019 v0.0.7	Do not create child devices when globalChildPrefix is null
+ *	Apr 30, 2019 v0.0.7	Change method used to delete child devices to catch all of them
  *	Apr 28, 2019 v0.0.6	When arming Panic, close all child contacts, stop talker speaking panic is closed
  *	Apr 28, 2019 v0.0.5	use NCKL Panic Contact no longer necessary to specify contact sensor
  *	Apr 27, 2019 v0.0.5	Create and use simulated contacts in HSM arming, control here for arming override
@@ -164,7 +166,7 @@ preferences {
 
 def version()
 	{
-	return "0.0.6";
+	return "0.0.7";
 	}
 def main()
 	{
@@ -362,6 +364,9 @@ def initialize()
  *		Maintain Child Devices
  *			One for each unique contact device, plus a panic contact device
  */ 
+	if (!globalChildPrefix)
+		{}
+	else	
  	if (globalAwayContacts)
 		{
 		subscribe(globalAwayContacts,"contact.open", openDoorHandler)
@@ -395,7 +400,10 @@ def initialize()
 
 def uninstalled()
 	{
-	globalAwayContacts?.each
+	getChildDevices().each
+		{deleteOldChildDevice(it)}
+
+/*	globalAwayContacts?.each
 		{
 		deleteOldChildDevice(it)
 		}
@@ -409,7 +417,7 @@ def uninstalled()
 		}
 	def dvc = [name: "Panic Contact", id: "Panic Id", label: "Panic Contact"]
 	deleteOldChildDevice(dvc)
-	}
+*/	}
 
 //  --------------------------Keypad support added Mar 02, 2018 V2-------------------------------
 /*				Basic location modes are Home, Night, Away. This can be very confusing
