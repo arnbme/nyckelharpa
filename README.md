@@ -46,18 +46,18 @@ This app is free and very much beta code. However, if you like it, derived benef
 ## 4. Installation
 
 There are five modules and an optional Keypad Device Handler (DH) associated with this app  
-Module Name		Function	
-1. Nyckelharpa. 	Parent module, required. 
+	
+1. Nyckelharpa. 	Parent module. Controls HSM forced arming from a keypad, and User pin verification. Required  
 
-2. Nyclelharpa Modefix. Adjusts HSM mode when HSM State changes. Required
+2. Nyckelharpa Modefix. Adjusts HSM mode when HSM State changes, and forced arming from a non keypd source. Required
 
-3. Nyclelharpa Talker.  Creates security related output to TTS, speakers, Pushover, and SMS
+3. Nyckelharpa Talker.  Creates security related output to TTS, speakers, Pushover, and SMS
 
-4. Nyclelharpa Contact. Controls some actions when a monitored contact sensor (door) opens
+4. Nyckelharpa Contact. Controls some actions when a monitored contact sensor (door) opens
 
-5. Nyclelharpa User.    Maintains pins when using the user version of the Centralite Keypad DH.
+5. Nyckelharpa User.    Maintains pins when using the user version of the Centralite Keypad DH.
 
-6. Centralite Keypad.   Optional keypad device handler for models: Centralite V2 and V3, and Iris V2
+6. Centralite Keypad.   Keypad device handler for models: Centralite V2 and V3, and Iris V2
 
 Let's begin installing Nyckelharpa into Hubitat (HE) from this Github repository. 
 
