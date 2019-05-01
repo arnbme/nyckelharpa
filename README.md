@@ -1,11 +1,13 @@
 <a name="top"></a>
 # Nyckelharpa
-The buttons and levers controlling HSM's strings. (This information is a work in progress with much of it from Smarthings that will be updated and removed)
+![image nyckelharpa](images/nyckelharpa.jpg) 
+**The buttons and levers controlling Hubitat's Home Security Monitor's strings.** 
+(This document is a work in progress, nothing beyond section 4 is meaningful)
 ## Table of Contents 
 [ 1. Purpose](#purpose)<br />
 [ 2. Features](#features)<br />
 [ 3. Donate](#support)<br />
-[ 4. Installation](#appinstall)<br />
+[ 4. Installation](#install)<br />
 [ 5. Quick Setup Guide](#setup)<br />
 [ 8. Setting Smart Home Security](#SHMsecurity)<br />
 [ 9. Global Definitions](#globals)<br />
@@ -33,36 +35,38 @@ The buttons and levers controlling HSM's strings. (This information is a work in
 [31. Addon Module - SHM Delay BuzzerSwitch](/t/release-shm-delay-version-2-0/121800/74#buzzerswitch)
 <a name="purpose"></a>
 ## 1. Purpose
-Nyckepharpa is an HSM extension providing features not available in HSM, plus it simplifies setting up security related messaging. 
+Nyckepharpa is a user created Hubitat Home Security Monitor (HSM) extension, providing features not available in HSM. Additionally, it simplifies setting up security related messaging. 
 
 [:arrow_up_small: Back to top](#top)
 
 <a name="features"></a>
 ## 2. Features
 
-* Optionally forces HSM arming when a contact is open
+* Optionally, and under user control, forces HSM arming when a contact is open.<br /> 
+Why is this needed? It's 1AM, you want to arm the system for night, but a contact is broken. You are away from home, forgot to arm the system, and when you try, oops the back door is open. 
 
-* Sets the HSM mode when the HSM arm state changes
+* Sets the HSM mode when the HSM arm state changes. (HSM aleady sets HSM arm state when mode changes)
 
-* Provides an easy to use TTS and xxxxxxx security message control center
+* Provides an easy to use security related message control center with output to TTS, Speakers, Pushover, and SMS
 
-* Keypads: Centralite V2 and V3, and Iris V2 devices may use a ported version of the Mitch Pond Keypad DH that makes he keypad function as it did in ST
+* Keypads: Centralite V2 and V3, and Iris V2 devices may use a ported version of Mitch Pond's Keypad DH making he keypad function as it did in SmartThings with the SHM Delay App, and it uses an easy to use Pin maintenance module with available use count, time. and devices restrictions.
 
 [:arrow_up_small: Back to top](#top)
 <a name="support"></a>
 ## 3. Support this project
-This app is free and very much beta code, however if you like it donations are appreciated.
+This app is free and very much beta code. However, if you like it, derived benefit from it, and want to express your support, donations are appreciated.
 * Paypal: https://www.paypal.me/arnbme 
 
+<a name="install"></a>
 ## 4. Installation
 
 There are five modules and an optional Keypad Device Handler (DH) associated with this app  
-
-1. Nyckelharpa. 		Parent module, required. 
+Module Name		Function	
+1. Nyckelharpa. 	Parent module, required. 
 
 2. Nyclelharpa Modefix. Adjusts HSM mode when HSM State changes. Required
 
-3. Nyclelharpa Talker.  Creates TTS, speaker and xxxxxxxxx messages 
+3. Nyclelharpa Talker.  Creates security related output to TTS, speakers, Pushover, and SMS
 
 4. Nyclelharpa Contact. Controls some actions when a monitored contact sensor (door) opens
 
@@ -70,7 +74,7 @@ There are five modules and an optional Keypad Device Handler (DH) associated wit
 
 6. Centralite Keypad.   Optional keypad device handler for models: Centralite V2 and V3, and Iris V2
 
-Let's Begin using the Smartthings Classic app, _not ST Samsung Connect_, with install via repository, or manually from code below:
+Let's begin installing Nyckelharpa into Hubitat (HE) from this Github repository. 
 
 *  Install via the Github repository (preferred), add the following to the IDE Settings.
 Using a United Kingdom (non-USA) hub? [See this thread to enable Github](https://community.smartthings.com/t/uk-github-working/62793?u=m1key&source_topic_id=75666&source_topic_id=107947) 
