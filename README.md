@@ -4,35 +4,21 @@
 **The buttons and levers controlling Hubitat Elevation's, Home Security Monitor's strings.** 
 (This document is a work in progress, nothing beyond the beginning of section 4 is meaningful)
 ## Table of Contents 
-[ 1. Purpose](#purpose)<br />
-[ 2. Features](#features)<br />
-[ 3. Donate](#support)<br />
-[ 4. Installation](#install)<br />
-[ 5. Quick Setup Guide](#setup)<br />
-[ 8. Setting Smart Home Security](#SHMsecurity)<br />
-[ 9. Global Definitions](#globals)<br />
-[10. Delay Profile Setup](#delayprofile)
-[11. User/Pin Profile Setup](#userprofile)
-[12. Modefix Setup and Usage, Fix keypad out of sync with SHM Arming State](#modefix)
-[13. How to Use Keypads](#howtousekeypads)
-[14. Supported Keypads,  hardware setup and troubleshooting](#keypadtrouble)
-[15. Initial Testing](/t/release-shm-delay-version-2-0/121800/74#initialtesting)
-[16. Fix Motion Sensor Intrusion During Entry Delay](/t/release-shm-delay-version-2-0/121800/74#fixmotionentry)
-[17. Fix Motion Sensor Intrusion During Exit Delay](/t/release-shm-delay-version-2-0/121800/74#fixmotionexit)
-[18. Using Sounds and Text to Speach](/t/release-shm-delay-version-2-0/121800/74#soundtts)
-[19. Fix Siren Alarm During Entry delay](/t/release-shm-delay-version-2-0/121800/74#fixsiren)
-[20. Using True Entry Delay](/t/release-shm-delay-version-2-0/121800/74#trueentrydelay)
-[21. TrueNight Option, Keypads, and Exit / Entry Delays](/t/release-shm-delay-version-2-0/121800/74#truenight)
-[22. Way Beyond the Basics, User Created SHM Modes](/t/release-shm-delay-version-2-0/121800/74#waybeyond)
-[23. Using Simulated Keypad](/t/release-shm-delay-version-2-0/121800/74#simkeypad)
-[24. Known Issues](/t/release-shm-delay-version-2-0/121800/74#knownissues)
-[25. Update History](/t/release-shm-delay-version-2-0/121800/74#updatehistory)
-[26. Background](/t/release-shm-delay-version-2-0/121800/74#background)
-[27. Source Code](/t/release-shm-delay-version-2-0/121800/74#sourcecode)
-[28. Switching between "beta" and "Version2"](/t/release-shm-delay-version-2-0/121800/74#swapversion)
-[29. Help and Support](/t/release-shm-delay-version-2-0/121800/74#help)
-[30. Addon Module - SHM Delay TrueExit](/t/release-shm-delay-version-2-0/121800/74#trueexit)
-[31. Addon Module - SHM Delay BuzzerSwitch](/t/release-shm-delay-version-2-0/121800/74#buzzerswitch)
+[&ensp;1 Purpose](#purpose)<br />
+[&ensp;2. Features](#features)<br />
+[&ensp;3. Donate](#support)<br />
+[&ensp;4. Installation](#install)<br />
+[&ensp;5. Quick Setup Guide](#setup)<br />
+[&ensp;6. Global Definitions](#globals)<br />
+[&ensp;7. Preparing HSM Forced Arming](/t/release-shm-delay-version-2-0/121800/74#soundtts)<br />
+[&ensp;8. Modefix Setup and Usage, Fix keypad out of sync with SHM Arming State](#modefix)<br />
+[&ensp;9. Using Sounds and Text to Speach](/t/release-shm-delay-version-2-0/121800/74#soundtts)<br />
+[10. Contact Profile Setup](#delayprofile)<br />
+[11. User/Pin Profile Setup](#userprofile)<br />
+[12. Using The User Keypad Device Handler](#howtousekeypads)<br />
+[13. Adjusting the Home System Monitor (HSM)](#HSMsecurity)<br />
+[14. Initial Testing](/t/release-shm-delay-version-2-0/121800/74#initialtesting)<br />
+[15. Report An Issue or Contact](/t/release-shm-delay-version-2-0/121800/74#fixmotionentry)
 <a name="purpose"></a>
 ## 1. Purpose
 Nyckepharpa is a user created Hubitat Home Security Monitor (HSM) extension, providing features not available in HSM. Additionally, it simplifies setting up security related messaging. 
