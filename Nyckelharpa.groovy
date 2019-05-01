@@ -269,7 +269,8 @@ def globalsPage()
 			input "globalKeypadControl", "bool", required: true, defaultValue: true, submitOnChange: true,
 				title: "A real or simulated Keypad is used to arm and disarm Home Security Monitor (HSM). Default: On/True"
 			def actions = location.helloHome?.getPhrases()*.label
-			input "globalKeypadDevices", "device.CentralitexKeypad", required: false, multiple: true, submitOnChange: true,
+//			input "globalKeypadDevices", "device.CentralitexKeypad", required: false, multiple: true, submitOnChange: true,
+			input "globalKeypadDevices", "capability.securityKeypad", required: false, multiple: true, submitOnChange: true,
 				title: "Real Keypads used to arm and disarm HSM"
 			input "globalPanic", "bool", required: true, defaultValue: true,
 				title: "Keypad Panic Key when available is Monitored. No Panic key? Set this flag on, add a User Profile, Pin Usage: Panic. Default: On/True"

@@ -406,7 +406,7 @@ private Map getTemperatureResult(value) {
 //------Command handlers------//
 private handleArmRequest(message){
 	def keycode = new String(message.data[2..-2].join().decodeHex(),"UTF-8")
-	def reqArmMode = message.data[0]
+	def reqArmMode = message.data[0].substring(1)
 	//state.lastKeycode = keycode
 	logdebug "Received arm command with keycode/armMode: ${keycode}/${reqArmMode}"
 
@@ -532,7 +532,7 @@ def setEntryDelay(delay) {
 	sendRawStatus(5, delay) // Entry delay beeps
 }
 
-def setExitDelay(delay) {
+def setExitAway(delay) {
 //	setModeHelper("exitDelay", delay)
 //	setModeHelper("exitDelay", 0)
 	sendRawStatus(10, delay)  // Exit delay
