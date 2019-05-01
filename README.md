@@ -1,8 +1,8 @@
 <a name="top"></a>
 # Nyckelharpa
-![image nyckelharpa](images/nyckelharpa.jpg) 
-**The buttons and levers controlling Hubitat's Home Security Monitor's strings.** 
-(This document is a work in progress, nothing beyond section 4 is meaningful)
+![image nyckelharpa](images/nyckelharpa.jpg)<br /> 
+**The buttons and levers controlling Hubitat Elevation's, Home Security Monitor's strings.** 
+(This document is a work in progress, nothing beyond the beginning of section 4 is meaningful)
 ## Table of Contents 
 [ 1. Purpose](#purpose)<br />
 [ 2. Features](#features)<br />
