@@ -1,6 +1,6 @@
 <a name="top"></a>
 # Nyckelharpa
-The buttons and levers controlling HSM's strings. (currently a work in progress with much of it from Smarthings that will be updated and removed)
+The buttons and levers controlling HSM's strings. (This information is a work in progress with much of it from Smarthings that will be updated and removed)
 ## Table of Contents 
 [ 1. Purpose](#purpose)<br />
 [ 2. Features](#features)<br />
