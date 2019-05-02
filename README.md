@@ -214,10 +214,10 @@ This is still in the Alpha stage of development and is subject to change
 2. Ignore the motion sensors setting, it's currently not used
 3. Set Beep these devices on Entry Delay
 4. Set Beep these devices when this contact opens and system is disarmed
-5. Profile name should be set from the contact sensor name
-6. Click Next
+5. Profile name is created from the contact sensor name
+6. *Click Next*
 7. Set the Open Door warning settings
-8. Click Save
+8. *Click Save*
 
 [:arrow_up_small: Back to top](#top)
 <a name="keypadDH"></a>
