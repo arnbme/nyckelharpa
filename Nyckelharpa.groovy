@@ -22,23 +22,23 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  * 
+ *	May 02, 2019 v0.0.9	Cleanup and prepare for release
  *	May 02, 2019 v0.0.8	Fix missing spaces on valid and invalid pin messages
  *	Apr 30, 2019 v0.0.7	Do not create child devices when globalChildPrefix is null
  *	Apr 30, 2019 v0.0.7	Change method used to delete child devices to catch all of them
  *	Apr 28, 2019 v0.0.6	When arming Panic, close all child contacts, stop talker speaking panic is closed
- *	Apr 28, 2019 v0.0.5	use NCKL Panic Contact no longer necessary to specify contact sensor
+ *	Apr 28, 2019 v0.0.5	use NCKL Panic Contact no longer necessary to specify simulated contact sensor in globals
  *	Apr 27, 2019 v0.0.5	Create and use simulated contacts in HSM arming, control here for arming override
  *	Apr 25, 2019 v0.0.4	Improve arming faild and forced arming messages
  *	Apr 24, 2019 v0.0.3	allow force rearm if second arm request within 30 minutes of last open doors failure
  *	Apr 23, 2019 v0.0.2	cleanup pin entry and panic logic
  *	Apr 22, 2019 v0.0.1	Add pushover support
  *	Apr 22, 2019 v0.0.0	Rename SHM Delay to Nyckelharpa change version to 0.0.0 prerelease
- *	Apr 20, 2019 v2.2.9AH Cleanup some grunge
+ *	Apr 20, 2019 v2.2.9H Cleanup some grunge
  *	Apr 01, 2019 v2.2.9H killed verify version link for now
  *	Apr 01, 2019 v2.2.9H Use true on device.currentvalue to insure live value, otherwise could be stale
  *	Mar 26, 2019 v2.2.8  Corrected keypad lights not properly see around statement 1034/5  fakeEvt = [value: theMode]
  *	Mar 14, 2019 v2.2.8  Change: Period not saved in Apple IOS, remove it as a phone number delimter
- *	Mar 12, 2019 v2.2.8  add phone number delimiters pound sign(#) and period(.) the semi colon no longer shows in android, nor is saved in IOS?
  *	Mar 12, 2019 v2.2.8  add phone number delimiters pound sign(#) and period(.) the semi colon no longer shows in android, nor is saved in IOS?
  *	Mar 03, 2019 v2.2.8  add flag to turn debug messages on, default is off
  *	Feb 19, 2019 v2.2.7  globalPinPush was miscoded should have been globalBadPinPush around line 359 Send Bad Pin Push Notification
@@ -47,96 +47,8 @@
  *								remove ,"" selection option						
  *	Nov 30, 2018 V2.2.4  not in this version (add additional panic subscribe when using RBoy DTH
  *	Nov 30, 2018 V2.2.4  not in this version (Minor logic change for Iris V3 when testing for 3405-L
- *	Nov 24, 2018 V2.2.3H Convert to Hubitat
- *	Nov 19, 2018 V2.2.3  Test Modefix user settings for exit delay in verify version
- *	Nov 19, 2018 V2.2.2  User exit event not running in SHM Delay BuzzerSwitch, modify routine verify_version()
- *	Nov 03, 2018 v2.2.1	 Adjust logic per Rboy suggestions
- *							Change Name of Rboy DTH
- *							When RBoy DTH do not issue: acknowledgeArmRequest and sendInvalidKeycodeResponse
- *							On install and Rboy DTH execute disableInvalidPinLogging(true) stops Rboy dth from issuing acknowledgement 
- *							On uninstall execute disableInvalidPinLogging(false) when it exists in DTH 
- *	Oct 27, 2018 v2.2.1	 Fix bug selecting keypad devices with Rboy Dth, move Rboy input selector to place that makes sense
- *	Oct 26, 2018 v2.2.1	 Fix bug testing globalKeypadDevices size when it doew not exist
- *	Oct 22, 2018 v2.2.1	 Repackage some settings and adujst some text, no logic changes
- *	Oct 21, 2018 v2.2.1	 Check for open user defined contacts prior to arming (will not arm or set exit delay)
- *						 separate setting for away and stay alarm states
- *	Oct 17, 2018 v2.2.0	 Use user exit delay settings in ModeFix to control exit delay on keypad
- *						 When two or more keypads: each keypad gets unique exit delay time setting
- *	Oct 15, 2018 v2.1.9	 Move non keypad exit delay from SHM Delay Child to routine verify_version
- *							symptom multiple non keypad exit delay messages being issued
- *							issue: when non keypad exit times vary in delay profiles the minimum number is announced 
- *	Oct 10, 2018 v2.1.8	 Add support for RBOY DTH, add global dthrboy
- *	Sep 20, 2018 v2.1.7	 Change pin verification lookup reducing overhead in routine keypadcodehandler around line 376
- *	Jul 24	2018 v2.1.7	 Pin 0000 not User or UserRoutinePiston and ingore off was previously set, it was honored
- *							(released on Sep 20, 2018)
- *	Jul 21	2018 v2.1.6	 add support for Iris Keypad quick arm with no pin and Off or Partial key
- *							sends a 0000 pin code
- *	Jul 19	2018 v2.1.5	 add notification options on Bad Pin entry on global basis
- *	Jul 18	2018 v2.1.5	 add notification options on Pin entry on global and each user pin
- *	Jul 17	2018 v2.1.4  Add support for multifunction UserRoutinePiston pins and
- *							Keypad mode selection on Routine, Piston, and UserRoutinePiston pins
- *							based upon code added to SHm Delay Users V1.0.0 to setup the fields
- *	Jul 11	2018 v2.1.3  Make all keypads sound Exit Delay tones when any keypad set to Exit Delay
- *						 Change default for Multiple Motion Sensors to True
- *	Jul 02	2018 v2.1.2  Add code to verify simkypd and talker modules
- *	Jun 27	2018 v2.1.1  Add logic to trigger all SHM Delay Talker Child profiles
- *							with exitDelay when keypad enters exitdelay
- *  Jun 16, 2018 v2.1.0  Fix Error saving page caused by lack of event on call to veerify_version
- *							add dummy_evt to call
- *  Jun 13, 2018 v2.0.9  Add logic to process pin restrictions by mode and device
- *  Jun 03, 2018 v2.0.8  Show exit delay on internet keypad, and Panic when triggered
- *							When exit delay triggered by internet keypad sound exit delay on all real keypads
- *  Jun 01, 2018 v2.0.8  Add logic to queue pinstatus, ST status and ST mode for sse display in keypad.html			
- *  May 29, 2018 v2.0.7  Add logic to KeypadLightHandler to process simulated keypads so DTH armMode is properly set
- *							Split original adding function KeypadLighton
- *  May 28, 2018 v2.0.7  Allow GlobalKeypadControl to be set when no real Keypads are defined
- *							fixes problem when using simulated keypads without a real keypad
- *  May 25, 2018 v2.0.7  Add Simulated Keypad Child App
- *  May 23, 2018 v2.0.6  Add Simulated Panic support. (deprecated, moved the simulated keypad childapp)
- *  Apr 30, 2018 v2.0.6  Add Simulated keypad support.(deprecated, moved the simulated keypad childapp)
- *  Apr 30, 2018 v2.0.5  Add Version verification when updating.
- *						 Add subscribe for alarm state change that executes Version verification
- *  Apr 25, 2018 v2.0.4  Add Dynamic Version number;
- *						 Use user defined armed (home) light mode for 3400 keypads defined in SHm Delay Modefix
- *						 Add globalDuplicateMotionSensors used by SHM Delay Child to implement logic to handle
- *							false alarm issues when a motion sensors is defined in multiple delay profiles	
- *  Apr 24, 2018 v2.0.3  When Modefix: on; then change mode with Action Tiles from night to stay;
- *							3400 keypad night light did not change to stay
- *  Apr 23, 2018 v2.0.2b cleanup keypadModeHandler debug messages, see change in keypadModeHandler
- *  Apr 23, 2018 v2.0.2a reduce overhead by asking for keypad status as needed, may be creating keypad traffic collisions
- *  Apr 23, 2018 v2.0.2  when arming on Xfinity 3400 with Stay icon, light flipped to Night icon caused instant alarm
- *							See logic for Stay and Night in routine keypadLightHandler
- *  Apr 04, 2018 v2.0.1  Fix issue with burned pin, move all documentation to community forum release thread,
- *							change global keypad selection from capability to device
- *  Mar 20, 2018 v2.0.0  add reverse mode fix, user defined modes, set Alarm State when mode changes 
- *  Mar 18, 2018 v2.0.0  add Panic option
- *	Mar 14, 2018 v2.0.0  add logic that executes a Routine for a pin 
- *	Mar 13, 2018 v2.0.0  add logic for weekday, time and dates just added to SHM Delay User 
- *  Mar 02, 2018 v2.0.0  add support for users and total keypad control
- *							Use mode vs alarmstatus to set Keypad mode lights, requires modefix be live
- *	Dec 31, 2017 v1.6.0  Add bool to allow Multiple Motion sensors in delay profile,
- *							without forcing existing users to update their profile data.
- *	Sep 23, 2017 v1.4.0  Document True Entry Delay and optional followed motion sensor in Delay Profile 
- *	Sep 23, 2017 v1.3.0  Add Global setting for option True Entry Delay, default off/false 
- * 	Sep 06, 2017 v1.2.0b add custom app remove button and text
- * 	Sep 02, 2017 v1.2.0a fix sorry there was an unexpected error due to having app name as modefixx from testing on
- *					one of the app connections
- * 	Sep 02, 2017 v1.2.0  repackage Modefix logic back into child ModeFix module where it belongs
- * 	Aug 30, 2017 v1.1.1  add global for using the upgraded Keypad module.
- * 	Aug 27, 2017 v1.1.0  Add child module SHM Delay ModeFix for Mode fixup profiles and adjust menus to reflect status
- * 	Aug 25, 2017 v1.1.0  SmartHome send stay mode when going into night mode. Force keypad to show
- *					night mode and have no entry delay. Add globalTrueNight for this option and globalFixMode 
- *	Aug 23, 2017 v1.0.7  Add police 911 and telephone numbers as links in notification messages
- *	Aug 20, 2017 v1.0.6a Change default global options: non-unique to false, create intrusion messages to true
- *					update documentation
- *	Aug 19, 2017 v1.0.6  Add global options allowing non unique simulated sensors, and alarm trigger messages
- *	Aug 17, 2017 v1.0.5  Revise documentation prior to release
- *	Aug 14, 2017 v1.0.4  Revise documentation for exit delay, split about page into about and installation pages
- *	Aug 14, 2017 v1.0.3  Revise initial setup testing app.getInstallationState() for COMPLETE vs childApps.size
- *					done in v1.0.1
- *	Aug 13, 2017 v1.0.2  Add documentation pages (Thanks to Stephan Hackett Button Controller)
- *	Aug 12, 2017 v1.0.1  Add warning on initial setup to install first (Thanks to E Thayer Lock Manager code) 
- *	Aug 11, 2017 v1.0.0  Create from example in developer documentation 
+ *	Nov 24, 2018 V2.2.3H Convert to Hubitat, then did nothing until April 2019
+ *	Aug 11, 2017 v1.0.0  Created as SHM Delay in SmartThings 
  *
  */
 
@@ -167,7 +79,7 @@ preferences {
 
 def version()
 	{
-	return "0.0.8";
+	return "0.0.9";
 	}
 def main()
 	{
@@ -190,7 +102,7 @@ def main()
 				}
 			def modeActive=" Inactive"
 			def globalKeypadControl=true
-			if (globalFixMode || globalKeypadControl)
+			if (globalFixMode)
 				{modeActive=" Active"}
 			def fixtitle = modeFixChild + modeActive + " Mode Fix Settings"
 			section 
@@ -202,8 +114,8 @@ def main()
 				{
 				app(name: "EntryDelayProfile", appName: "Nyckelharpa Contact", namespace: "arnbme", title: "Create A New Delay Profile", multiple: true)
 				}
-//			if (globalKeypadControl)
-//				{
+			if (globalKeypadDevices)
+				{
 				section 
 					{
 					app(name: "UserProfile", appName: "Nyckelharpa User", namespace: "arnbme", title: "Create A New User Profile", multiple: true)
@@ -212,7 +124,7 @@ def main()
 //					{
 //					app(name: "SimKypdProfile", appName: "Nyckelharpa Simkypd", namespace: "arnbme", title: "Create A New Sim Keypad Profile", multiple: true)
 //					}
-//				}	
+				}	
 			section 
 				{
 				app(name: "TalkerProfile", appName: "Nyckelharpa Talker", namespace: "arnbme", title: "Create A New Talker Profile", multiple: true)
@@ -267,39 +179,40 @@ def globalsPage()
 			{
 			input "globalDisable", "bool", required: true, defaultValue: false,
 				title: "Disable All Functions. Default: Off/False"
-			input "globalKeypadControl", "bool", required: true, defaultValue: true, submitOnChange: true,
-				title: "A real or simulated Keypad is used to arm and disarm Home Security Monitor (HSM). Default: On/True"
-			def actions = location.helloHome?.getPhrases()*.label
-//			input "globalKeypadDevices", "device.CentralitexKeypad", required: false, multiple: true, submitOnChange: true,
+//			input "globalKeypadControl", "bool", required: true, defaultValue: true, submitOnChange: true,
+//				title: "A real or simulated Keypad is used to arm and disarm Home Security Monitor (HSM). Default: On/True"
 			input "globalKeypadDevices", "capability.securityKeypad", required: false, multiple: true, submitOnChange: true,
-				title: "Real Keypads used to arm and disarm HSM"
-			input "globalPanic", "bool", required: true, defaultValue: true,
-				title: "Keypad Panic Key when available is Monitored. No Panic key? Set this flag on, add a User Profile, Pin Usage: Panic. Default: On/True"
-//			input "globalSimContact", "capability.contactSensor", required: true,
-//				title: "Simulated Contact Sensor (Must Monitor in HSM Contacts)"
-			input "globalPinMsgs", "bool", required: false, defaultValue: true, submitOnChange: true,
-				title: "Log pin entries. Default: On/True"
-			if (globalPinMsgs)
+				title: "Iris V2, and Centralite V2/V3 devices using Nyckelharpa Centralite Device Handler to arm and disarm HSM"
+			if (globalKeypadDevices)
 				{
-				input "globalPinLog", "bool", required: false, defaultValue:true,
-					title: "Log Pin to log.trace?"
-				input "globalPinPush", "bool", required: false, defaultValue:true,
-					title: "Send Pin Pushover Notification?"
-				input "globalPinPhone", "phone", required: false, 
-					title: "Send Pin text message to this number. For multiple SMS recipients, separate phone numbers with a pound sign(#), or semicolon(;)"
-				}
-			input "globalBadPinMsgs", "bool", required: false, defaultValue: true, submitOnChange: true,
-				title: "Log invalid keypad entries, pins not found in a User Profile Default: On/True"
-			if (globalBadPinMsgs)
-				{
-				input "globalBadPinLog", "bool", required: false, defaultValue:true,
-					title: "Log Bad Pins to log.trace?"
-				input "globalBadPinPush", "bool", required: false, defaultValue:true,
-					title: "Send Bad Pin Push Notification?"
-				input "globalBadPinPhone", "phone", required: false, 
-					title: "Send Invalid Bad Pin text message to this number. For multiple SMS recipients, separate phone numbers with a pound sign(#), or semicolon(;)"
-				}
-			paragraph "<b>When entering contacts below, remove from HSM Intrusion-(armState) Open/Close Sensors. When arming fails due to an open or broken contact, you may force arm by rearming within 15 seconds. Note: HSM does not permit arming when a required closed contact sensor is open or broken.</b>"
+				input "globalPanic", "bool", required: true, defaultValue: true,
+					title: "Keypad Panic Key when available is Monitored. No Panic key? Set this flag on, add a User Profile, Pin Usage: Panic. Default: On/True"
+//				input "globalSimContact", "capability.contactSensor", required: true,
+//					title: "Simulated Contact Sensor (Must Monitor in HSM Contacts)"
+				input "globalPinMsgs", "bool", required: false, defaultValue: true, submitOnChange: true,
+					title: "Log pin entries. Default: On/True"
+				if (globalPinMsgs)
+					{
+					input "globalPinLog", "bool", required: false, defaultValue:true,
+						title: "Log Pin to log.trace?"
+					input "globalPinPush", "bool", required: false, defaultValue:true,
+						title: "Send Pin Pushover Notification?"
+					input "globalPinPhone", "phone", required: false, 
+						title: "Send Pin text message to this number. For multiple SMS recipients, separate phone numbers with a pound sign(#), or semicolon(;)"
+					}
+				input "globalBadPinMsgs", "bool", required: false, defaultValue: true, submitOnChange: true,
+					title: "Log invalid keypad entries, pins not found in a User Profile Default: On/True"
+				if (globalBadPinMsgs)
+					{
+					input "globalBadPinLog", "bool", required: false, defaultValue:true,
+						title: "Log Bad Pins to log.trace?"
+					input "globalBadPinPush", "bool", required: false, defaultValue:true,
+						title: "Send Bad Pin Push Notification?"
+					input "globalBadPinPhone", "phone", required: false, 
+						title: "Send Invalid Bad Pin text message to this number. For multiple SMS recipients, separate phone numbers with a pound sign(#), or semicolon(;)"
+					}
+				}	
+			paragraph "<b>Allow the following contacts to remain open when Arming HSM. Each contact generates a Virtual Contact Sensor that must be set in HSM following directions in section 7 of the Github Readme.md file.</b>"
 			input "globalAwayContacts", "capability.contactSensor", required: false, submitOnChange: true, multiple: true,
 				title: "(Optional!) Contact Sensors that must be closed prior to arming Away. Remove from HSM!"
 			if (globalAwayContacts)
@@ -323,11 +236,12 @@ def globalsPage()
 				}
 //			if (!state.configured)
 //				{
-//				state.configured = true
-				input "globalChildPrefix", "text", title:"Simulated Device Prefix. Simulated device names start with this 	prefix.\n\nThe prefix must start with a letter and the only supported characters are letters, numbers and hyphens.\n\nThis setting can't be changed once you leave this screen. Each unique device specified in '(Optional!) Contact sensors that must be closed' above, creates a simulated device that must be specified in HSM Open/Close contacts",
+				input "globalChildPrefix", "text", title:"Simulated Device Prefix. Simulated device names used with Forced HSM Arming, and the simulaed Panic Contact, start with this prefix.\n\nThe prefix must start with a letter and the only supported characters are letters, numbers and hyphens.\n\nThis setting can't be changed once you leave this screen.",
 					description: "Simulated Device Prefix",
 					defaultValue: 'NCKL', required: true
 //				}
+//			else
+//				paragraph "Simulated Device Prefix: ${globalChildPrefix}. (Remove app to reset)"
 			input "sendPushMessage", "capability.notification", title: "Devices receiving Pushover notifications", multiple: true, required: false
 			}
 		}
@@ -367,8 +281,8 @@ def initialize()
  *			One for each unique contact device, plus a panic contact device
  */ 
 	if (!globalChildPrefix)
-		{}
-	else	
+		{return}
+	state.configured = true			//locks the device prefix value so it cant be changed
  	if (globalAwayContacts)
 		{
 		subscribe(globalAwayContacts,"contact.open", openDoorHandler)

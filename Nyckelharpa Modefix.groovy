@@ -20,6 +20,7 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *	May 02, 2019 	v0.0.5	Make all mode settings optional
  *	Apr 30, 2019 	v0.0.4	HSM hijacked command setExitDelay to send all HSM delay to keypad
  *								avoid confusion by changing ours to setExitAway
  *	Apr 29, 2019 	v0.0.3	adjust for newly added setExitNight and setExitStay keypad DTH commands
@@ -106,9 +107,9 @@ def pageOne(error_msg)
 			}
 		section ("Alarm State: Disarmed / Off")
 			{
-			input "offModes", "mode", required: true, multiple: true, defaultValue: "Home",
+			input "offModes", "mode", required: false, multiple: true, defaultValue: "disarmed",
 				title: "Valid Modes for: Disarmed"
-			input "offDefault", "mode", required: true, defaultValue: "Home",
+			input "offDefault", "mode", required: false, defaultValue: "disarmed",
 				title: "Default Mode for: Disarmed"
 			}	
 		section ("Alarm State: Armed (Away)")
@@ -117,9 +118,9 @@ def pageOne(error_msg)
 				{
 				paragraph away_error_data
 				}
-			input "awayModes", "mode", required: true, multiple: true, defaultValue: "Away", submitOnChange: true,
+			input "awayModes", "mode", required: false, multiple: true, defaultValue: "Away", submitOnChange: true,
 				title: "Valid modes for: Armed Away"
-			input "awayDefault", "mode", required: true, defaultValue: "Away",
+			input "awayDefault", "mode", required: false, defaultValue: "Away",
 				title: "Default Mode for Armed Away"
 /*			awayModes.each
 				{
@@ -131,23 +132,23 @@ def pageOne(error_msg)
 */			}	
 		section ("Alarm State: Armed (Night)")
 			{
-			input "nightModes", "mode", required: true, multiple: true, defaultValue: "Night", submitOnChange: true,
+			input "nightModes", "mode", required: false, multiple: true, defaultValue: "Night", submitOnChange: true,
 				title: "Valid Modes for Armed Night"
-			input "nightDefault", "mode", required: true, defaultValue: "Night",
+			input "nightDefault", "mode", required: false, defaultValue: "Night",
 				title: "Default Mode for Armed Night"
 /*			nightModes.each
 				{
-				input "nightExit${it.value}", "bool", required: true, defaultValue: false,
+				input "nightExit${it.value}", "bool", required: false, defaultValue: false,
 					title: "Create Exit Delay for Armed (Night) ${it.value} mode"
-				input "nightEntry${it.value}", "bool", required: true, defaultValue: true,
+				input "nightEntry${it.value}", "bool", required: false, defaultValue: true,
 						title: "Create Entry Delay for Armed (Night) ${it.value} mode"
 				}	
 */			}	
 		section ("Alarm State: Armed (Home) aka Stay")
 			{
-			input "homeModes", "mode", required: true, multiple: true, defaultValue: "Stay", submitOnChange: true,
+			input "homeModes", "mode", required: false, multiple: true, defaultValue: "Stay", submitOnChange: true,
 				title: "Valid Modes for Armed Home"
-			input "homeDefault", "mode", required: true, defaultValue: "Stay",
+			input "homeDefault", "mode", required: false, defaultValue: "Stay",
 				title: "Default Mode for Armed Home"
 /*			homeModes.each
 				{
@@ -241,50 +242,50 @@ def pageTwo()
 			}
 */		section ("Alarm State: Disarmed / Off")
 			{
-			input "offModes", "mode", required: true, multiple: true, defaultValue: "Home",
+			input "offModes", "mode", required: false, multiple: true, defaultValue: "Home",
 				title: "Valid Modes for: Disarmed"
-			input "offDefault", "mode", required: true, defaultValue: "Home",
+			input "offDefault", "mode", required: false, defaultValue: "Home",
 				title: "Default Mode for: Disarmed"
 			}	
 		section ("Alarm State: Armed (Away)")
 			{
-			input "awayModes", "mode", required: true, multiple: true, defaultValue: "Away", submitOnChange: true,
+			input "awayModes", "mode", required: false, multiple: true, defaultValue: "Away", submitOnChange: true,
 				title: "Valid modes for: Armed Away"
-			input "awayDefault", "mode", required: true, defaultValue: "Away",
+			input "awayDefault", "mode", required: false, defaultValue: "Away",
 				title: "Default Mode: Armed Away"
 /*			awayModes.each
 				{
-				input "awayExit${it.value}", "bool", required: true, defaultValue: true,
+				input "awayExit${it.value}", "bool", required: false, defaultValue: true,
 					title: "Create Exit Delay for Armed (Away) ${it.value} mode"
-				input "awayEntry${it.value}", "bool", required: true, defaultValue: true,
+				input "awayEntry${it.value}", "bool", required: false, defaultValue: true,
 					title: "Create Entry Delay for Armed (Away) ${it.value} mode"
 				}	
 */			}	
 		section ("Alarm State: Armed (Night)")
 			{
-			input "nightModes", "mode", required: true, multiple: true, defaultValue: "Night",  submitOnChange: true,
+			input "nightModes", "mode", required: false, multiple: true, defaultValue: "Night",  submitOnChange: true,
 				title: "Valid Modes for Armed Night"
-			input "nightDefault", "mode", required: true, defaultValue: "Night",
+			input "nightDefault", "mode", required: false, defaultValue: "Night",
 				title: "Default Mode for Armed Night"
 /*			stayModes.each
 				{
-				input "nightExit${it.value}", "bool", required: true, defaultValue: false,
+				input "nightExit${it.value}", "bool", required: false, defaultValue: false,
 					title: "Create Exit Delay for Armed (Night) ${it.value} mode"
-				input "nightEntry${it.value}", "bool", required: true, defaultValue: false,
+				input "nightEntry${it.value}", "bool", required: false, defaultValue: false,
 					title: "Create Entry Delay for Armed (Night) ${it.value} mode"
 				}
 */			}	
 		section ("Alarm State: Armed (Home) aka Stay")
 			{
-			input "stayModes", "mode", required: true, multiple: true, defaultValue: "Stay",  submitOnChange: true,
+			input "stayModes", "mode", required: false, multiple: true, defaultValue: "Stay",  submitOnChange: true,
 				title: "Valid Modes for Armed Home"
-			input "stayDefault", "mode", required: true, defaultValue: "Stay",
+			input "stayDefault", "mode", required: false, defaultValue: "Stay",
 				title: "Default Mode for Armed Home"
 /*			stayModes.each
 				{
-				input "stayExit${it.value}", "bool", required: true, defaultValue: false,
+				input "stayExit${it.value}", "bool", required: false, defaultValue: false,
 					title: "Create Exit Delay for Armed (Home) ${it.value} mode"
-				input "stayEntry${it.value}", "bool", required: true, defaultValue: false,
+				input "stayEntry${it.value}", "bool", required: false, defaultValue: false,
 					title: "Create Entry Delay for Armed (Home) ${it.value} mode"
 				}	
 				
@@ -381,9 +382,12 @@ def alarmStatusHandler(evt)
 				ttsExit(evt.jsonData.seconds)
 				}
 			}	
-		if (!awayModes.contains(theMode))
+		if (awayModes && awayDefault)
 			{
-			setLocationMode(awayDefault)
+			if (!awayModes.contains(theMode))
+				{
+				setLocationMode(awayDefault)
+				}
 			}
 		}
 	else
@@ -430,9 +434,12 @@ def alarmStatusHandler(evt)
 				ttsExit(evt.jsonData.seconds)
 				}
 			}	
-		if (!nightModes.contains(theMode))
+		if (nightModes && nightDefault)
 			{
-			setLocationMode(nightDefault)
+			if (!nightModes.contains(theMode))
+				{
+				setLocationMode(nightDefault)
+				}
 			}
 		}	
 	else
@@ -463,10 +470,13 @@ def alarmStatusHandler(evt)
 					parent.globalKeypadDevices.setExitStay(evt.jsonData.seconds)
 				ttsExit(evt.jsonData.seconds)
 				}
-			}	
-		if (!homeModes.contains(theMode))
+			}
+		if (homeModes && homeDefault)
 			{
-			setLocationMode(homeDefault)
+			if (!homeModes.contains(theMode))
+				{
+				setLocationMode(homeDefault)
+				}
 			}
 		}	
 	else
