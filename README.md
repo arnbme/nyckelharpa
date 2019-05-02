@@ -173,7 +173,7 @@ Other messages issued by system.
 <a name="keypadDH"></a>
 ## 11. Keypad Device Handler
 
-The app's Keypad Device Handler was created by Mitch Pond on SmartThings, and ported to HE by Mitch and me. I added Alarm capability that sounds a fast high pitch tone until set off on the Iris V2, and beeps for 255 seconds on the Centralite.
+The app's Keypad Device Handler was created by Mitch Pond on SmartThings where it is still used by a few Smartapps including SHM Delay. With Mitch's assistance and Zigbee skills it was ported to HE, then I added the Alarm capability that sounds a fast high pitch tone until set off on the Iris V2, and beeps for 255 seconds on the Centralite. 
 
 _This DH may be used with the Centralite V2, Centralite V3, and Iris V2 keypads_
 
