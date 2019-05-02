@@ -83,11 +83,12 @@ There are five modules and an optional Keypad Device Handler (DH) associated wit
     <td>Optional</td>
   </tr>
 </table> 
-* Using the link below, let's begin by installing the Nyckelharpa parent module into Hubitat (HE) from this Github repository. OAuth is not required and should be skipped. Should you want to used the Install's Import button each module's Github raw address is availabe at the beginning of the module.<br />
+
+* Using the link below, let's begin by installing the Nyckelharpa parent module into Hubitat (HE) from this Github repository.<br /> OAuth is not required and should be skipped.<br /> Should you want to used the Install's Import button each module's Github raw address is availabe at the beginning of the module.<br />
 https://docs.hubitat.com/index.php?title=How_to_Install_Custom_Apps <br />
 Then then install Modefix, Talker, Contact and User, ignore OAuth, and do not add these modules as User Apps.
 
-* Should you be using the user Centralite Keypad driver follow thise directions<br />
+* Should you be using the user Centralite Keypad driver follow these directions<br />
 https://docs.hubitat.com/index.php?title=How_to_Install_Custom_Drivers
 
 *  Next step: Quick Setup Guide
