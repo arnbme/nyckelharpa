@@ -74,7 +74,7 @@ There are five modules and an optional Keypad Device Handler (DH) associated wit
   </tr>
   <tr>
     <td>Nyckelharpa User</td>
-    <td>Adjusts HSM mode when HSM State changes, and forced arming from a non keypd source</td>
+    <td>Maintains User pin codes when using the app's Centralite Keypad DH</td>
     <td>Optional</td>
   </tr>
   <tr>
