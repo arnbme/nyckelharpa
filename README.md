@@ -123,6 +123,48 @@ Detailed instuctions for each step follow the Quick Setup Guide. Begin by clicki
 <a name="talker"></a>
 ## 9. Talker messages
 
+Table with Reason Issued and Message Issued. Pin messages to not allow for test adjustment.
+ <table style="width:100%">
+  <tr>
+    <th>Reason Issued</th>
+    <th>Default Message</th>
+  </tr>
+  <tr>
+    <td>Contact Sensor Opens, arm state disarmed</td>
+    <td>%device is now open</td>
+  </tr>
+  <tr>
+    <td>Contact Sensor Closes, arm state disarmed</td>
+    <td>%device is now closed</td>
+  </tr>
+  <tr>
+    <td>Exit Delay</td>
+    <td>Alarm system is arming in %nn seconds. Please exit the facility</td>
+  </tr>
+  <tr>
+    <td>Entry Delay</td>
+    <td>Please enter your pin on the keypad</td>
+  </tr>
+  <tr>
+    <td>System Armed</td>
+    <td>Alarm System is now armed in %hsmStatus Mode</td>
+  </tr>
+  <tr>
+    <td>System Disarmed</td>
+    <td>System Disarmed</td>
+  </tr>
+  <tr>
+    <td>Valid Pin Entered</td>
+    <td>%keypad.displayname set HSM state to %armState with pin for %userName</td>
+  </tr> 
+  <tr>
+    <td>Bad Pin Entered</td>
+    <td>%keypad.displayname Invalid pin entered: %pinCode</td>
+  </tr>
+</table>
+
+Other messages issued by system.
+
 [:arrow_up_small: Back to top](#top)
 <a name="contact"></a>
 ## 10. Contact Profiles
