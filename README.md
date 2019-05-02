@@ -42,13 +42,14 @@ You are away from home, forgot to arm the system, and when you try, oops the bac
 This app is free and very much beta code. However, if you like it, derived benefit from it, and want to express your support, donations are appreciated.
 * Paypal: https://www.paypal.me/arnbme 
 
-[:arrow_up_small: Back to top]
-(#top)<a name="install"></a>
+[:arrow_up_small: Back to top](#top)
+
+<a name="install"></a>
 ## 4. Installation
 
 There are five modules and an optional Keypad Device Handler (DH) associated with this app  
 	
-1. Nyckelharpa. 	Parent module. Controls HSM forced arming from a keypad, and User pin verification. Required  
+1. Nyckelharpa.         Parent module. Controls HSM forced arming from a keypad, and User pin verification. Required  
 
 2. Nyckelharpa Modefix. Adjusts HSM mode when HSM State changes, and forced arming from a non keypd source. Required
 
@@ -64,31 +65,22 @@ There are five modules and an optional Keypad Device Handler (DH) associated wit
 https://docs.hubitat.com/index.php?title=How_to_Install_Custom_Apps <br />
 Then then install Modefix, Talker, Contact and User, ignore OAuth, and do not add these modules as User Apps.
 
-* Should you be using the user Centralite Keypad driver follow thise directions
+* Should you be using the user Centralite Keypad driver follow thise directions<br />
 https://docs.hubitat.com/index.php?title=How_to_Install_Custom_Drivers
 
 *  Next step: Quick Setup Guide 
-[:arrow_up_small: Back to top](#top)
+[:arrow_up_small: Back to top](#top)<br />
 <a name="setup"></a>
 ## 5. Quick Setup Guide
-1. In the IDE Devices [create one simulated contact sensor device](#createsim). Later this device is added to SHM Security "contact sensors to use"
-2. When using a Keypad read and review section "Xfinity/Iris/Centralite Keypad Installation and TroubleShooting". [Install the suggested Keypad Device Handler (DTH)](https://raw.githubusercontent.com/miriad/Centralite-Keypad/master/devicetypes/mitchpond/centralite-keypad.src/centralite-keypad.groovy) then properly install the keypad into SmartThings. Take your time, [it is a multistep procedure](https://community.smartthings.com/t/release-lowes-iris-and-xfinity-centralite-keypad-dth-apps/58630/716). Note: The RBoy Apps DTH is also supported.
-3. Install this smartApp into the IDE: follow directions in ["Installation"](#appinstall)
-4. In SmartThings phone app, tap "Automations"  (bottom)--> tap Smartapps (top)--> scroll down then tap "+ Add a SmartApp"--> scroll down then tap "+ My Apps"--> scroll down then tap "SHM_Delay"
-5. In this app, SHM_Delay, view the ["Global Application Settings"](#globals). Suggest keeping all the defaults, but define your 3 digit emergency and local police department telephone numbers. When using a keypad set "A real or simulated Keypad" is used to on/true, then click "Done". The app is now installed, but does nothing until a Delay Profile and User Profile (keypads only) are created.
-6. Create one or more [Delay Profiles](#delayprofile)
-7. When using a keypad, create one or more [User profiles](#userprofile) 
-8. Adjust SHM Security monitored sensors, exclude SHM Delay monitored contacts and motion sensors used in step 6 above, and include the simulated sensor(s) defined in step 1.
-9. Test your system in Away, and Stay/Night modes for correct operation. 
-**_Stop here! When ready, add one or more of the following features documented below._**
-10. In Global Settings Implement  "True Night Mode"  (all users) 
-11. in Global Settings set  "Mode Fix" on then edit and save the Modefix profile.  Alarm Status and Mode changes stay syncronized. (all users) _This is important for Keypad users who want non keypad  SHM Alert Status and Mode changes to reflect on the keypad's status keys or icons._ 
-12. Way Beyond the Basics (Xfinity and Centralite keypad users only. Not for Iris users) Utilize all  available armed keypad modes: Stay, Away, and Night
-12. When Keypads are not installed and you want a True Exit Delay, meaning the system is not armed during the exit delay, smartapp [SHM Delay TrueExit](https://community.smartthings.com/t/release-shm-delay-trueexit-create-a-smarthome-true-exit-delay/98696) is suggested.
+Detailed instuctions for each step follow the Quick Setup Guide. Begin by clicking on APPs in the HE menu, then click on Nyckelharpa
+1. Setup Global Settings, then click Next, then Done.
 
+2. Adjust HSM's settings
+3. Create the Modefix profile
+4. Optionally create a Talker profile
+5. Optionally create one or more Contact profiles
+6. Optionally set a one or more existing keypad devices to use the user provided Centralite Driver, then add one or more User pin profiles 
 [:arrow_up_small: Back to top](#top)
-<a name="appinstall"></a>
-
 <a name="createsim"></a>
 ## 7. Creating a Simulated Contact Sensor
 Each contact sensor defined in a Delay Profile must be paired with a "simulated contact sensor" device. A single simulated sensor is preferred and may used in multiple Delay Profiles, or if you insist it may be unique. The simulated sensor must be monitored by SHM. 
