@@ -4,7 +4,7 @@
 **The buttons and levers controlling Hubitat Elevation's, Home Security Monitor's strings.** 
 (This document is a work in progress, nothing beyond the beginning of section 4 is meaningful)
 ## Table of Contents 
-[&ensp;1 Purpose](#purpose)<br />
+[&ensp;1. Purpose](#purpose)<br />
 [&ensp;2. Features](#features)<br />
 [&ensp;3. Donate](#support)<br />
 [&ensp;4. Installation](#install)<br />
@@ -42,7 +42,8 @@ You are away from home, forgot to arm the system, and when you try, oops the bac
 This app is free and very much beta code. However, if you like it, derived benefit from it, and want to express your support, donations are appreciated.
 * Paypal: https://www.paypal.me/arnbme 
 
-<a name="install"></a>
+[:arrow_up_small: Back to top]
+(#top)<a name="install"></a>
 ## 4. Installation
 
 There are five modules and an optional Keypad Device Handler (DH) associated with this app  
@@ -59,34 +60,14 @@ There are five modules and an optional Keypad Device Handler (DH) associated wit
 
 6. Centralite Keypad.   Keypad device handler for models: Centralite V2 and V3, and Iris V2
 
-Let's begin installing Nyckelharpa into Hubitat (HE) from this Github repository. 
+* Using the link below, let's begin by installing the Nyckelharpa parent module into Hubitat (HE) from this Github repository. OAuth is not required and should be skipped. Should you want to used the Install's Import button each module's Github raw address is availabe at the beginning of the module.<br />
+https://docs.hubitat.com/index.php?title=How_to_Install_Custom_Apps <br />
+Then then install Modefix, Talker, Contact and User, ignore OAuth, and do not add these modules as User Apps.
 
-*  Install via the Github repository (preferred), add the following to the IDE Settings.
-Using a United Kingdom (non-USA) hub? [See this thread to enable Github](https://community.smartthings.com/t/uk-github-working/62793?u=m1key&source_topic_id=75666&source_topic_id=107947) 
+* Should you be using the user Centralite Keypad driver follow thise directions
+https://docs.hubitat.com/index.php?title=How_to_Install_Custom_Drivers
 
-1. Login to the IDE at https://account.smartthings.com
-2. click "My Smartapps"
-3. click settings, scroll down, click add new repository
-4. add repository: arnbme SHMDelay Version2 (Note: all data fields are case dependent!)
-Owner: arnbme  (in upper case that is ARNBME, but use lower case)
-Name: SHMDelay
-Branch: Version2
-5. Click 'Save',  then in 'My Smart Apps' click 'Update from repo", 
-6. Select the SHMDelay repository and install and publish SHM_Delay (must be first)
-7. Install, _but do not publish:_ SHM_Delay Child, SHM_Delay ModeFix, SHM_Delay_Users (Optional, required if using keypad), SHM Delay Talker Child (Optional, required for spoken delay messages-beta), and optionally SHM_Delay_Simkypd_Child
-8. When you plan to use the Simulated Keypad see Section 23 for additional information about Oauth, and installing the Internet Keypad DTH
-9. In the SmartThings phone app, tap "Automations"  (bottom)--> tap Smartapps (top)--> scroll down then tap "+ Add a SmartApp"--> scroll down then tap "+ My Apps"--> scroll down then tap "SHM_Delay"
-
-* Manually install by going to https://github.com/arnbme/SHMDelay/tree/Version2/smartapps/arnbme then copy the modules and installing 'from code" You may also copy the source from the code in Section 27.
-
-* @tonesto7's [Community SmartApp Installer](https://community.smartthings.com/t/release-community-smartapp-installer/118348) 
-
-When using an Iris or Xfinity/Centalite keypad use the DTH at miriad/Centralite-Keypad/master, or you may get it at this link: https://raw.githubusercontent.com/miriad/Centralite-Keypad/master/devicetypes/mitchpond/centralite-keypad.src/centralite-keypad.groovy
-Other DTHs may function, but may not produce entry or exit tones. 
-
-[:arrow_up_small: Back to top](#top)
-
-
+*  Next step: Quick Setup Guide 
 [:arrow_up_small: Back to top](#top)
 <a name="setup"></a>
 ## 5. Quick Setup Guide
