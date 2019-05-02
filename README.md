@@ -122,7 +122,7 @@ Global Settings is reached by: clicking Apps in the menu, then click the Nyckelh
 
 4. Set any Pushover messaging devices
 
-5. _When finished, click Next, the click Save
+5. *When finished, click Next, the click Done*
 
 [:arrow_up_small: Back to top](#top)
 
