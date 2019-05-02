@@ -108,7 +108,19 @@ Detailed instuctions for each step follow the Quick Setup Guide. Begin by clicki
 [:arrow_up_small: Back to top](#top)
 
 <a name="globals"></a>
-## 6. Global Settings
+## 6. Global Settings. Includes information or Forced HSM Arming.
+
+Global Settings is reached by: clicking Apps in the menu, then click the Nyckelharpa app, scroll down to Global Settings, then click  "click to show" 
+1. Select any keypad devices using the Nyckelharpa provided Centralite Keypad device driver
+* When devices are selected, default options for valid and invalid pin message routing are shown
+
+2. For each armState select real contact sensor devices that allow HSM arming when the device is Open.
+* _When Global Settings is saved, it generates child Virtual Contact Sensor named NCKL-contact-sensor-name that must be used to Adjust HSM Settings for Forced HSM Arming
+* Specify one or more destinations for "arming cancled contact open" and "arming forced messages: Pushover, SMS, Talk
+
+3. Set the Virtual Child Device prefix, Default NCKL. Once set, it displays but cannot be changed.
+
+4. Set any Pushover messaging devices
 
 [:arrow_up_small: Back to top](#top)
 
