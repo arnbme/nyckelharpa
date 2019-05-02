@@ -122,7 +122,7 @@ Global Settings is reached by: clicking Apps in the menu, then click the Nyckelh
 
 4. Set any Pushover messaging devices
 
-5. *When finished, click Next, the click Done*
+5. *When finished, click Next, then click Done*
 
 [:arrow_up_small: Back to top](#top)
 
@@ -209,6 +209,15 @@ Table with Reason Issued and Message Issued.
 [:arrow_up_small: Back to top](#top)
 <a name="contact"></a>
 ## 10. Contact Profiles
+This is still in the Alpha stage of development and is subject to change
+1. Select a real Contact Sensor to monitor
+2. Ignore the motion sensors setting, it's currently not used
+3. Set Beep these devices on Entry Delay
+4. Set Beep these devices when this contact opens and system is disarmed
+5. Profile name should be set from the contact sensor name
+6. Click Next
+7. Set the Open Door warning settings
+8. Click Save
 
 [:arrow_up_small: Back to top](#top)
 <a name="keypadDH"></a>
@@ -233,6 +242,7 @@ To use the Iris V2's instant arming, no pin required, create a User profile with
 [:arrow_up_small: Back to top](#top)
 <a name="testing"></a>
 ## 13. Testing
+To be developed
 
 [:arrow_up_small: Back to top](#top)
 <a name="help"></a>
