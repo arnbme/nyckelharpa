@@ -119,6 +119,14 @@ Detailed instuctions for each step follow the Quick Setup Guide. Begin by clicki
 <a name="modefix"></a>
 ## 8. Modefix setup and usage
 
+Modefix processes HSM armState changes, and optionally sets the HSM mode. _It must be created even when the optional mode change data is empty._ 
+
+(Optional) For each armState set:
+* all valid modes for the armState
+* the default mode for the armState
+
+Caution: improper armState/mode choices, creates havoc with the system.
+
 [:arrow_up_small: Back to top](#top)
 <a name="talker"></a>
 ## 9. Talker messages
