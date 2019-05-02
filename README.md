@@ -46,19 +46,43 @@ This app is free and very much beta code. However, if you like it, derived benef
 ## 4. Installation
 
 There are five modules and an optional Keypad Device Handler (DH) associated with this app  
-	
-1. Nyckelharpa.         Parent module. Controls HSM forced arming from a keypad, and User pin verification. Required  
-
-2. Nyckelharpa Modefix. Adjusts HSM mode when HSM State changes, and forced arming from a non keypd source. Required
-
-3. Nyckelharpa Talker.  Creates security related output to TTS, speakers, Pushover, and SMS
-
-4. Nyckelharpa Contact. Controls some actions when a monitored contact sensor (door) opens
-
-5. Nyckelharpa User.    Maintains pins when using the user version of the Centralite Keypad DH.
-
-6. Centralite Keypad.   Keypad device handler for models: Centralite V2 and V3, and Iris V2
-
+ <table style="width:100%">
+  <tr>
+    <th>Module Name</th>
+    <th>Function</th>
+    <th>Required</th>
+  </tr>
+  <tr>
+    <td>Nyckelharpa</td>
+    <td>Parent module. Controls HSM forced arming from a keypad, and User pin verification</td>
+    <td>Yes</td>
+  </tr>
+  <tr>
+    <td>Nyckelharpa Modefix</td>
+    <td>Adjusts HSM mode when HSM State changes, and forced arming from a non keypd source</td>
+    <td>Yes</td>
+  </tr>
+  <tr>
+    <td>Nyckelharpa Talker</td>
+    <td>Creates security related output to TTS, speakers, Pushover, and SMS</td>
+    <td>Optional</td>
+  </tr>
+  <tr>
+    <td>Nyckelharpa Contact</td>
+    <td>Controls some actions when a monitored contact sensor (door) opens</td>
+    <td>Optional</td>
+  </tr>
+  <tr>
+    <td>Nyckelharpa User</td>
+    <td>Adjusts HSM mode when HSM State changes, and forced arming from a non keypd source</td>
+    <td>Optional</td>
+  </tr>
+  <tr>
+    <td>Centralite Keypad</td>
+    <td>Keypad device handler for models: Centralite V2 and V3, and Iris V2. Created and converted to HE by Mitch Pond</td>
+    <td>Optional</td>
+  </tr>
+</table> 
 * Using the link below, let's begin by installing the Nyckelharpa parent module into Hubitat (HE) from this Github repository. OAuth is not required and should be skipped. Should you want to used the Install's Import button each module's Github raw address is availabe at the beginning of the module.<br />
 https://docs.hubitat.com/index.php?title=How_to_Install_Custom_Apps <br />
 Then then install Modefix, Talker, Contact and User, ignore OAuth, and do not add these modules as User Apps.
@@ -117,5 +141,7 @@ Detailed instuctions for each step follow the Quick Setup Guide. Begin by clicki
 [:arrow_up_small: Back to top](#top)
 <a name="help"></a>
 ## 14. Get Help, report an issue, and contact information
+* Post requests for assistance, or to report an issue, on the HE Community's Nyckelharpa forum. Private messages may be directed to @arnbme on the HE community site.
+
 
 [:arrow_up_small: Back to top](#top)
