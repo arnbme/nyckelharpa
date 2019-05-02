@@ -22,6 +22,7 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  * 
+ *	May 02, 2019 v0.0.8	Fix missing spaces on valid and invalid pin messages
  *	Apr 30, 2019 v0.0.7	Do not create child devices when globalChildPrefix is null
  *	Apr 30, 2019 v0.0.7	Change method used to delete child devices to catch all of them
  *	Apr 28, 2019 v0.0.6	When arming Panic, close all child contacts, stop talker speaking panic is closed
@@ -166,7 +167,7 @@ preferences {
 
 def version()
 	{
-	return "0.0.7";
+	return "0.0.8";
 	}
 def main()
 	{
@@ -245,8 +246,8 @@ def main()
 			}	
 		section
 			{
-			href (url: "https://community.smartthings.com/t/release-shm-delay-version-2-0/121800",
-			title: "Smartapp Documentation",
+			href (url: "https://github.com/arnbme/nyckelharpa/blob/master/README.md",
+			title: "Documentation",
 			style: "external")
 			}
 		section
@@ -463,7 +464,7 @@ def keypadCodeHandler(evt)
 //	logdebug("Delayv2 codeentryhandler searching user apps for keypad ${keypad.displayName} ${evt.data} ${evt.value}")
 	def userName=false;
 	def badPin=true;
-	def badPin_message = keypad.displayName + "\nInvalid pin: " + codeEntered
+	def badPin_message = keypad.displayName + "Invalid pin entered: " + codeEntered
 	def error_message=""
 	def info_message=""
 	def pinKeypadsOK=false;
@@ -748,7 +749,7 @@ def keypadCodeHandler(evt)
 //	atomicState.badpins=0		//reset badpin count
 	def HSMarmModes=['disarm','armHome','armNight','armAway']
 	def armModes=['Home','Stay','Night','Away']
-	def message = keypad.displayName + "set HSM State to " + HSMarmModes[modeEntered] + "with pin for " + userName
+	def message = keypad.displayName + " set HSM State to " + HSMarmModes[modeEntered] + " with pin for " + userName
 	def aMap = [data: [codeEntered: codeEntered, armMode: armModes[modeEntered]]]
 	def mf
 	def am
