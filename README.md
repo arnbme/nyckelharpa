@@ -122,6 +122,8 @@ Global Settings is reached by: clicking Apps in the menu, then click the Nyckelh
 
 4. Set any Pushover messaging devices
 
+5. _When finished, click Next, the click Save
+
 [:arrow_up_small: Back to top](#top)
 
 <a name="adjustHSM"></a>
