@@ -183,6 +183,12 @@ User pin profiles are required when using this DH
 <a name="userpin"></a>
 ## 12. User pin Profiles
 
+When using the app's keypad DH,  User pin profiles must be created for each valid pin code.
+
+Pin codes may be restricted by date/time, use count (burnable pins), and keypad device
+
+To use the Iris V2's instant arming, no pin required, create a User profile with pin code 0000. It is not accepted for OFF
+
 [:arrow_up_small: Back to top](#top)
 <a name="testing"></a>
 ## 13. Testing
