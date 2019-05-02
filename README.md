@@ -247,6 +247,6 @@ To be developed
 [:arrow_up_small: Back to top](#top)
 <a name="help"></a>
 ## 14. Get Help, report an issue, and contact information
-* Use the the HE Community's Nyckelharpa forum to request assistance, or to report an issue. Direct private messages to user @arnbme
+* Use the HE Community's Nyckelharpa forum to request assistance, or to report an issue. Direct private messages to user @arnbme
 
 [:arrow_up_small: Back to top](#top)
