@@ -44,7 +44,7 @@ This app is free and very much beta code. However, if you like it, derived benef
 <a name="install"></a>
 ## 4. Installation
 
-There are five modules and an optional Keypad Device Handler (DH) associated with this app  
+There are four modules and an optional Keypad Device Handler (DH) associated with this app  
  <table style="width:100%">
   <tr>
     <th>Module Name</th>
