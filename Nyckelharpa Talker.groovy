@@ -26,6 +26,7 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *	May 02, 2019 v0.0.5 Fix error displaying Open and Close messages as Null
  *	Apr 28, 2019 v0.0.4 Add open contacts messages
  *	Apr 25, 2019 v0.0.3 When HSM cancels arming due to open doors set keypad to off (for 100% accuracy should be last state).
  *	Apr 24, 2019 v0.0.2 Restore ArmCancel message code.
@@ -58,7 +59,7 @@ definition(
 
 def version()
 	{
-	return "0.0.2";
+	return "0.0.5";
 	}
 
 preferences {
@@ -188,18 +189,18 @@ def pageTwo(error_data)
 			if (theContactOpenMsg)
 				{
 				if (theOpenMsgChimes)
-					paragraph "The Open Contact Message:\n(Chime) ${theContactMsg}"
+					paragraph "The Open Contact Message:\n(Chime) ${theContactOpenMsg}"
 				else
-					paragraph "The Open Contact Message:\n${theContactMsg}"
+					paragraph "The Open Contact Message:\n${theContactOpenMsg}"
 				}	
 			else	
 				paragraph "The Open Contact Message is not defined"
 			if (theContactClosedMsg)
 				{
 				if (theClosedMsgChimes)
-					paragraph "The Closed Contact Message:\n(Chime) ${theContactMsg}"
+					paragraph "The Closed Contact Message:\n(Chime) ${theContactClosedMsg}"
 				else
-					paragraph "The Closed Contact Message:\n${theContactMsg}"
+					paragraph "The Closed Contact Message:\n${theContactClosedMsg}"
 				}	
 			else	
 				paragraph "The Closed Contact Message is not defined"
