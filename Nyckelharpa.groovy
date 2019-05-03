@@ -82,7 +82,7 @@ preferences {
 
 def version()
 	{
-	return "0.0.9";
+	return "0.1.0";
 	}
 def main()
 	{
@@ -117,10 +117,10 @@ def main()
     			{
   				href(name: 'toglobalsPage', page: 'globalsPage', title: 'Globals Settings')
 				}	
-			section 
-				{
-				app(name: "EntryDelayProfile", appName: "Nyckelharpa Contact", namespace: "arnbme", title: "Create A New Delay Profile", multiple: true)
-				}
+//			section 
+//				{
+//				app(name: "EntryDelayProfile", appName: "Nyckelharpa Contact", namespace: "arnbme", title: "Create A New Delay Profile", multiple: true)
+//				}
 			section
 				{
 				if (globalFixMode && modeFixChild == "Create")
@@ -131,6 +131,10 @@ def main()
 					{
 					app(name: "ModeFixProfile", appName: "Nyckelharpa ModeFix", namespace: "arnbme", title: "${fixtitle}", multiple: false)
 					}	
+				}
+			section 
+				{
+				app(name: "TalkerProfile", appName: "Nyckelharpa Talker", namespace: "arnbme", title: "Create A New Talker Profile", multiple: true)
 				}
 			if (globalKeypadDevices)
 				{
@@ -143,10 +147,6 @@ def main()
 //					app(name: "SimKypdProfile", appName: "Nyckelharpa Simkypd", namespace: "arnbme", title: "Create A New Sim Keypad Profile", multiple: true)
 //					}
 				}	
-			section 
-				{
-				app(name: "TalkerProfile", appName: "Nyckelharpa Talker", namespace: "arnbme", title: "Create A New Talker Profile", multiple: true)
-				}
 			}
 		else
 			{
