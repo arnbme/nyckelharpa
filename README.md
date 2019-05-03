@@ -12,11 +12,10 @@
 [&ensp;7. Adjust HSM Settings](#adjustHSM)<br />
 [&ensp;8. Modefix Setup and Usage](#modefix)<br />
 [&ensp;9. Talker messages](#talker)<br />
-[10. Contact Profiles](#contact)<br />
-[11. Keypad Device Handler](#keypadDH)<br />
-[12. User/Pin Profiles](#userpin)<br />
-[13. Testing](#testing)<br />
-[14. Get Help, report an issue, or contact information](#help)
+[10. Keypad Device Handler](#keypadDH)<br />
+[11. User/Pin Profiles](#userpin)<br />
+[12. Testing](#testing)<br />
+[13. Get Help, report an issue, or contact information](#help)
 <a name="purpose"></a>
 ## 1. Purpose
 Nyckepharpa is a user created Hubitat Home Security Monitor (HSM) extension, providing features not available in HSM. Additionally, it simplifies setting up security related messaging. 
@@ -68,11 +67,6 @@ There are five modules and an optional Keypad Device Handler (DH) associated wit
     <td>Optional</td>
   </tr>
   <tr>
-    <td>Nyckelharpa Contact</td>
-    <td>Controls some actions when a monitored contact sensor (door) opens</td>
-    <td>Optional</td>
-  </tr>
-  <tr>
     <td>Nyckelharpa User</td>
     <td>Maintains User pin codes when using the app's Centralite Keypad DH</td>
     <td>Optional</td>
@@ -102,8 +96,7 @@ Detailed instuctions for each step follow the Quick Setup Guide. Begin by clicki
 2. Adjust HSM's settings
 3. Create the Modefix profile
 4. Optionally create a Talker profile
-5. Optionally create one or more Contact profiles
-6. Optionally set a one or more existing keypad devices to use the user provided Centralite Driver, then add one or more User pin profiles 
+5. Optionally set a one or more existing keypad devices to use the user provided Centralite Driver, then add one or more User pin profiles 
 
 [:arrow_up_small: Back to top](#top)
 
@@ -117,12 +110,14 @@ Global Settings is reached by: clicking Apps in the menu, then click the Nyckelh
 2. For each armState select real contact sensor devices that allow HSM arming when the device is Open.
 * _When Global Settings is saved, it generates child Virtual Contact Sensor named NCKL-contact-sensor-name that must be used to Adjust HSM Settings for Forced HSM Arming
 * Specify one or more destinations for "arming cancled contact open" and "arming forced messages: Pushover, SMS, Talk
+3. Select any contact to be monitored for Open / Close that were not selected for Forced HSM Arming
 
-3. Set the Virtual Child Device prefix, Default NCKL. Once set, it displays but cannot be changed.
+4. Select any alarms and beeps as required
+5. Set the Virtual Child Device prefix, Default NCKL. Once set, it displays but cannot be changed.
 
-4. Set any Pushover messaging devices
+6. Set any Pushover messaging devices
 
-5. *When finished, click Next, then click Done*
+7. *When finished, click Next, then click Done*
 
 [:arrow_up_small: Back to top](#top)
 
@@ -207,21 +202,8 @@ Table with Reason Issued and Message Issued.
   </table>
 
 [:arrow_up_small: Back to top](#top)
-<a name="contact"></a>
-## 10. Contact Profiles
-This is still in the Alpha stage of development and is subject to change
-1. Select a real Contact Sensor to monitor
-2. Ignore the motion sensors setting, it's currently not used
-3. Set Beep these devices on Entry Delay
-4. Set Beep these devices when this contact opens and system is disarmed
-5. Profile name is created from the contact sensor name
-6. *Click Next*
-7. Set the Open Door warning settings
-8. *Click Save*
-
-[:arrow_up_small: Back to top](#top)
 <a name="keypadDH"></a>
-## 11. Keypad Device Handler
+## 10. Keypad Device Handler
 
 The app's Keypad Device Handler was created by Mitch Pond on SmartThings where it is still used by a few Smartapps including SHM Delay. With Mitch's assistance and Zigbee skills it was ported to HE, then I added the Alarm capability that sounds a fast high pitch tone until set off on the Iris V2, and beeps for 255 seconds on the Centralite. 
 
@@ -231,7 +213,7 @@ User pin profiles are required when using this DH
 
 [:arrow_up_small: Back to top](#top)
 <a name="userpin"></a>
-## 12. User pin Profiles
+## 11. User pin Profiles
 
 When using the app's keypad DH,  User pin profiles must be created for each valid pin code.
 
@@ -241,12 +223,12 @@ To use the Iris V2's instant arming, no pin required, create a User profile with
 
 [:arrow_up_small: Back to top](#top)
 <a name="testing"></a>
-## 13. Testing
+## 12. Testing
 To be developed
 
 [:arrow_up_small: Back to top](#top)
 <a name="help"></a>
-## 14. Get Help, report an issue, and contact information
+## 13. Get Help, report an issue, and contact information
 * Use the HE Community's Nyckelharpa forum to request assistance, or to report an issue. Direct private messages to user @arnbme
 
 [:arrow_up_small: Back to top](#top)
