@@ -134,6 +134,10 @@ def pageOne()
 				title: "Speaker Devices?"
 			input "theVolume", "number", required: true, range: "1..100", defaultValue: 40,
 				title: "Speaker Volume Level from 1 to 100"
+			if (parent.sendPushMessage)
+				paragraph "Pushover messages sent to devices: ${sendPushMessage}"
+			else	
+				paragraph "Pushover messaging is inactive"
 			}
 		}
 	}	
