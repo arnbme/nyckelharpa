@@ -1,4 +1,4 @@
-/**
+/** DEPRECATED DO NOT INSTALL
  *  Update Url:   https://raw.githubusercontent.com/arnbme/nyckelharpa/master/Nyckelharpa%20Contact.groovy
  * 
  *  Nyckelharpa Contact sensor monitor 
