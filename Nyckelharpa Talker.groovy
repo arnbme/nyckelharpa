@@ -26,6 +26,7 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *	May 03, 2019 v0.0.6 Move hsmAlert subscribe to Nyckelharpa to handle siren chirps and make this module truly optional
  *	May 02, 2019 v0.0.5 Fix error displaying Open and Close messages as Null
  *	Apr 28, 2019 v0.0.4 Add open contacts messages
  *	Apr 25, 2019 v0.0.3 When HSM cancels arming due to open doors set keypad to off (for 100% accuracy should be last state).
@@ -59,7 +60,7 @@ definition(
 
 def version()
 	{
-	return "0.0.5";
+	return "0.0.6";
 	}
 
 preferences {
@@ -256,24 +257,7 @@ def updated() {
 }
 
 def initialize() {
-	subscribe(location, "hsmAlert", alertHandler)
 	subscribe(location, "Nyckelharpatalk", TalkerHandler)
-	}
-
-def alertHandler(evt)
-	{
-	logdebug("alertHandler entered, event: ${evt.value}")
-	if (['intrusion-delay','intrusion-home-delay','intrusion-night-delay'].contains(evt.value))
-		{
-		parent.globalKeypadDevices.setEntryDelay(evt.jsonData.seconds)
-		TalkerHandler([value: 'entryDelay', data: evt.jsonData.seconds])
-		}
-	else
-	if (evt.value == 'arming' && parent.globalKeypadDevices)		//failed to alert due to open contact
-		{
-		runInMillis(500, delaysetDisarmed)
-		runInMillis(1200, delayBeep)
-		}
 	}
 
 def TalkerHandler(evt)
@@ -412,16 +396,6 @@ def ttsDelay(map)
 	{
 	theTTS.speak(map.tts)
 	}
-
-def delayBeep()
-	{
-	parent.globalKeypadDevices.beep(2)		
-	}	
-
-def delaysetDisarmed()
-	{
-	parent.globalKeypadDevices.setDisarmed()
-	}	
 
 def logdebug(txt)
 	{

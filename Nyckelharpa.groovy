@@ -6,7 +6,7 @@
  *		Acts as a container/controller for Child modules
  *		Process all Keypad activity
  * 
- *  Copyright 2017 Arn Burkhoff
+ *  Copyright 2017-2019 Arn Burkhoff
  * 
  * 	Changes to Apache License
  *	4. Redistribution. Add paragraph 4e.
@@ -22,6 +22,9 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  * 
+ *	May 03, 2019 v0.1.0	Add Beepers and Sirens from deprecated contact module, move alarm state subscribe from talker to here
+ *	May 03, 2019 v0.1.0	Rearrange sections, place globalSettings as  top profile
+ *	May 02, 2019 v0.1.0	Add other devices to monitor for open / close to globalContacts
  *	May 02, 2019 v0.0.9	Cleanup and prepare for release
  *	May 02, 2019 v0.0.8	Fix missing spaces on valid and invalid pin messages
  *	Apr 30, 2019 v0.0.7	Do not create child devices when globalChildPrefix is null
@@ -110,9 +113,24 @@ def main()
 				input "logDebugs", "bool", required: false, defaultValue:false,
 					title: "Log debugging messages? Nyckelharpa module only. Normally off/false"
 				}
+			section
+    			{
+  				href(name: 'toglobalsPage', page: 'globalsPage', title: 'Globals Settings')
+				}	
 			section 
 				{
 				app(name: "EntryDelayProfile", appName: "Nyckelharpa Contact", namespace: "arnbme", title: "Create A New Delay Profile", multiple: true)
+				}
+			section
+				{
+				if (globalFixMode && modeFixChild == "Create")
+					{
+					app(name: "ModeFixProfile", appName: "Nyckelharpa ModeFix", namespace: "arnbme", title: "${fixtitle}", multiple: false)
+					}	
+				else
+					{
+					app(name: "ModeFixProfile", appName: "Nyckelharpa ModeFix", namespace: "arnbme", title: "${fixtitle}", multiple: false)
+					}	
 				}
 			if (globalKeypadDevices)
 				{
@@ -128,21 +146,6 @@ def main()
 			section 
 				{
 				app(name: "TalkerProfile", appName: "Nyckelharpa Talker", namespace: "arnbme", title: "Create A New Talker Profile", multiple: true)
-				}
-			section
-    			{
-  				href(name: 'toglobalsPage', page: 'globalsPage', title: 'Globals Settings')
-				}	
-			section
-				{
-			if (globalFixMode && modeFixChild == "Create")
-				{
-				app(name: "ModeFixProfile", appName: "Nyckelharpa ModeFix", namespace: "arnbme", title: "${fixtitle}", multiple: false)
-				}	
-			else
-				{
-				app(name: "ModeFixProfile", appName: "Nyckelharpa ModeFix", namespace: "arnbme", title: "${fixtitle}", multiple: false)
-				}	
 				}
 			}
 		else
@@ -212,36 +215,63 @@ def globalsPage()
 						title: "Send Invalid Bad Pin text message to this number. For multiple SMS recipients, separate phone numbers with a pound sign(#), or semicolon(;)"
 					}
 				}	
-			paragraph "<b>Allow the following contacts to remain open when Arming HSM. Each contact generates a Virtual Contact Sensor that must be set in HSM following directions in section 7 of the Github Readme.md file.</b>"
+			paragraph "<b>Allow the following contacts to remain open when Arming HSM. Each contact generates a Virtual Contact Sensor that must be set in HSM following directions in section 7 of the Github Readme.md file. These contacts also generate Open and Close messages</b>"
 			input "globalAwayContacts", "capability.contactSensor", required: false, submitOnChange: true, multiple: true,
-				title: "(Optional!) Contact Sensors that must be closed prior to arming Away. Remove from HSM!"
+				title: "(Optional!) Contact Sensors that should be closed prior to arming Away"
 			if (globalAwayContacts)
 				{
 				input (name: "globalAwayNotify", type:"enum", required: false, options: ["Pushover Msg", "SMS","Talk"],multiple:true,
 					title: "How to notify contact is open when arming Away")
 				}
 			input "globalHomeContacts", "capability.contactSensor", required: false, submitOnChange: true, multiple:true,
-				title: "(Optional!) Contact sensors that must be closed prior to arming Home (Stay). Remove from HSM!"
+				title: "(Optional!) Contact sensors that should be closed prior to arming Home (Stay)!"
 			if (globalHomeContacts)
 				{
 				input (name: "globalHomeNotify", type:"enum", required: false, options: ["PushOver Msg", "SMS","Talk"],multiple:true,
 					title: "How to notify contact is open arming Home (Stay)")
 				}
 			input "globalNightContacts", "capability.contactSensor", required: false, submitOnChange: true, multiple:true,
-				title: "(Optional!) Contact sensors that must be closed prior to arming Night. Remove from HSM!"
+				title: "(Optional!) Contact sensors that should be closed prior to arming Night"
 			if (globalNightContacts)
 				{
 				input (name: "globalNightNotify", type:"enum", required: false, options: ["PushOver Msg", "SMS","Talk"],multiple:true,
 					title: "How to notify contact is open arming Night")
 				}
-//			if (!state.configured)
-//				{
+			paragraph "<b>Other Open/Close contacts not specified above to monitor for Open and Close Messages only. Do not select the Child Virtual Contact Sensors. These contacts do not generate a child device.</b>"
+			input "globalOtherContacts", "capability.contactSensor", required: false, submitOnChange: true, multiple:true,
+				title: "(Optional!) Other Contact sensors not selected above to monitor for Open and Close messages"
+			if (globalOtherContacts)
+				{
+				input (name: "globalOtherNotify", type:"enum", required: false, options: ["PushOver Msg", "SMS","Talk"],multiple:true,
+					title: "How to notify when these contacts are open or closed")
+				}
+/*			This seems redundant and useless in HE, HSM cant arm with open contacts,
+ *			and we already give a warning prior to forced arming.
+ *			Leaving this here just in case, but if code is needed it is in SHM Delay Child			
+ *
+ *			paragraph "<b>For all monitored contact sensors, when system is armed and 'Maximum number of open door warning messages' is greater than 0: controls how many times and how often, system issues message 'Warning %device is open'</b>"
+ *			input "globalOpenCycles", "number", required: false, range: "0..99", submitOnChange: true,
+ *				title: "Maximum number of open door warning messages from 0 to 99 when system is armed"
+ *			if (globalOpenCycles && globalOpenCycles>0)	
+ *				{
+ *				input "globalOpenMsgDelay", "number", required: false, range: "1..15", defaultValue: 1,
+ *					title: "Number of minutes between open door messages from 1 to 15"  	
+ *				input (name: "globalOpenNotify", type:"enum", required: false, options: ["PushOver Msg", "SMS","Talk"],multiple:true,
+ *					title: "How to notify when these contacts remain open")
+ *				}	
+ */	
+			input "globalAlarmDevices", "capability.alarm", required: false, multiple: true,
+				title: "(Optional!) Beep these alarm devices when entry delay begins. Originally designed to beep a siren as a warning"
+			input "globalBeeperDevices", "capability.tone", required: false, multiple: true,
+				title: "(Optional!) Beep/Chime these devices when any monitored contact sensor opens, and arm state is disarmed"
+			if (!state.configured)
+				{
 				input "globalChildPrefix", "text", title:"Simulated Device Prefix. Simulated device names used with Forced HSM Arming, and the simulaed Panic Contact, start with this prefix.\n\nThe prefix must start with a letter and the only supported characters are letters, numbers and hyphens.\n\nThis setting can't be changed once you leave this screen.",
 					description: "Simulated Device Prefix",
 					defaultValue: 'NCKL', required: true
-//				}
-//			else
-//				paragraph "Simulated Device Prefix: ${globalChildPrefix}. (Remove app to reset)"
+				}
+			else
+				paragraph "Simulated Device Prefix: ${globalChildPrefix}. (Remove app to reset)"
 			input "sendPushMessage", "capability.notification", title: "Devices receiving Pushover notifications", multiple: true, required: false
 			}
 		}
@@ -272,9 +302,21 @@ def initialize()
 			if (it.hasCommand("disableInvalidPinLogging"))
 				it.disableInvalidPinLogging(true)
 			}
+		subscribe(location, "hsmAlert", alertHandler)
 		}
 //	subscribe(location, "hsmStatus", verify_version)	//kill for now
 //	verify_version("dummy_evt")
+
+ 	if (globalOtherContacts)
+		{
+		subscribe(globalOtherContacts,"contact.open", openMonitorDoorHandler)
+		subscribe(globalOtherContacts,"contact.closed", closeMonitorDoorHandler)
+		globalHomeContacts?.each
+			{
+			addNewChildDevice(it, 'Virtual Contact Sensor')
+			}
+		}
+
 
 /*
  *		Maintain Child Devices
@@ -1514,8 +1556,36 @@ def openDoorHandler(evt)
 			displayed: true, descriptionText: "${evt.displayName} is open", linkText: "${evt.displayName} is open",
 			data: "${evt.displayName}"]	
 		sendLocationEvent(locevent)
+		if (globalBeeperDevices)
+			globalBeeperDevices.beep()
 		}
 	}
+
+def openMonitorDoorHandler(evt)		//monitored only no child device
+	{
+	logdebug "openMonitoredDoorHandler entered ${evt?.displayName} ${evt?.value} ${evt?.deviceId}"
+	if (location.hsmStatus=='disarmed' || location.hsmStatus == 'allDisarmed')
+		{
+		def locevent = [name:"Nyckelharpatalk", value: "contactOpenMsg", isStateChange: true,
+			displayed: true, descriptionText: "${evt.displayName} is open", linkText: "${evt.displayName} is open",
+			data: "${evt.displayName}"]	
+		sendLocationEvent(locevent)
+		if (globalBeeperDevices)
+			globalBeeperDevices.beep()
+		}
+	}
+
+def closeMonitorDoorHandler(evt)
+	{
+	logdebug "closeMonitorDoorHandler entered ${evt?.displayName} ${evt?.value} ${evt?.deviceId}"
+	if (location.hsmStatus=='disarmed' || location.hsmStatus == 'allDisarmed')
+		{
+		def locevent = [name:"Nyckelharpatalk", value: "contactClosedMsg", isStateChange: true,
+			displayed: true, descriptionText: "${evt.displayName} is closed", linkText: "${evt.displayName} is closed",
+			data: "${evt.displayName}"]	
+		sendLocationEvent(locevent)
+		}
+	}	
 
 def closePanicContact()
 	{
@@ -1526,3 +1596,51 @@ def openPanicContact()
 	{
 	getChildDevice("${globalChildPrefix}Panic Id").open()
 	}
+	
+
+def alertHandler(evt)
+	{
+	logdebug("alertHandler entered, event: ${evt.value}")
+	if (['intrusion-delay','intrusion-home-delay','intrusion-night-delay'].contains(evt.value))
+		{
+		if (globalKeypadDevices)
+			globalKeypadDevices.setEntryDelay(evt.jsonData.seconds)
+		def locevent = [name:"Nyckelharpatalk", value: "entryDelay", isStateChange: true,
+			displayed: true, descriptionText: "Issue enrty delay talk event", linkText: "Issue entry delay talk event",
+			data: evt.jsonData.seconds]
+		sendLocationEvent(locevent)
+		if (globalAlarmDevices)
+			{
+			globalAlarmDevices.each
+				{
+				if (it.hasCommand("beep"))
+					{
+//					it.beep([delay: 2000])		//have to figure out how to do this type of delay in HE
+					it.beep()					
+					}
+/*				else
+					{
+					it.off([delay: 2500])		//double off the siren to hopefully shut it, same issue here in HE
+					it.siren([delay: 2000])	
+					it.off([delay: 2250])
+					}
+*/				}
+			}
+		}	
+	else
+	if (evt.value == 'arming' && globalKeypadDevices)		//failed to alert due to open contact
+		{
+		runInMillis(500, delaysetDisarmed)
+		runInMillis(1200, delayBeep)
+		}
+	}
+def delayBeep()
+	{
+	globalKeypadDevices.beep(2)		
+	}	
+
+def delaysetDisarmed()
+	{
+	globalKeypadDevices.setDisarmed()
+	}	
+	
