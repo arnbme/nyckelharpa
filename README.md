@@ -1,7 +1,7 @@
 <a name="top"></a>
 # Nyckelharpa
 ![image nyckelharpa](images/nyckelharpa.jpg)<br /> 
-**The buttons and levers controlling Hubitat Elevation's, Home Security Monitor's strings.** 
+**The buttons and levers controlling Hubitat Elevation's Home Security Monitor's strings.** 
 ## Table of Contents 
 [&ensp;1. Purpose](#purpose)<br />
 [&ensp;2. Features](#features)<br />
@@ -26,10 +26,9 @@ Nyckepharpa is a user created Hubitat Home Security Monitor (HSM) extension, pro
 ## 2. Features
 
 * Under user control, forces HSM arming when a contact is open.<br /> 
-Why is this needed? HSM does not arm the system when a contact is open. Examples:<br />It's 1AM, you want to arm the system for night, but a contact is broken.<br /> 
-You are away from home, forgot to arm the system, and when you try, oops the back door is open. 
+Why is this needed? HSM does not arm the system when a contact is open. Examples:<br />It's 1AM, you want to arm the system for night, but a contact is broken.<br /> You are away from home, forgot to arm the system, and when you try, oops the back door is open. 
 * Adjusts HSM's mode when HSM's arm state changes. (HSM adjusts HSM's arm state when the mode changes)
-* Provides an easy to use security related message control center with output to TTS, Speakers, Pushover, and SMS
+* Provides an easy to use security related message control center with output to TTS, Speakers, and Pushover
 
 * Keypads: Centralite V2 and V3, and Iris V2 devices may use a ported version of Mitch Pond's Keypad DH making he keypad function as it did in SmartThings with the SHM Delay App, and it uses an easy to use Pin maintenance module with available use count, time. and devices restrictions.
 
@@ -63,7 +62,7 @@ There are four modules and an optional Keypad Device Handler (DH) associated wit
   </tr>
   <tr>
     <td>Nyckelharpa Talker</td>
-    <td>Creates security related output to TTS, speakers, Pushover, and SMS</td>
+    <td>Creates security related output to TTS, speakers, Pushover</td>
     <td>Optional</td>
   </tr>
   <tr>
@@ -229,6 +228,6 @@ To be developed
 [:arrow_up_small: Back to top](#top)
 <a name="help"></a>
 ## 13. Get Help, report an issue, and contact information
-* Use the HE Community's Nyckelharpa forum to request assistance, or to report an issue. Direct private messages to user @arnbme
+* Use the HE Community's Nyckelharpa forum to request assistance, or to report an issue. Direct private messages to user @arnb
 
 [:arrow_up_small: Back to top](#top)
