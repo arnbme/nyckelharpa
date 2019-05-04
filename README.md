@@ -228,6 +228,6 @@ To be developed
 [:arrow_up_small: Back to top](#top)
 <a name="help"></a>
 ## 13. Get Help, report an issue, and contact information
-* Use the HE Community's Nyckelharpa forum to request assistance, or to report an issue. Direct private messages to user @arnb
+* [Use the HE Community's Nyckelharpa forum](https://community.hubitat.com/t/release-nyckelharpa/15062) to request assistance, or to report an issue. Direct private messages to user @arnb
 
 [:arrow_up_small: Back to top](#top)
