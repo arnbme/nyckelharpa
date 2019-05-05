@@ -27,7 +27,7 @@ Nyckepharpa is a user created Hubitat Home Security Monitor (HSM) extension, pro
 
 * Under user control, forces HSM arming when a contact is open.<br /> 
 Why is this needed? HSM does not arm the system when a contact is open. Examples:<br />It's 1AM, you want to arm the system for night, but a contact is broken.<br /> You are away from home, forgot to arm the system, and when you try, oops the back door is open. 
-* Adjusts HSM's mode when HSM's arm state changes. (HSM adjusts HSM's arm state when the mode changes)
+* Adjusts Hubitat's mode when HSM's arm state changes. (HSM adjusts HSM's arm state when the mode changes)
 * Provides an easy to use security related message control center with output to TTS, Speakers, and Pushover
 
 * Keypads: Centralite V2 and V3, and Iris V2 devices may use a ported version of Mitch Pond's Keypad DH making he keypad function as it did in SmartThings with the SHM Delay App, and it uses an easy to use Pin maintenance module with available use count, time. and devices restrictions.
@@ -138,7 +138,7 @@ Creating and saving Nyckelharpa's Global Settings generates one or more child Vi
 <a name="modefix"></a>
 ## 8. Modefix setup and usage
 
-Modefix processes HSM armState changes, and optionally sets the HSM mode. _It must be created even when the optional mode change data is empty._ 
+Modefix processes HSM armState changes, and optionally sets the Hubitat HSM mode. _It must be created even when the optional mode change data is empty._ 
 
 (Optional) For each armState set:
 * all valid modes for the armState
