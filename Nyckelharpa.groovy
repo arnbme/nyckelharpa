@@ -22,6 +22,7 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  * 
+ *	May 06, 2019 v0.1.1	Change subscibe from contact.open/close to contact reducing system overhead
  *	May 03, 2019 v0.1.0	Add Beepers and Sirens from deprecated contact module, move alarm state subscribe from talker to here
  *	May 03, 2019 v0.1.0	Rearrange sections, place globalSettings as  top profile
  *	May 02, 2019 v0.1.0	Add other devices to monitor for open / close to globalContacts
@@ -82,7 +83,7 @@ preferences {
 
 def version()
 	{
-	return "0.1.0";
+	return "0.1.1";
 	}
 def main()
 	{
@@ -309,8 +310,7 @@ def initialize()
 
  	if (globalOtherContacts)
 		{
-		subscribe(globalOtherContacts,"contact.open", openMonitorDoorHandler)
-		subscribe(globalOtherContacts,"contact.closed", closeMonitorDoorHandler)
+		subscribe(globalOtherContacts,"contact", MonitorDoorHandler)
 		globalHomeContacts?.each
 			{
 			addNewChildDevice(it, 'Virtual Contact Sensor')
@@ -327,8 +327,7 @@ def initialize()
 	state.configured = true			//locks the device prefix value so it cant be changed
  	if (globalAwayContacts)
 		{
-		subscribe(globalAwayContacts,"contact.open", openDoorHandler)
-		subscribe(globalAwayContacts,"contact.closed", closeDoorHandler)
+		subscribe(globalAwayContacts,"contact", DoorHandler)
 		globalAwayContacts?.each
 			{
 			addNewChildDevice(it, 'Virtual Contact Sensor')
@@ -336,8 +335,7 @@ def initialize()
 		}
  	if (globalHomeContacts)
 		{
-		subscribe(globalHomeContacts,"contact.open", openDoorHandler)
-		subscribe(globalHomeContacts,"contact.closed", closeDoorHandler)
+		subscribe(globalHomeContacts,"contact", DoorHandler)
 		globalHomeContacts?.each
 			{
 			addNewChildDevice(it, 'Virtual Contact Sensor')
@@ -345,8 +343,7 @@ def initialize()
 		}
  	if (globalNightContacts)
 		{
-		subscribe(globalNightContacts,"contact.open", openDoorHandler)
-		subscribe(globalNightContacts,"contact.closed", closeDoorHandler)
+		subscribe(globalNightContacts,"contact", DoorHandler)
 		globalNightContacts?.each
 			{
 			addNewChildDevice(it, 'Virtual Contact Sensor')
@@ -1533,59 +1530,56 @@ def deleteOldChildDevice(deviceData)
      	deleteChildDevice("$globalChildPrefix${deviceData.id}")
 	}
 	
-def closeDoorHandler(evt)
+def DoorHandler(evt)		//with child device
 	{
-	logdebug "closeDoorHandler entered ${evt?.displayName} ${evt?.value} ${evt?.deviceId}"
-	getChildDevice("$globalChildPrefix${evt.deviceId}").close()
+	logdebug "DoorHandler entered ${evt?.displayName} ${evt?.value} ${evt?.deviceId}"
 	if (location.hsmStatus=='disarmed' || location.hsmStatus == 'allDisarmed')
 		{
-		def locevent = [name:"Nyckelharpatalk", value: "contactClosedMsg", isStateChange: true,
-			displayed: true, descriptionText: "${evt.displayName} is closed", linkText: "${evt.displayName} is closed",
-			data: "${evt.displayName}"]	
-		sendLocationEvent(locevent)
-		}
-	}	
-	
-def openDoorHandler(evt)
-	{
-	logdebug "openDoorHandler entered ${evt?.displayName} ${evt?.value} ${evt?.deviceId}"
-	getChildDevice("$globalChildPrefix${evt.deviceId}").open()		//open the child device
-	if (location.hsmStatus=='disarmed' || location.hsmStatus == 'allDisarmed')
-		{
-		def locevent = [name:"Nyckelharpatalk", value: "contactOpenMsg", isStateChange: true,
-			displayed: true, descriptionText: "${evt.displayName} is open", linkText: "${evt.displayName} is open",
-			data: "${evt.displayName}"]	
-		sendLocationEvent(locevent)
-		if (globalBeeperDevices)
-			globalBeeperDevices.beep()
-		}
+		if (evt.value=='open')
+			{
+			getChildDevice("$globalChildPrefix${evt.deviceId}").open()		//open the child device
+			def locevent = [name:"Nyckelharpatalk", value: "contactOpenMsg", isStateChange: true,
+				displayed: true, descriptionText: "${evt.displayName} is open", linkText: "${evt.displayName} is open",
+				data: "${evt.displayName}"]	
+			sendLocationEvent(locevent)
+			if (globalBeeperDevices)
+				globalBeeperDevices.beep()
+			}
+		else
+			{
+			getChildDevice("$globalChildPrefix${evt.deviceId}").close()
+			def locevent = [name:"Nyckelharpatalk", value: "contactClosedMsg", isStateChange: true,
+				displayed: true, descriptionText: "${evt.displayName} is closed", linkText: "${evt.displayName} is closed",
+				data: "${evt.displayName}"]	
+			sendLocationEvent(locevent)
+			}
+		}	
 	}
 
-def openMonitorDoorHandler(evt)		//monitored only no child device
+def MonitorDoorHandler(evt)		//monitored only no child device
 	{
-	logdebug "openMonitoredDoorHandler entered ${evt?.displayName} ${evt?.value} ${evt?.deviceId}"
+	logdebug "MonitoredDoorHandler entered ${evt?.displayName} ${evt?.value} ${evt?.deviceId}"
 	if (location.hsmStatus=='disarmed' || location.hsmStatus == 'allDisarmed')
 		{
-		def locevent = [name:"Nyckelharpatalk", value: "contactOpenMsg", isStateChange: true,
-			displayed: true, descriptionText: "${evt.displayName} is open", linkText: "${evt.displayName} is open",
-			data: "${evt.displayName}"]	
-		sendLocationEvent(locevent)
-		if (globalBeeperDevices)
-			globalBeeperDevices.beep()
-		}
-	}
+		if (evt.value=='open')
+			{
+			def locevent = [name:"Nyckelharpatalk", value: "contactOpenMsg", isStateChange: true,
+				displayed: true, descriptionText: "${evt.displayName} is open", linkText: "${evt.displayName} is open",
+				data: "${evt.displayName}"]	
+			sendLocationEvent(locevent)
+			if (globalBeeperDevices)
+				globalBeeperDevices.beep()
+			}
+		else
+			{
+			def locevent = [name:"Nyckelharpatalk", value: "contactClosedMsg", isStateChange: true,
+				displayed: true, descriptionText: "${evt.displayName} is closed", linkText: "${evt.displayName} is closed",
+				data: "${evt.displayName}"]	
+			sendLocationEvent(locevent)
+			}
 
-def closeMonitorDoorHandler(evt)
-	{
-	logdebug "closeMonitorDoorHandler entered ${evt?.displayName} ${evt?.value} ${evt?.deviceId}"
-	if (location.hsmStatus=='disarmed' || location.hsmStatus == 'allDisarmed')
-		{
-		def locevent = [name:"Nyckelharpatalk", value: "contactClosedMsg", isStateChange: true,
-			displayed: true, descriptionText: "${evt.displayName} is closed", linkText: "${evt.displayName} is closed",
-			data: "${evt.displayName}"]	
-		sendLocationEvent(locevent)
-		}
-	}	
+		}	
+	}
 
 def closePanicContact()
 	{
