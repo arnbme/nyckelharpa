@@ -1413,7 +1413,7 @@ def checkOpenContacts (contactList, notifyOptions, keypad)
 					contactmsg = 'Arming Forced. '+it.displayName
 					checkOpenReturn = true
 					evt = [value: "close", displayName: "${globalChildPrefix}-${it.name}", deviceId: "${it.id}"]
-					closeDoorHandler(evt)
+					DoorHandler(evt)
 					}				
 				}
 			else
@@ -1422,7 +1422,7 @@ def checkOpenContacts (contactList, notifyOptions, keypad)
 				if (checkOpenReturn)
 					{
 					evt = [value: "close", displayName: "${globalChildPrefix}-${it.name}", deviceId: "${it.id}"]
-					closeDoorHandler(evt)
+					DoorHandler(evt)
 					}
 				}	
 			}
