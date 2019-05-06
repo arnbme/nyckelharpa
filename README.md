@@ -31,6 +31,9 @@ Why is this needed? HSM does not arm the system when a contact is open. Examples
 * Provides an easy to use security related message control center with output to TTS, Speakers, and Pushover
 
 * Keypads: Centralite V2 and V3, and Iris V2 devices may use a ported version of Mitch Pond's Keypad DH making he keypad function as it did in SmartThings with the SHM Delay App, and it uses an easy to use Pin maintenance module with available use count, time. and devices restrictions.
+* When Panic is issued using the ported version of Mitch Pond's keypad with the Nyckelharpa app:<br /> 
+When system is armed: triggers instant intrusion<br />
+When system is disarmed: attempts to arm system then issues an intrusion
 
 [:arrow_up_small: Back to top](#top)
 <a name="support"></a>
@@ -208,7 +211,11 @@ The app's Keypad Device Handler was created by Mitch Pond on SmartThings where i
 
 _This DH may be used with the Centralite V2, Centralite V3, and Iris V2 keypads_
 
-User pin profiles are required when using this DH
+1. After installing the keypad DH, go to devices, change Type to Centralitex Keypad, Save Device
+
+2. Remove keypad from HSM, Add keypad to Nyckelharpa Global Settings
+
+3. Create User pin profiles
 
 [:arrow_up_small: Back to top](#top)
 <a name="userpin"></a>
