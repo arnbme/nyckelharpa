@@ -14,7 +14,7 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
- *	May 05, 2019 Restore button capability as pushableButton, add update Url
+ *	May 05, 2019 Restore button capability as pushableButton, capability ContactSensor add update Url
  *	Apr 30, 2019 HSM hijacked command setExitDelay to send all HSM delay to keypad
  *								avoid confusion by changing ours to setExitAway
  *  Apr 29, 2019 Arn Burkhoff Updated siren and off commands
@@ -60,7 +60,7 @@ metadata {
 		capability "Tone"
 		capability "PushableButton"
 //      capability "polling"
-//      capability "Contact Sensor"
+		capability "ContactSensor"
 		
 		attribute "armMode", "String"
         attribute "lastUpdate", "String"
