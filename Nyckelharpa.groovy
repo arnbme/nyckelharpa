@@ -22,6 +22,8 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  * 
+ *	May 06, 2019 v0.1.3	Issue in DoorMonitor: child device not to parent device state when system is armed, 
+ *						caused false alarm. Corrected DoorMonitor code.
  *	May 06, 2019 v0.1.2	Issue in CheckOpenContacts: When force closing child contact for alarm, it issues an
  *						unwanted door closed message. Solution: directly close the child contact vs using DoorHandler
  *	May 06, 2019 v0.1.1	Change subscibe from contact.open/close to contact reducing system overhead
@@ -85,7 +87,7 @@ preferences {
 
 def version()
 	{
-	return "0.1.2";
+	return "0.1.3";
 	}
 def main()
 	{
@@ -1537,11 +1539,11 @@ def deleteOldChildDevice(deviceData)
 def DoorHandler(evt)		//Should be real devices with child device
 	{
 	logdebug "DoorHandler entered ${evt?.displayName} ${evt?.value} ${evt?.deviceId}"
-	if (location.hsmStatus=='disarmed' || location.hsmStatus == 'allDisarmed')
+	if (evt.value=='open')
 		{
-		if (evt.value=='open')
+		getChildDevice("$globalChildPrefix${evt.deviceId}").open()		//open the child device
+		if (location.hsmStatus=='disarmed' || location.hsmStatus == 'allDisarmed')
 			{
-			getChildDevice("$globalChildPrefix${evt.deviceId}").open()		//open the child device
 			def locevent = [name:"Nyckelharpatalk", value: "contactOpenMsg", isStateChange: true,
 				displayed: true, descriptionText: "${evt.displayName} is open", linkText: "${evt.displayName} is open",
 				data: "${evt.displayName}"]	
@@ -1549,9 +1551,12 @@ def DoorHandler(evt)		//Should be real devices with child device
 			if (globalBeeperDevices)
 				globalBeeperDevices.beep()
 			}
-		else
+		}	
+	else
+		{
+		getChildDevice("$globalChildPrefix${evt.deviceId}").close()
+		if (location.hsmStatus=='disarmed' || location.hsmStatus == 'allDisarmed')
 			{
-			getChildDevice("$globalChildPrefix${evt.deviceId}").close()
 			def locevent = [name:"Nyckelharpatalk", value: "contactClosedMsg", isStateChange: true,
 				displayed: true, descriptionText: "${evt.displayName} is closed", linkText: "${evt.displayName} is closed",
 				data: "${evt.displayName}"]	
