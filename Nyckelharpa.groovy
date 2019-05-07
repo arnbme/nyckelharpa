@@ -22,6 +22,8 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  * 
+ *	May 06, 2019 v0.1.2	Issue in CheckOpenContacts: When force closing child contact for alarm, it issues an
+ *						unwanted door closed message. Solution: directly close the child contact vs using DoorHandler
  *	May 06, 2019 v0.1.1	Change subscibe from contact.open/close to contact reducing system overhead
  *	May 03, 2019 v0.1.0	Add Beepers and Sirens from deprecated contact module, move alarm state subscribe from talker to here
  *	May 03, 2019 v0.1.0	Rearrange sections, place globalSettings as  top profile
@@ -83,7 +85,7 @@ preferences {
 
 def version()
 	{
-	return "0.1.1";
+	return "0.1.2";
 	}
 def main()
 	{
@@ -1412,8 +1414,9 @@ def checkOpenContacts (contactList, notifyOptions, keypad)
 					atomicState.doorsdtim=0
 					contactmsg = 'Arming Forced. '+it.displayName
 					checkOpenReturn = true
-					evt = [value: "close", displayName: "${globalChildPrefix}-${it.name}", deviceId: "${it.id}"]
-					DoorHandler(evt)
+					getChildDevice("$globalChildPrefix${it.id}").close()		//close the child device
+//					evt = [value: "close", displayName: "${globalChildPrefix}-${it.name}", deviceId: "${it.id}"]
+//					DoorHandler(evt)
 					}				
 				}
 			else
@@ -1421,8 +1424,9 @@ def checkOpenContacts (contactList, notifyOptions, keypad)
 				contactmsg += ', '+it.displayName
 				if (checkOpenReturn)
 					{
-					evt = [value: "close", displayName: "${globalChildPrefix}-${it.name}", deviceId: "${it.id}"]
-					DoorHandler(evt)
+					getChildDevice("$globalChildPrefix${it.id}").close()		//close the child device
+//					evt = [value: "close", displayName: "${globalChildPrefix}-${it.name}", deviceId: "${it.id}"]
+//					DoorHandler(evt)
 					}
 				}	
 			}
@@ -1530,7 +1534,7 @@ def deleteOldChildDevice(deviceData)
      	deleteChildDevice("$globalChildPrefix${deviceData.id}")
 	}
 	
-def DoorHandler(evt)		//with child device
+def DoorHandler(evt)		//Should be real devices with child device
 	{
 	logdebug "DoorHandler entered ${evt?.displayName} ${evt?.value} ${evt?.deviceId}"
 	if (location.hsmStatus=='disarmed' || location.hsmStatus == 'allDisarmed')
@@ -1558,7 +1562,7 @@ def DoorHandler(evt)		//with child device
 
 def MonitorDoorHandler(evt)		//monitored only no child device
 	{
-	logdebug "MonitoredDoorHandler entered ${evt?.displayName} ${evt?.value} ${evt?.deviceId}"
+	logdebug "MonitorDoorHandler entered ${evt?.displayName} ${evt?.value} ${evt?.deviceId}"
 	if (location.hsmStatus=='disarmed' || location.hsmStatus == 'allDisarmed')
 		{
 		if (evt.value=='open')
