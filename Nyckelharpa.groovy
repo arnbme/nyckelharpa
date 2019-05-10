@@ -22,8 +22,9 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  * 
- *	May 06, 2019 v0.1.3	Issue in DoorMonitor: child device not to parent device state when system is armed, 
- *						caused false alarm. Corrected DoorMonitor code.
+ *	May 10, 2019 v0.1.4	Adjust Entry delay beeping devices text to warn against using keypad, it causes entry delay tones to stop 
+ *	May 06, 2019 v0.1.3	Issue in doorHandler: child device not to parent device state when system is armed, 
+ *						caused false alarm. Corrected doorHandler code.
  *	May 06, 2019 v0.1.2	Issue in CheckOpenContacts: When force closing child contact for alarm, it issues an
  *						unwanted door closed message. Solution: directly close the child contact vs using DoorHandler
  *	May 06, 2019 v0.1.1	Change subscibe from contact.open/close to contact reducing system overhead
@@ -87,7 +88,7 @@ preferences {
 
 def version()
 	{
-	return "0.1.3";
+	return "0.1.4";
 	}
 def main()
 	{
@@ -266,7 +267,7 @@ def globalsPage()
  *				}	
  */	
 			input "globalAlarmDevices", "capability.alarm", required: false, multiple: true,
-				title: "(Optional!) Beep these alarm devices when entry delay begins. Originally designed to beep a siren as a warning"
+				title: "(Optional!) Beep these alarm devices when entry delay begins. Originally designed to beep a siren as a warning. Warning! Do not select a keypad here, it kills entry delay tones"
 			input "globalBeeperDevices", "capability.tone", required: false, multiple: true,
 				title: "(Optional!) Beep/Chime these devices when any monitored contact sensor opens, and arm state is disarmed"
 			if (!state.configured)
@@ -1538,7 +1539,7 @@ def deleteOldChildDevice(deviceData)
 	
 def DoorHandler(evt)		//Should be real devices with child device
 	{
-	logdebug "DoorHandler entered ${evt?.displayName} ${evt?.value} ${evt?.deviceId}"
+//	logdebug "DoorHandler entered ${evt?.displayName} ${evt?.value} ${evt?.deviceId}"  remove to speed up child open
 	if (evt.value=='open')
 		{
 		getChildDevice("$globalChildPrefix${evt.deviceId}").open()		//open the child device
