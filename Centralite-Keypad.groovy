@@ -14,6 +14,12 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ * 	May 11, 2019 v0.1.7 AAB Add support for UEI keypad device
+ *					added UEI XHK1 fingerprint but did not test if DTH is assigned correctly
+ *					added Steve Jackson's changed battery reference voltages to accommodate the higher voltage of
+ *					of the UEI XHK1 keypad.  Changed voltages from 3.5 to 7.2 (voltage too high),
+ *					3.5 to 5.2 (MinVolts), 3.0 to 6.8 (MaxVolts).
+ *	May 11, 2019 added version number, initially set to 0.1.7 17 changes from initial porting
  *	May 11, 2019 Generate beeps for 3400-G Keypad, Centralite V3 does not respond to Siren Command
  *	May 05, 2019 Restore button capability as pushableButton, capability ContactSensor add update Url
  *	Apr 30, 2019 HSM hijacked command setExitDelay to send all HSM delay to keypad
@@ -32,6 +38,7 @@
  *					error found in Hubitat with entry delay
  *  Feb 22, 2019 convertToHexString default in ST not available in HE, change width to 2
  *  Feb 21, 2019 V1.0.1 Hubitat command names vary from Smartthings, add additional commands
+ *  -------------------------Porting to Hubitat starts around here----------------------------------------
  *  Sep 20, 2018 per ST tech support. Issue acknowlegement in HandleArmRequest
  *               disable routines: acknowledgeArmRequest and sendInvalidKeycodeResponse allowing SHM Delay to have no code changes
  *
@@ -82,6 +89,7 @@ metadata {
 		
 		fingerprint endpointId: "01", profileId: "0104", deviceId: "0401", inClusters: "0000,0001,0003,0020,0402,0500,0B05", outClusters: "0019,0501", manufacturer: "CentraLite", model: "3400", deviceJoinName: "Xfinity 3400-X Keypad"
 		fingerprint endpointId: "01", profileId: "0104", deviceId: "0401", inClusters: "0000,0001,0003,0020,0402,0500,0501,0B05,FC04", outClusters: "0019,0501", manufacturer: "CentraLite", model: "3405-L", deviceJoinName: "Iris 3405-L Keypad"
+ 		fingerprint endpointId: "01", profileId: "0104", deviceId: "0401", inClusters: "0000,0001,0003,0020,0402,0500,0B05", outClusters: "0003,0019,0501", manufacturer: "Universal Electronics Inc", model: "URC4450BC0-X-R", deviceJoinName: "Xfinity XHK1-UE Keypad" 
 	}
 	
 	preferences{
@@ -91,19 +99,26 @@ metadata {
 				defaultValue: 1, displayDuringSetup: false)
                 
         input ("motionTime", "number", title: "Time in seconds for Motion to become Inactive (Default:10, 0=disabled)",	defaultValue: 10, displayDuringSetup: false)
+        input ("showVolts", "bool", title: "Turn on to show actual battery voltage. Default (Off) is percentage", defaultValue: false, displayDuringSetup: false)
         input ("logdebugs", "bool", title: "Log debugging messages", defaultValue: false, displayDuringSetup: false)
         input ("logtraces", "bool", title: "Log trace messages", defaultValue: false, displayDuringSetup: false)
+//		paragraph "Centralitex Keypad Plus UEI  Version ${version()}" Throws an error unable to use
 	}
 
 }
+
+def version()
+	{
+	return "0.1.7";	
+	}
 
 // Statuses:
 // 00 - Command: setDisarmed   Centralite all icons off / Iris Off button on
 // 01 - Command: setArmedStay  lights Centralite Stay button / Iris Partial
 // 02 - Command: setArmedNight lights Centralite Night button / Iris does nothing
 // 03 - Command: setArmedAway  lights Centralite Away button / Iris ON 
-// 04 - Panic Sound, uses seconds for duration (seems same as 05 Beep command on Iris, max 255)
-// 05 - Command: Beep and SetEntryDelay Fast beep (1 per second, uses seconds for duration, max 255) Appears to keep the status lights as it was, used for entry delay command
+// 04 - Panic Sound, uses seconds for duration (fast beep sound on Iris V2, not available on Centralite)
+// 05 - Command: Beep and SetEntryDelay Slow beep (1 per second, uses seconds for duration, max 255) Appears to keep the status lights as it was, used for entry delay command
 // 06 - Amber status blink (Runs forever until Off or some command issued)
 // 07 - ? 
 // 08 - Command: setExitStay  Exit delay Slow beep (1 per second, accelerating to 2 beep per second for the last 10 seconds) - With red flashing status - lights Stay icon/Iris Partial Uses seconds 
@@ -350,8 +365,6 @@ def panicContactClose()
 	sendEvent(name: "contact", value: "closed", displayed: true, isStateChange: true)
 }
 
-//TODO: find actual good battery voltage range and update this method with proper values for min/max
-//
 //Converts the battery level response into a percentage to display in ST
 //and creates appropriate message for given level
 
@@ -362,22 +375,28 @@ private getBatteryResult(rawValue) {
 
 	def volts = rawValue / 10
 	def descriptionText=""
-	if (volts > 3.5) {
+	def excessVolts=3.5			//voltages for Centralite and Iris V2 keypads
+	def maxVolts=3.0
+	def minVolts=2.6
+	if (device.data.model.contains ('URC'))		//adjust per Steve Jackson for UEI keypad
+		{
+		excessVolts=7.2
+		maxVolts=6.8
+		minVolts=5.2
+		}
+
+	if (volts > excessVolts) 
 		result.descriptionText = "${linkText} battery has too much power (${volts} volts)."
-	}
-	else {
-		def minVolts = 2.6
-		def maxVolts = 3.0
+	else
+		{
 		def pct = (volts - minVolts) / (maxVolts - minVolts)
-//		result.value = Math.min(100, (int) pct * 100)
 		result.value = Math.min(100, Math.round(pct * 100))
 		descriptionText = "${linkText} battery was ${result.value}% $volts volts"
 		result.descriptionText = descriptionText
 		logdebug "$result"
-//      result.value=rawValue
+		if (showVolts)			//test if voltage setting is true
+		    result.value=rawValue
 		}
-//	sendNotificationEvent "${result.descriptionText}"
-//	sendNotificationEvent (descriptionText)
 	return result
 }
 
