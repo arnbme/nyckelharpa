@@ -22,6 +22,11 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  * 
+ *	May 11, 2019 v0.1.5	Add settings for open door tone beep or last 10 seconds of setexitdelay
+ *						Add setting to specify open doors tone here rather than in device
+ *						moved talker door open event to end of open DoorHandler routines,
+ *							otherwise it delayed beeps and chimes by over 2+ seconds
+ *						Do some editing on settings and produce warning messages
  *	May 10, 2019 v0.1.4	Adjust Entry delay beeping devices text to warn against using keypad, it causes entry delay tones to stop 
  *	May 06, 2019 v0.1.3	Issue in doorHandler: child device not to parent device state when system is armed, 
  *						caused false alarm. Corrected doorHandler code.
@@ -88,7 +93,7 @@ preferences {
 
 def version()
 	{
-	return "0.1.4";
+	return "0.1.5";
 	}
 def main()
 	{
@@ -268,8 +273,15 @@ def globalsPage()
  */	
 			input "globalAlarmDevices", "capability.alarm", required: false, multiple: true,
 				title: "(Optional!) Beep these alarm devices when entry delay begins. Originally designed to beep a siren as a warning. Warning! Do not select a keypad here, it kills entry delay tones"
-			input "globalBeeperDevices", "capability.tone", required: false, multiple: true,
+			input "globalBeeperDevices", "capability.tone", required: false, multiple: true, submitOnChange: true,
 				title: "(Optional!) Beep/Chime these devices when any monitored contact sensor opens, and arm state is disarmed"
+			if (globalBeeperDevices)
+ 				{
+ 				input "globalBeeperSeconds", "number", required: false, range: "1..10", submitOnChange: true,defaultValue: 2,
+ 						title: "Duration in seconds for open contact Beep/Chime from 1 to 10 when system is disarmed. Default: 2"
+				input "globalBeeperExitSound", "bool", required: false, defaultValue:false,
+					title: "When available use warning fast beep from the a keypad's exit delay tone"
+				}
 			if (!state.configured)
 				{
 				input "globalChildPrefix", "text", title:"Simulated Device Prefix. Simulated device names used with Forced HSM Arming, and the simulaed Panic Contact, start with this prefix.\n\nThe prefix must start with a letter and the only supported characters are letters, numbers and hyphens.\n\nThis setting can't be changed once you leave this screen.",
@@ -1540,17 +1552,42 @@ def deleteOldChildDevice(deviceData)
 def DoorHandler(evt)		//Should be real devices with child device
 	{
 //	logdebug "DoorHandler entered ${evt?.displayName} ${evt?.value} ${evt?.deviceId}"  remove to speed up child open
+	def resetKeypads=false				//do keypads have to be reset to OFF/Disarmed from running setExitAway 
 	if (evt.value=='open')
 		{
 		getChildDevice("$globalChildPrefix${evt.deviceId}").open()		//open the child device
 		if (location.hsmStatus=='disarmed' || location.hsmStatus == 'allDisarmed')
 			{
+			if (globalBeeperDevices)
+				{
+				if (globalBeeperSeconds)
+					{
+					if (globalBeeperExitSound)
+						{
+						globalBeeperDevices.each
+							{
+							if (it.hasCommand("setExitAway"))
+								{
+								it.setExitAway(globalBeeperSeconds)	//turns on the keypads status light and blinks 
+								resetKeypads=true
+								}
+							else
+								it.beep(globalBeeperSeconds as Integer)
+							}	
+						if (resetKeypads)	
+							runInMillis((globalBeeperSeconds * 1000) + 1500, delaysetDisarmed)	//restore disarmed
+						}
+					else	
+						globalBeeperDevices.beep(globalBeeperSeconds as Integer)
+						}
+				else	
+					globalBeeperDevices.beep()
+				}
+//			moved location event here from top of routine or there is a 2 second delay producing the beep/chime
 			def locevent = [name:"Nyckelharpatalk", value: "contactOpenMsg", isStateChange: true,
 				displayed: true, descriptionText: "${evt.displayName} is open", linkText: "${evt.displayName} is open",
 				data: "${evt.displayName}"]	
 			sendLocationEvent(locevent)
-			if (globalBeeperDevices)
-				globalBeeperDevices.beep()
 			}
 		}	
 	else
@@ -1569,16 +1606,41 @@ def DoorHandler(evt)		//Should be real devices with child device
 def MonitorDoorHandler(evt)		//monitored only no child device
 	{
 	logdebug "MonitorDoorHandler entered ${evt?.displayName} ${evt?.value} ${evt?.deviceId}"
+	def resetKeypads=false				//do keypads have to be reset to OFF/Disarmed from running setExitAway 
 	if (location.hsmStatus=='disarmed' || location.hsmStatus == 'allDisarmed')
 		{
-		if (evt.value=='open')
+	`	if (evt.value=='open')
 			{
+			if (globalBeeperDevices)
+				{
+				if (globalBeeperSeconds)
+					{
+					if (globalBeeperExitSound)
+						{
+						globalBeeperDevices.each
+							{
+							if (it.hasCommand("setExitAway"))
+								{
+								it.setExitAway(globalBeeperSeconds)	//turns on the keypads status light and blinks 
+								resetKeypads=true
+								}
+							else
+								it.beep(globalBeeperSeconds as Integer)
+							}	
+						if (resetKeypads)	
+							runInMillis((globalBeeperSeconds * 1000) + 1500, delaysetDisarmed)	//restore disarmed to keypads
+						}
+					else	
+						globalBeeperDevices.beep(globalBeeperSeconds as Integer)
+						}
+				else	
+					globalBeeperDevices.beep()
+				}
+//			moved location event here from top of routine or there is a 2 second delay producing the beep/chime
 			def locevent = [name:"Nyckelharpatalk", value: "contactOpenMsg", isStateChange: true,
 				displayed: true, descriptionText: "${evt.displayName} is open", linkText: "${evt.displayName} is open",
 				data: "${evt.displayName}"]	
 			sendLocationEvent(locevent)
-			if (globalBeeperDevices)
-				globalBeeperDevices.beep()
 			}
 		else
 			{
@@ -1587,9 +1649,8 @@ def MonitorDoorHandler(evt)		//monitored only no child device
 				data: "${evt.displayName}"]	
 			sendLocationEvent(locevent)
 			}
-
-		}	
-	}
+		}
+	}	
 
 def closePanicContact()
 	{
