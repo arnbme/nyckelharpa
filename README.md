@@ -14,7 +14,7 @@
 [&ensp;9. Talker messages](#talker)<br />
 [10. Keypad Device Handler](#keypadDH)<br />
 [11. User/Pin Profiles](#userpin)<br />
-[12. Testing](#testing)<br />
+[12. Debugging](#testing)<br />
 [13. Get Help, report an issue, or contact information](#help)
 <a name="purpose"></a>
 ## 1. Purpose
@@ -229,8 +229,12 @@ To use the Iris V2's instant arming, no pin required, create a User profile with
 
 [:arrow_up_small: Back to top](#top)
 <a name="testing"></a>
-## 12. Testing
-To be developed
+## 12. Debugging
+1. No entry delay tones on keypad<br />
+Keypad may be selected as an Optional Alarm device. Remove it as an Alarm device
+
+2. No exit delay tones<br />
+Create and save a Modefix profile
 
 [:arrow_up_small: Back to top](#top)
 <a name="help"></a>
