@@ -20,6 +20,7 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *	May 10, 2019 	v0.0.6	Do what 0.0.5 said it would do but did not
  *	May 02, 2019 	v0.0.5	Make all mode settings optional
  *	Apr 30, 2019 	v0.0.4	HSM hijacked command setExitDelay to send all HSM delay to keypad
  *								avoid confusion by changing ours to setExitAway
@@ -80,7 +81,7 @@ preferences {
 
 def version()
 	{
-	return "0.0.5";
+	return "0.0.6";
 	}
 
 def pageOne(error_msg)
@@ -91,10 +92,10 @@ def pageOne(error_msg)
 			{
 			if (error_msg instanceof String )
 				{
-				paragraph error_msg
+				paragraph "<b>"+error_msg+"</b>"
 				}
 			else
-				paragraph "Caution! Wrong settings may create havoc. If you don't fully understand Alarm States and Modes, read the Introduction and use the defaults!"
+				paragraph "Caution! Wrong settings may create havoc. If you don't fully understand Alarm States and Modes, leave the settings empty, but it must be saved"
 			href(name: "href",
 			title: "Introduction",
 			required: false,
@@ -107,57 +108,32 @@ def pageOne(error_msg)
 			}
 		section ("Alarm State: Disarmed / Off")
 			{
-			input "offModes", "mode", required: false, multiple: true, defaultValue: "disarmed",
+			input "offModes", "mode", required: false, multiple: true, 
 				title: "Valid Modes for: Disarmed"
-			input "offDefault", "mode", required: false, defaultValue: "disarmed",
+			input "offDefault", "mode", required: false, 
 				title: "Default Mode for: Disarmed"
 			}	
 		section ("Alarm State: Armed (Away)")
 			{
-			if (away_error_data instanceof String )
-				{
-				paragraph away_error_data
-				}
-			input "awayModes", "mode", required: false, multiple: true, defaultValue: "Away", submitOnChange: true,
+			input "awayModes", "mode", required: false, multiple: true,
 				title: "Valid modes for: Armed Away"
-			input "awayDefault", "mode", required: false, defaultValue: "Away",
+			input "awayDefault", "mode", required: false,
 				title: "Default Mode for Armed Away"
-/*			awayModes.each
-				{
-				input "awayExit${it.value}", "bool", required: true, defaultValue: true,
-					title: "Create Exit Delay for Armed (Away) ${it.value} mode"
-				input "awayEntry${it.value}", "bool", required: true, defaultValue: true,
-					title: "Create Entry Delay for Armed (Away) ${it.value} mode"
-				}	
-*/			}	
+			}	
 		section ("Alarm State: Armed (Night)")
 			{
-			input "nightModes", "mode", required: false, multiple: true, defaultValue: "Night", submitOnChange: true,
+			input "nightModes", "mode", required: false, multiple: true, 
 				title: "Valid Modes for Armed Night"
-			input "nightDefault", "mode", required: false, defaultValue: "Night",
+			input "nightDefault", "mode", required: false, 
 				title: "Default Mode for Armed Night"
-/*			nightModes.each
-				{
-				input "nightExit${it.value}", "bool", required: false, defaultValue: false,
-					title: "Create Exit Delay for Armed (Night) ${it.value} mode"
-				input "nightEntry${it.value}", "bool", required: false, defaultValue: true,
-						title: "Create Entry Delay for Armed (Night) ${it.value} mode"
-				}	
-*/			}	
+			}	
 		section ("Alarm State: Armed (Home) aka Stay")
 			{
-			input "homeModes", "mode", required: false, multiple: true, defaultValue: "Stay", submitOnChange: true,
+			input "homeModes", "mode", required: false, multiple: true, 
 				title: "Valid Modes for Armed Home"
-			input "homeDefault", "mode", required: false, defaultValue: "Stay",
+			input "homeDefault", "mode", required: false,
 				title: "Default Mode for Armed Home"
-/*			homeModes.each
-				{
-				input "homeExit${it.value}", "bool", required: true, defaultValue: false,
-					title: "Create Exit Delay for Armed (Home) ${it.value} mode"
-				input "homeEntry${it.value}", "bool", required: true, defaultValue: true,
-					title: "Create Entry Delay for Armed (Home) ${it.value} mode"
-				}	
-*/			}	
+			}	
 		section
 			{
 			paragraph "Nyckelharpa Modefix ${version()}"
@@ -169,45 +145,75 @@ def pageOne(error_msg)
 def pageOneVerify() 				//edit page One
 	{
 
+	def off_error=null
+	def home_error=null
+	def night_error=null
+	def away_error=null
+	
 //	Verify disarm/off data
-	def off_error="Disarmed / Off Default Mode not defined in Valid Modes"
-	def children = offModes
-	children.each
-		{ child ->
-		if (offDefault == child)
-			{
-			off_error=null
+	if (offModes || offDefault)
+		{
+		off_error="Disarmed / Off Default Mode not defined in Valid Modes"
+		def children = offModes
+		children.each
+			{ child ->
+			log.debug "$offDefault $child" 
+			if (offDefault == child)
+				{
+				off_error=null
+				}
 			}
 		}
 	
 //	Verify Away data
-	def away_error="Armed (Away) Default Mode not defined in Valid Modes"
-	children = awayModes
-	children.each
-		{ child ->
-		if (awayDefault == child)
-			{
-			away_error=null
+	if (awayModes || awayDefault)
+		{
+		away_error="Armed (Away) Default Mode not defined in Valid Modes"
+		children = awayModes
+		children.each
+			{ child ->
+			if (awayDefault == child)
+				{
+				away_error=null
+				}
 			}
 		}
 
-//	Verify Stay data
-	def stay_error="Armed (Home) Default Mode not defined in Valid Modes"
-	children = stayModes
-	children.each
-		{ child ->
-		if (stayDefault == child)
-			{
-			stay_error=null
+//	Verify Home (Stay) data
+	if (homeModes || homeDefault)
+		{
+		home_error="Armed (Home) Default Mode not defined in Valid Modes"
+		children = homeModes
+		children.each
+			{ child ->
+			if (homeDefault == child)
+				{
+				home_error=null
+				}
+			}
+		}
+		
+//	Verify Night data
+	if (nightModes || nightDefault)
+		{
+		night_error="Armed (Night) Default Mode not defined in Valid Modes"
+		children = nightModes
+		children.each
+			{ child ->
+			if (nightDefault == child)
+				{
+				night_error=null
+				}
 			}
 		}
 
-	if (off_error == null && away_error == null && stay_error == null)
+	if (off_error == null && away_error == null && home_error == null && night_error == null)
 		{
 		pageTwo()
 		}
 	else	
 		{
+		log.debug "in error logic"
 		def error_msg=""
 		def newline=""
 		if (off_error>"")
@@ -220,9 +226,14 @@ def pageOneVerify() 				//edit page One
 			error_msg+=newline + away_error
 			newline="\n"
 			}	
-		if (stay_error >"")
+		if (home_error >"")
 			{
-			error_msg+=newline + stay_error
+			error_msg+=newline + home_error
+			newline="\n"
+			}
+		if (night_error >"")
+			{
+			error_msg+=newline + night_error
 			newline="\n"
 			}
 		pageOne(error_msg)
@@ -231,65 +242,52 @@ def pageOneVerify() 				//edit page One
 
 def pageTwo()
 	{
-	dynamicPage(name: "pageTwo", title: "Mode settings verified, press 'Done/Save' to install, press '<' to change, ", install: true, uninstall: true)
+	dynamicPage(name: "pageTwo", title: "<b>Mode settings verified, press 'Done' to install, press '<' or Back to change</b>", install: true, uninstall: true)
 		{
-/*		section
+		section ("<b>Alarm State: Disarmed / Off</b>")
 			{
-			href(name: "href",
-			title: "Introduction",
-			required: false,
-			page: "aboutPage")
-			}
-*/		section ("Alarm State: Disarmed / Off")
-			{
-			input "offModes", "mode", required: false, multiple: true, defaultValue: "Home",
-				title: "Valid Modes for: Disarmed"
-			input "offDefault", "mode", required: false, defaultValue: "Home",
-				title: "Default Mode for: Disarmed"
+			if (offModes)
+				paragraph "Valid Modes for Disarmed: $offModes"
+			else	
+				paragraph "Valid Modes for Disarmed: Not Set"
+			if (offDefault)
+				paragraph "Default Mode for Disarmed: $offDefault"
+			else	
+				paragraph "Default Mode for Disarmed: Not Set"
 			}	
-		section ("Alarm State: Armed (Away)")
+		section ("<b>Alarm State: Armed (Away)</b>")
 			{
-			input "awayModes", "mode", required: false, multiple: true, defaultValue: "Away", submitOnChange: true,
-				title: "Valid modes for: Armed Away"
-			input "awayDefault", "mode", required: false, defaultValue: "Away",
-				title: "Default Mode: Armed Away"
-/*			awayModes.each
-				{
-				input "awayExit${it.value}", "bool", required: false, defaultValue: true,
-					title: "Create Exit Delay for Armed (Away) ${it.value} mode"
-				input "awayEntry${it.value}", "bool", required: false, defaultValue: true,
-					title: "Create Entry Delay for Armed (Away) ${it.value} mode"
-				}	
-*/			}	
-		section ("Alarm State: Armed (Night)")
+			if (awayModes)
+				paragraph "Valid Modes for Away: $awayModes"
+			else	
+				paragraph "Valid Modes for Away: Not Set"
+			if (awayDefault)
+				paragraph "Default Mode for Away: $awayDefault"
+			else	
+				paragraph "Default Mode for Away: Not Set"
+			}	
+		section ("<b>Alarm State: Armed (Night)</b>")
 			{
-			input "nightModes", "mode", required: false, multiple: true, defaultValue: "Night",  submitOnChange: true,
-				title: "Valid Modes for Armed Night"
-			input "nightDefault", "mode", required: false, defaultValue: "Night",
-				title: "Default Mode for Armed Night"
-/*			stayModes.each
-				{
-				input "nightExit${it.value}", "bool", required: false, defaultValue: false,
-					title: "Create Exit Delay for Armed (Night) ${it.value} mode"
-				input "nightEntry${it.value}", "bool", required: false, defaultValue: false,
-					title: "Create Entry Delay for Armed (Night) ${it.value} mode"
-				}
-*/			}	
-		section ("Alarm State: Armed (Home) aka Stay")
+			if (nightModes)
+				paragraph "Valid Modes for Night: $nightModes"
+			else	
+				paragraph "Valid Modes for Night: Not Set"
+			if (awayDefault)
+				paragraph "Default Mode for Night: $nightDefault"
+			else	
+				paragraph "Default Mode for Night: Not Set"
+			}
+		section ("<b>Alarm State: Armed (Home) aka Stay</b>")
 			{
-			input "stayModes", "mode", required: false, multiple: true, defaultValue: "Stay",  submitOnChange: true,
-				title: "Valid Modes for Armed Home"
-			input "stayDefault", "mode", required: false, defaultValue: "Stay",
-				title: "Default Mode for Armed Home"
-/*			stayModes.each
-				{
-				input "stayExit${it.value}", "bool", required: false, defaultValue: false,
-					title: "Create Exit Delay for Armed (Home) ${it.value} mode"
-				input "stayEntry${it.value}", "bool", required: false, defaultValue: false,
-					title: "Create Entry Delay for Armed (Home) ${it.value} mode"
-				}	
-				
-*/			}	
+			if (homeModes)
+				paragraph "Valid Modes for Home: $homeModes"
+			else	
+				paragraph "Valid Modes for Home: Not Set"
+			if (homeDefault)
+				paragraph "Default Mode for Home: $homeDefault"
+			else	
+				paragraph "Default Mode for Home: Not Set"
+			}	
 
 		section
 			{
@@ -348,7 +346,7 @@ def alarmStatusHandler(evt)
 		if (parent.globalKeypadDevices)
 			parent.globalKeypadDevices.setDisarmed()
 		ttsDisarmed()
-		if (!offModes.contains(theMode))
+		if (offModes && !offModes.contains(theMode))
 			{
 			setLocationMode(offDefault)
 			}
@@ -377,7 +375,6 @@ def alarmStatusHandler(evt)
 			if (evt.jsonData.seconds)
 				{
 				if (parent.globalKeypadDevices)
-//					parent.globalKeypadDevices.setExitDelay(evt.jsonData.seconds)
 					parent.globalKeypadDevices.setExitAway(evt.jsonData.seconds)
 				ttsExit(evt.jsonData.seconds)
 				}
