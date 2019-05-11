@@ -74,7 +74,7 @@ definition(
 
 preferences {
 	page(name: "pageOne", nextPage: "pageOneVerify")
-	page(name: "pageOneVerify")
+	page(name: "pageOneVerify", nextPage: "pageOne")
 	page(name: "pageTwo")
 	page(name: "aboutPage", nextPage: "pageOne")
 }
@@ -244,6 +244,13 @@ def pageTwo()
 	{
 	dynamicPage(name: "pageTwo", title: "<b>Mode settings verified, press 'Done' to install, press '<' or Back to change</b>", install: true, uninstall: true)
 		{
+		section ("<b>Debugging messages</b>")
+			{
+			if (logDebugs)
+				paragraph "Log Debug messages are generated"
+			else
+				paragraph "No Debugging messages" 
+			}
 		section ("<b>Alarm State: Disarmed / Off</b>")
 			{
 			if (offModes)
