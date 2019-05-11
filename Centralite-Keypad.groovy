@@ -14,6 +14,7 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *	May 11, 2019 Generate beeps for 3400-G Keypad, Centralite V3 does not respond to Siren Command
  *	May 05, 2019 Restore button capability as pushableButton, capability ContactSensor add update Url
  *	Apr 30, 2019 HSM hijacked command setExitDelay to send all HSM delay to keypad
  *								avoid confusion by changing ours to setExitAway
@@ -567,9 +568,9 @@ def off()
 def siren()
 	{
 /*	device.data.model not available in ST
- *  siren command does not work on Centralite 3400 not sure on 3400-G
+ *  siren command does not work on Centralite 3400 V2 and 3400-G (V3)
  */ 
-	if (device.data.model == '3400')		
+	if (device.data.model.contains ('3400'))							
 		beep(255)							
 	else
 		{
