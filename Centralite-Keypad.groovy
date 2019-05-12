@@ -370,33 +370,30 @@ def panicContactClose()
 
 private getBatteryResult(rawValue) {
 	def linkText = getLinkText(device)
-
 	def result = [name: 'battery']
-
 	def volts = rawValue / 10
-	def descriptionText=""
-	def excessVolts=3.5			//voltages for Centralite and Iris V2 keypads
+	def excessVolts=3.5			
 	def maxVolts=3.0
 	def minVolts=2.6
-	if (device.data.model.contains ('URC'))		//adjust per Steve Jackson for UEI keypad
+	if (device.data.model.substring(0,3)!='340')	//adjust voltages if not Centralite 3400 or Iris 3405 V2 keypads
 		{
 		excessVolts=7.2
 		maxVolts=6.8
 		minVolts=5.2
 		}
-
-	if (volts > excessVolts) 
-		result.descriptionText = "${linkText} battery has too much power (${volts} volts)."
+	if (volts > excessVolts)
+		{
+		result.descriptionText = "${linkText} battery voltage: $volts, exceeds max voltage: $excessVolts"
+		result.value = Math.round(((volts * 100) / maxVolts))
+		}
 	else
 		{
 		def pct = (volts - minVolts) / (maxVolts - minVolts)
 		result.value = Math.min(100, Math.round(pct * 100))
-		descriptionText = "${linkText} battery was ${result.value}% $volts volts"
-		result.descriptionText = descriptionText
-		logdebug "$result"
-		if (showVolts)			//test if voltage setting is true
-		    result.value=rawValue
+		result.descriptionText = "${linkText} battery was ${result.value}% $volts volts"
 		}
+	if (showVolts)			//test if voltage setting is true
+	    result.value=rawValue
 	return result
 }
 
@@ -587,9 +584,9 @@ def off()
 def siren()
 	{
 /*	device.data.model not available in ST
- *  siren command does not work on Centralite 3400 V2 and 3400-G (V3)
+ *  siren command does not work on Centralite 3400 V2 and 3400-G (V3) or UEI
  */ 
-	if (device.data.model.contains ('3400'))							
+	if (device.data.model.contains ('3400') || device.data.model.substring(0,3)=='URC')							
 		beep(255)							
 	else
 		{
