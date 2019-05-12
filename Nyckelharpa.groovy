@@ -1609,7 +1609,7 @@ def MonitorDoorHandler(evt)		//monitored only no child device
 	def resetKeypads=false				//do keypads have to be reset to OFF/Disarmed from running setExitAway 
 	if (location.hsmStatus=='disarmed' || location.hsmStatus == 'allDisarmed')
 		{
-	`	if (evt.value=='open')
+		if (evt.value=='open')
 			{
 			if (globalBeeperDevices)
 				{
