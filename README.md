@@ -262,7 +262,7 @@ What kind of device do you want to use: select Contact Sensor<br />
 Select Contact Sensors: check Keypad devices using user provided Keypad Driver, click Update<br />
 What do you want to monitor?: Set Sensor Opens on/true<br />
 Set Alerts for Text, Audio, Siren and Lights<br />
-Click on the Arm This Rule
+Click on the Arm This Rule<br />
 Click Done
 
 [:arrow_up_small: Back to top](#top)
