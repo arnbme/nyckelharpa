@@ -16,6 +16,7 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *	
+ *	May 18, 2019 V0.0.2	Minor text changes: get rid of Shmarthings, change Save to Done, adjust back text
  *	Apr 22, 2019 v0.0.1	Add Pushover support
  *	Apr 22, 2019 v0.0.0	Rename SHM Delay User to Nyckelharpa User change version to 0.0.0 prerelease
  *	Apr 21, 2019 v1.1.1H Fix missing NEXT Button on pageone, add nextPage: "pageOneVerify" to Pageone definition per Patrick at HE
@@ -62,7 +63,7 @@ preferences {
 
 def version()
 	{
-	return "0.0.1";
+	return "0.0.2";
 	}
 
 def pageZeroVerify()
@@ -589,7 +590,7 @@ def pageFourVerify() 					//edit schedule data, go to pageThree when valid
 //	This page summarizes the data prior to save	
 def pageFive(error_data)
 	{
-	dynamicPage(name: "pageFour", title: "Verify settings then tap Save, or tap < (back) to change settings", install: true, uninstall: true)
+	dynamicPage(name: "pageFour", title: "Verify settings then tap Done button, or tap this device's &lt;, &#9665;, or 'back' icon to change settings", install: true, uninstall: true)
 		{
 		def rdata=""
 		section
@@ -632,7 +633,7 @@ def pageFive(error_data)
 					paragraph "The pin executes a WebCore Piston for: $rdata"
 					break
 				case "Panic":
-					paragraph "Panic pin triggers the SmartThings intrusion alarm"
+					paragraph "Panic pin: software opens simulated NCKL-Panic-Contact, <b>must be monitored by HSM</b>."
 					break
 				case "UserRoutinePiston":
 					paragraph "Multi function pin assigned to a Person"
@@ -735,7 +736,7 @@ def pageFive(error_data)
 				if (pinSimKeypads)
 					paragraph "Pin valid only on these simulated devices: ${pinSimKeypads}"
 				}	
-			paragraph "${app.getLabel()}\nModule Nyckelharpa User ${version()}"
+			paragraph "${app.getLabel()}\n\nModule: Nyckelharpa User ${version()}"
 			}	
 		}
 	}	

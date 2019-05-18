@@ -14,7 +14,12 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
- * 	May 11, 2019 v0.1.7 AAB Add support for UEI keypad device
+ * 	May 18, 2019 v0.1.9 Make existing routine panicCommand useable from external modules
+ *							Used by Nyckelharpa for Panic Pin procssing
+ *							Add Enable Panic setting similar HE Device Handlers, unable to get setting name
+ * 	May 15, 2019 v0.1.8 For 3400 and UEI, change off command to issue beep(0)
+ *						Show Version as an unused setting. No other way to get it to show AFAIK
+ * 	May 11, 2019 v0.1.7 Add support for UEI keypad device
  *					added UEI XHK1 fingerprint but did not test if DTH is assigned correctly
  *					added Steve Jackson's changed battery reference voltages to accommodate the higher voltage of
  *					of the UEI XHK1 keypad.  Changed voltages from 3.5 to 7.2 (voltage too high),
@@ -84,6 +89,7 @@ metadata {
 		command "testCmd", ['number']
 		command "sendInvalidKeycodeResponse"
 		command "acknowledgeArmRequest",['number']
+		command "panicContact"
 //		HSM commands		
 		command "armNight"						//not set as part of device capabilities
 		
@@ -93,23 +99,24 @@ metadata {
 	}
 	
 	preferences{
+		input ("version", "text", title: "Version (for display only)", defaultValue: "${version()}" )
+        input ("panicEnabled", "bool", title: "Enable Panic Key (when available) and Panic Pins. Default (True)", defaultValue: true)
 		input ("tempOffset", "number", title: "Enter an offset to adjust the reported temperature",
 				defaultValue: 0, displayDuringSetup: false)
 		input ("beepLength", "number", title: "Enter length of beep in seconds",
 				defaultValue: 1, displayDuringSetup: false)
-                
         input ("motionTime", "number", title: "Time in seconds for Motion to become Inactive (Default:10, 0=disabled)",	defaultValue: 10, displayDuringSetup: false)
         input ("showVolts", "bool", title: "Turn on to show actual battery voltage. Default (Off) is percentage", defaultValue: false, displayDuringSetup: false)
         input ("logdebugs", "bool", title: "Log debugging messages", defaultValue: false, displayDuringSetup: false)
         input ("logtraces", "bool", title: "Log trace messages", defaultValue: false, displayDuringSetup: false)
-//		paragraph "Centralitex Keypad Plus UEI  Version ${version()}" Throws an error unable to use
+//		paragraph "Centralitex Keypad Plus UEI Version ${version()}" Does not work in HE
 	}
 
 }
 
 def version()
 	{
-	return "0.1.7";	
+	return "0.1.9" as String;	
 	}
 
 // Statuses:
@@ -117,13 +124,13 @@ def version()
 // 01 - Command: setArmedStay  lights Centralite Stay button / Iris Partial
 // 02 - Command: setArmedNight lights Centralite Night button / Iris does nothing
 // 03 - Command: setArmedAway  lights Centralite Away button / Iris ON 
-// 04 - Panic Sound, uses seconds for duration (fast beep sound on Iris V2, not available on Centralite)
-// 05 - Command: Beep and SetEntryDelay Slow beep (1 per second, uses seconds for duration, max 255) Appears to keep the status lights as it was, used for entry delay command
+// 04 - Panic Sound, uses seconds for duration (seems same as 05 Beep command on Iris, max 255)
+// 05 - Command: Beep and SetEntryDelay Fast beep (1 per second, uses seconds for duration, max 255) Appears to keep the status lights as it was, used for entry delay command
 // 06 - Amber status blink (Runs forever until Off or some command issued)
 // 07 - ? 
-// 08 - Command: setExitStay  Exit delay Slow beep (1 per second, accelerating to 2 beep per second for the last 10 seconds) - With red flashing status - lights Stay icon/Iris Partial Uses seconds 
-// 09 - Command: setExitNight Exit delay Slow beep (1 per second, accelerating to 2 beep per second for the last 10 seconds) - With red flashing status - lights Night icon/ Uses seconds  (does nothing on Iris)
-// 10 - Command: setExitDelay Exit delay Slow beep (1 per second, accelerating to 2 beep per second for the last 10 seconds) - With red flashing status - lights Away Uses/Iris ON seconds
+// 08 - Command: setExitStay  Blink Stay Icon/Partial light all devices, Slow beep on Iris only (1 per second, accelerating to 2 beep per second for the last 10 seconds) - With red flashing status - lights Stay icon/Iris Partial Uses seconds 
+// 09 - Command: setExitNight Blink Night Icon on Centralite and UEI devices no beeps, with red flashing status - lights Night icon/ Uses seconds  (does nothing on Iris)
+// 10 - Command: setExitAway  Blink Away Icon / ON light on all devices (1 per second, accelerating to 2 beep per second for the last 10 seconds) - With red flashing status - lights Away Uses/Iris ON seconds
 // 11 - ?
 // 12 - ?
 // 13 - ?
@@ -166,11 +173,15 @@ def parse(String description) {
 				if (message?.command == '07') {
                 	motionON()
 				}
-                else if (message?.command == '04') {
-                	results = createEvent(name: "button", value: "pushed", data: [buttonNumber: 1], descriptionText: "$device.displayName panic button was pushed", isStateChange: true)
-					siren()	
-                    panicContact()
-                }
+                else if (message?.command == '04') 
+                	{
+                	if (panicEnabled)
+                		{
+                		results = createEvent(name: "button", value: "pushed", data: [buttonNumber: 1], descriptionText: "$device.displayName panic button was pushed", isStateChange: true)
+						siren()	
+                	    panicContact()
+                		}
+                	}
 				else if (message?.command == '00') {
 					results = handleArmRequest(message)
 					logtrace results
@@ -355,9 +366,12 @@ def motionOFF() {
 }
 
 def panicContact() {
-	logdebug "--- Panic button hit"
-    sendEvent(name: "contact", value: "open", displayed: true, isStateChange: true)
-    runIn(3, "panicContactClose")
+	logdebug "PanicContact routine entered, Panic enabled: $panicEnabled"
+	if (panicEnabled)
+		{
+    	sendEvent(name: "contact", value: "open", displayed: true, isStateChange: true)
+    	runIn(3, "panicContactClose")
+    	}
 }
 
 def panicContactClose()
@@ -415,7 +429,7 @@ private Map getTemperatureResult(value) {
 		def v = value as int
 		value = v + offset
 	}
-	def descriptionText = "${linkText} was ${value}°${temperatureScale}"
+	def descriptionText = "${linkText} was ${value}Â°${temperatureScale}"
 	return [
 		name: 'temperature',
 		value: value,
@@ -576,14 +590,18 @@ def both()
 	}
 def off()
 	{
-    List cmds = ["raw 0x501 {19 01 04 00 00 01 01}",
+	if (device.data.model.contains ('3400') || device.data.model.substring(0,3)=='URC')							
+		beep(0)							
+	else
+		{
+    	List cmds = ["raw 0x501 {19 01 04 00 00 01 01}",
     			 "send 0x${device.deviceNetworkId} 1 1", 'delay 100']
-	cmds
-//	setDisarmed()
+		cmds
+		}
 	}
 def siren()
 	{
-/*	device.data.model not available in ST
+/*	device.data.model not available in ST 
  *  siren command does not work on Centralite 3400 V2 and 3400-G (V3) or UEI
  */ 
 	if (device.data.model.contains ('3400') || device.data.model.substring(0,3)=='URC')							

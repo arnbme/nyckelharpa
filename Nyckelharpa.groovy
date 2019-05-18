@@ -22,6 +22,13 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  * 
+ *	May 18, 2019 v0.1.8	add support for using Panic Pin contact for HSM Custom Panic rule, HSM arming not required 
+ *						Use existing DH command panicContact changed to allow external call, when Panic pin is entered	
+ *						DH already supports using the device Panic pin for a Panic rule
+ *						eliminate creation and setting of the NCKL-Panic-Contact no lonner needed
+ *						eliminate globalPanic setting, Keypad Panic setting controls if Panic occurs
+ *	May 17, 2019 v0.1.7	eliminate some odd code in keypadLighton for night arm state (also removed in SHM Delay)
+ *	May 16, 2019 v0.1.6	add UEI model to keypads with 3 armed lighting modes
  *	May 12, 2019 v0.1.5	Show summary of settings on pageTwo prior to Done
  *						Insure non keypad device does not get a beep command with time, may create an error
  *	May 11, 2019 v0.1.5	Add settings for open door tone beep or last 10 seconds of setexitdelay
@@ -97,7 +104,7 @@ preferences {
 
 def version()
 	{
-	return "0.1.5";
+	return "0.1.8";
 	}
 def main()
 	{
@@ -205,8 +212,8 @@ def globalsPage(error_msg)
 				title: "Iris V2, and Centralite V2/V3 devices using Nyckelharpa Centralite Device Handler to arm and disarm HSM"
 			if (globalKeypadDevices)
 				{
-				input "globalPanic", "bool", required: true, defaultValue: true,
-					title: "Keypad Panic Key when available is Monitored. No Panic key? Set this flag on, add a User Profile, Pin Usage: Panic. Default: On/True"
+//				input "globalPanic", "bool", required: true, defaultValue: true,
+//					title: "Keypad Panic Key when available is Monitored. No Panic key? Set this flag on, add a User Profile, Pin Usage: Panic. Default: On/True"
 //				input "globalSimContact", "capability.contactSensor", required: true,
 //					title: "Simulated Contact Sensor (Must Monitor in HSM Contacts)"
 				input "globalPinMsgs", "bool", required: false, defaultValue: true, submitOnChange: true,
@@ -357,10 +364,10 @@ def pageTwo()
 			if (globalKeypadDevices)
 				{
 				workMsg="Keypads used for arming and disarming ${globalKeypadDevices}"
-				if (globalPanic)
-					workMsg += "\nKeypad Panic key is active when available"
-				else
-					workMsg += "\nKeypad Panic key is not monitored"
+//				if (globalPanic)
+//					workMsg += "\nKeypad Panic Pins are processed"
+//				else
+//					workMsg += "\nKeypad Panic Pins are ignored"
 				if (globalPinMsgs)
 					{
 					if (globalPinLog || globalPinPush || globalPinPhone)
@@ -486,10 +493,10 @@ def initialize()
 	if (!globalDisable)
 		{
 		subscribe(globalKeypadDevices, 'codeEntered',  keypadCodeHandler)
-		if (globalPanic)
-			{
-		    subscribe (globalKeypadDevices, "contact.open", keypadPanicHandler)
-		    }
+//		if (globalPanic)
+//			{
+//		    subscribe (globalKeypadDevices, "contact.open", keypadPanicHandler)
+//		    }
 		globalKeypadDevices?.each
 			{
 			if (it.hasCommand("disableInvalidPinLogging"))
@@ -541,8 +548,9 @@ def initialize()
 			addNewChildDevice(it, 'Virtual Contact Sensor')
 			}
 		}
-	def dvc = [name: "Panic Contact", id: "Panic Id", label: "Panic Contact"]
-	addNewChildDevice(dvc, 'Virtual Contact Sensor')
+//	deprecated panic device May 18, 2019 V0.1.8
+//	def dvc = [name: "Panic Contact", id: "Panic Id", label: "Panic Contact"]
+//	addNewChildDevice(dvc, 'Virtual Contact Sensor')
 	}	
 
 def uninstalled()
@@ -562,8 +570,9 @@ def uninstalled()
 		{
 		deleteOldChildDevice(it)
 		}
-	def dvc = [name: "Panic Contact", id: "Panic Id", label: "Panic Contact"]
-	deleteOldChildDevice(dvc)
+//	deprecated panic device May 18, 2019 V0.1.8
+//	def dvc = [name: "Panic Contact", id: "Panic Id", label: "Panic Contact"]
+//	deleteOldChildDevice(dvc)
 */	}
 
 //  --------------------------Keypad support added Mar 02, 2018 V2-------------------------------
@@ -614,7 +623,7 @@ def keypadCodeHandler(evt)
 	def info_message=""
 	def pinKeypadsOK=false;
 	def damap=[dummy: "dummy"]				//dummy return map for Routine and Piston processing
-	
+	def itthepinusage	
 //	Try to find a matching pin in the pin child apps	
 	def userApps = getChildApps()		//gets all completed child apps Sep 20, 2018
 //	def userApps = findAllChildAppsByName('Nyckelharpa User')
@@ -761,16 +770,16 @@ def keypadCodeHandler(evt)
 							info_message=damap.info
 						break
 					case 'Panic':
-						if (globalPanic)
-							{
-							error_message = keypad.displayName + " Panic entered with pin for " + it.theusername
-							keypadPanicHandler(evt)					
-//							panicContactOpen()	//unable to get this working use klunky method above
-							}
-						else	
-							{
-							error_message = keypad.displayName + " Panic entered but globalPanic flag disabled with pin for " + it.theusername
-							}
+//						if (globalPanic)
+//							{
+							error_message = keypad.displayName + " Panic Pin entered for " + it.theusername
+//							keypadPanicHandler(evt)					
+							itthepinusage='Panic'
+//							}
+//						else	
+//							{
+//							error_message = keypad.displayName + " Panic Pin entered but globalPanic flag disabled with pin for " + it.theusername
+//							}
 						break
 					case 'Piston':
 //						forced to do acknowledgeArmRequest here due to a possible hardware timeout on keypad
@@ -824,6 +833,9 @@ def keypadCodeHandler(evt)
 			if (!globalRboyDth)		//Nov 3, 2018 rBoy DTH already issues the acknowledgement
 				keypad.acknowledgeArmRequest(4)				//always issue badpin very long beep
 			acknowledgeArmRequest(4,keypad);
+//			log.debug "about to set panic contact open ${itthepinusage}"
+			if (itthepinusage=='Panic')
+				keypad.panicContact()			//have dh open contact trigger panic with Custome HSM rule
 			}
 		if (globalBadPinMsgs && badPin_message !="")
 			doBadPinNotifications (badPin_message, itext)
@@ -899,7 +911,7 @@ def keypadCodeHandler(evt)
 	def mf
 	def am
 //	globalSimContact.close()
-	closePanicContact()
+//	closePanicContact()
 	execRoutine(aMap.data)
 	sendLocationEvent(name: "hsmSetArm", value: HSMarmModes[modeEntered])
 	doPinNotifications(message,itext)
@@ -1077,34 +1089,16 @@ def	keypadLighton(evt,theMode,keypad)
 	else
 	if (theMode == 'Night')					//Iris has no Night light set Partial on	
 		{
-		if (['3400','3400-G'].contains(keypad?.data.model) ||
-			keypad?.getTypeName()=="Internet Keypad")
-			{
-			if (evt.source=="keypad")
-				{keypad.setArmedNight()}
-			else
-				{
-				currkeypadmode = keypad?.currentValue("armMode",true)
-				logdebug "keypadLightHandler LightRequest: ${theMode} model: ${keypad?.getModelName()} keypadmode: ${currkeypadmode}"
-				if (currkeypadmode =="armedStay")
-					{
-//						logdebug "keypadLightHandler model: ${keypad?.getModelName()} keypadmode: ${currkeypadmode} no lights unchanged"
-					}
-				else
-					{keypad.setArmedNight()}
-				}
-			}	
-
+		if (['3400','3400-G','URC4450BC0-X-R'].contains(keypad?.data.model) || 	keypad?.getTypeName()=="Internet Keypad")
+			keypad?.setArmedNight()
 		else
-			{
 			keypad?.setArmedStay()
-			}
 		}	
 	else
 	if (theMode == 'Away')					//lights ON light on Iris
 		{keypad.setArmedAway()}
 	}
-
+/* this routine is deprecated as of May 18, 2019 */
 def keypadPanicHandler(evt)
 	{
 	logdebug "keypadPanicHandler entered, ${evt}" 
@@ -1133,6 +1127,7 @@ def keypadPanicHandler(evt)
 		}
 	}	
 
+/* this routine is deprecated May 18, 2019 */
 def keypadPanicExecute(panic_map)						//Panic mode requested
 /*	When system is armed: Open simulated sensor
 **	When system is not armed: Wait for it to arm, open simulated sensor
@@ -1160,17 +1155,10 @@ def keypadPanicExecute(panic_map)						//Panic mode requested
 	closePanicContact()
 	openPanicContact()
 	runIn(4,closePanicContact)
-//	globalSimContact.close()		//trigger an intrusion		
-//	globalSimContact.open()
-//	runIn(4,closeSimContact)
 	qsse_status_mode(false,"**Panic**")
 	}
 
-//def	closeSimContact()
-//	{
-//	globalSimContact.close()			
-//	}
-	
+
 //	Process response from async execution of WebCore Piston
 def getResponseHandler(response, data)
 	{
@@ -1823,15 +1811,15 @@ def MonitorDoorHandler(evt)		//monitored only no child device
 		}
 	}	
 
-def closePanicContact()
-	{
-	getChildDevice("${globalChildPrefix}Panic Id").close()
-	}
-
-def openPanicContact()
-	{
-	getChildDevice("${globalChildPrefix}Panic Id").open()
-	}
+//def closePanicContact()
+//	{
+//	getChildDevice("${globalChildPrefix}Panic Id").close()
+//	}
+//	close and open panic deprecated May 18, 2019
+//def openPanicContact()
+//	{
+//	getChildDevice("${globalChildPrefix}Panic Id").open()
+//	}
 	
 
 def alertHandler(evt)

@@ -26,6 +26,7 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *	May 18, 2019 v0.0.7 Minor text change on page two heading
  *	May 03, 2019 v0.0.6 Move hsmAlert subscribe to Nyckelharpa to handle siren chirps and make this module truly optional
  *	May 02, 2019 v0.0.5 Fix error displaying Open and Close messages as Null
  *	Apr 28, 2019 v0.0.4 Add open contacts messages
@@ -60,7 +61,7 @@ definition(
 
 def version()
 	{
-	return "0.0.6";
+	return "0.0.7";
 	}
 
 preferences {
@@ -179,7 +180,7 @@ def pageOneVerify() 				//edit page one info, go to pageTwo when valid
 //	This page summarizes the data prior to save	
 def pageTwo(error_data)
 	{
-	dynamicPage(name: "pageTwo", title: "Verify settings then tap Done, or go back (tap <) to change settings", install: true, uninstall: true)
+	dynamicPage(name: "pageTwo", title: "Verify settings then tap Done, or tap this device's &lt;, &#9665;, or 'back' icon to change settings", install: true, uninstall: true)
 		{
 		def chimes=false
 		def chimetxt='(Chime) '

@@ -20,6 +20,7 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *	May 16, 2019 	v0.0.7	add UEI model to keypads with 3 armed lighting modes
  *	May 10, 2019 	v0.0.6	Do what 0.0.5 said it would do but did not
  *	May 02, 2019 	v0.0.5	Make all mode settings optional
  *	Apr 30, 2019 	v0.0.4	HSM hijacked command setExitDelay to send all HSM delay to keypad
@@ -81,7 +82,7 @@ preferences {
 
 def version()
 	{
-	return "0.0.6";
+	return "0.0.7";
 	}
 
 def pageOne(error_msg)
@@ -242,7 +243,7 @@ def pageOneVerify() 				//edit page One
 
 def pageTwo()
 	{
-	dynamicPage(name: "pageTwo", title: "<b>Mode settings verified, press 'Done' to install, press '<' or Back to change</b>", install: true, uninstall: true)
+	dynamicPage(name: "pageTwo", title: "<b>Mode settings verified, press 'Done' to install, or tap this device's &lt;, &#9665;, or 'back' icon to change settings</b>", install: true, uninstall: true)
 		{
 		section ("<b>Debugging messages</b>")
 			{
@@ -403,7 +404,7 @@ def alarmStatusHandler(evt)
 				{
 				parent.globalKeypadDevices.each
 					{
-					if (['3400','3400-G'].contains(it.data.model))
+					if (['3400','3400-G','URC4450BC0-X-R'].contains(it.data.model))
 						it.setArmedNight()
 					else	
 						it.setArmedStay()			//non Centralite keypads have 3 mode lights, light partial
@@ -429,10 +430,10 @@ def alarmStatusHandler(evt)
 					{
 					parent.globalKeypadDevices.each
 						{
-						if (['3400','3400-G'].contains(it.data.model))
+						if (['3400','3400-G','URC4450BC0-X-R'].contains(it.data.model))
 							it.setExitNight(evt.jsonData.seconds)
 						else	
-							it.setExitStay(evt.jsonData.seconds) //non Centralite keypads have 3 mode lights, light partial
+							it.setExitStay(evt.jsonData.seconds) //non Centralite/UEI keypads have 3 mode lights, light partial
 						}
 					}
 				ttsExit(evt.jsonData.seconds)
