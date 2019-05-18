@@ -236,7 +236,8 @@ _This DH may be used with the Centralite V2, Centralite V3, Iris V2, and UEI(bet
 <a name="userpin"></a>
 ## 11. User pin Profiles
 
-When using the app's keypad DH,  User pin profiles must be created for each valid pin code.
+When using the app's keypad Device Handler
+* For each valid user pin, create a User pin profile
 
 * Pin codes may be restricted by date/time, use count (burnable pins), and keypad device
 
@@ -262,7 +263,7 @@ What kind of device do you want to use: select Contact Sensor<br />
 Select Contact Sensors: check Keypad devices using user provided Keypad Driver, click Update<br />
 What do you want to monitor?: Set Sensor Opens on/true<br />
 Set Alerts for Text, Audio, Siren and Lights<br />
-Click on the Arm This Rule<br />
+Click the "Arm This Rule" button<br />
 Click Done
 
 [:arrow_up_small: Back to top](#top)
