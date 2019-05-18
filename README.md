@@ -14,8 +14,9 @@
 [&ensp;9. Talker messages](#talker)<br />
 [10. Keypad Device Handler](#keypadDH)<br />
 [11. User/Pin Profiles](#userpin)<br />
-[12. Debugging](#testing)<br />
-[13. Get Help, report an issue, or contact information](#help)
+[12. Create Custom HSM Panic Rule](#panicrules)<br />
+[13. Debugging](#testing)<br />
+[14. Get Help, report an issue, or contact information](#help)
 <a name="purpose"></a>
 ## 1. Purpose
 Nyckepharpa is a user created Hubitat Home Security Monitor (HSM) extension, providing features not available in HSM. Additionally, it simplifies setting up security related messaging. 
@@ -31,9 +32,8 @@ Why is this needed? HSM does not arm the system when a contact is open. Examples
 * Provides an easy to use security related message control center with output to TTS, Speakers, and Pushover
 
 * Keypads: Centralite V2 and V3, Iris V2, and UEI(beta) devices may use a ported version of Mitch Pond's Keypad DH making he keypad function as it did in SmartThings with the SHM Delay App, and it uses an easy to use Pin maintenance module with available use count, time. and devices restrictions.
-* When Panic is issued using the ported version of Mitch Pond's keypad with the Nyckelharpa app:<br /> 
-When system is armed: triggers instant intrusion<br />
-When system is disarmed: attempts to arm system then issues an intrusion
+* When the Panic key is pressed or a Panic Pin is entered using the ported version of Mitch Pond's keypad with the Nyckelharpa app, and a properly configured HSM Custom rule is active:<br /> 
+The system immediately executes the custom rule's alert functions
 
 [:arrow_up_small: Back to top](#top)
 <a name="support"></a>
@@ -98,7 +98,8 @@ Detailed instuctions for each step follow the Quick Setup Guide. Begin by clicki
 2. Setup [Forced Arming, Adjust HSM's settings](#adjustHSM) 
 3. Create [the Required Modefix profile](#modefix)
 4. Optionally create a [Talker profile](#talker)
-5. Optionally set a one or more existing keypad devices to use the user provided [Centralite Driver](#keypadDH), then add one or more [User pin profiles](#userpin) 
+5. Optionally set a one or more existing keypad devices to use the user provided [Centralite Driver](#keypadDH), then add one or more [User pin profiles](#userpin)
+6. Optionally enable [HSM Panic](#panicrules) response by creating a Custom HSM Panic Rule 
 
 [:arrow_up_small: Back to top](#top)
 
@@ -244,8 +245,21 @@ When using the app's keypad DH,  User pin profiles must be created for each vali
 * You may define "Panic Pins" designed for use on keypads without a Panic key, but may be used on any keypad
 
 [:arrow_up_small: Back to top](#top)
+
+<a name="panicrules"></a>
+## 12. Create Custom HSM Panic Rule
+
+When using the app's keypad DH,  User pin profiles must be created for each valid pin code.
+
+* Pin codes may be restricted by date/time, use count (burnable pins), and keypad device
+
+* To use the Iris V2's instant arming, no pin required, create a User profile with pin code 0000. It is not accepted for OFF
+
+* You may define "Panic Pins" designed for use on keypads without a Panic key, but may be used on any keypad
+
+[:arrow_up_small: Back to top](#top)
 <a name="testing"></a>
-## 12. Debugging
+## 13. Debugging
 1. No entry delay tones on keypad<br />
 Keypad may be selected as an Optional Alarm device. Remove it as an Alarm device
 
@@ -257,7 +271,7 @@ A user reported the Snapshot app somehow interfered with Nyclelharpa's forced ar
 
 [:arrow_up_small: Back to top](#top)
 <a name="help"></a>
-## 13. Get Help, report an issue, and contact information
+## 14. Get Help, report an issue, and contact information
 * [Use the HE Community's Nyckelharpa forum](https://community.hubitat.com/t/release-nyckelharpa/15062) to request assistance, or to report an issue. Direct private messages to user @arnb
 
 [:arrow_up_small: Back to top](#top)
