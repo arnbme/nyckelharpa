@@ -133,7 +133,7 @@ Forced Arming is a two step process: An standard initial HSM arming that fails n
 * Follow instrucions in Section 6 above, generating the NCKL-child-contact-sensors, and the NCKL-Panic Contact 
 
 2. Setup HSM's devices for Forced Arming: 
-* In Intrusion-Away, Intrusion-Home, and Intrusion-Night, "Contact Sensors": replace the real contact-sensor-name(s) with the virtual NCKL-contact-sensor-name(s), and add the NCKL-Panic-Contact
+* In Intrusion-Away, Intrusion-Home, and Intrusion-Night, "Contact Sensors": replace the real contact-sensor-name(s) with the virtual NCKL-contact-sensor-name(s)
 * In "Configure/Arming/Disarming/Cancel Options", "Delay only for selected doors": replace the real contact-sensor-name(s) with the virtual NCKL-contact-sensor-name(s)
 
 3. How to Force Arm, a two step process: Arming that fails normally, then Arming again within 15 seconds
@@ -249,13 +249,21 @@ When using the app's keypad DH,  User pin profiles must be created for each vali
 <a name="panicrules"></a>
 ## 12. Create Custom HSM Panic Rule
 
-When using the app's keypad DH,  User pin profiles must be created for each valid pin code.
+A custom HSM Rule is required to force an HSM response to a Panic key press, or Panic pin entry, enabling an instant Panic response even when the system is disarmed
 
-* Pin codes may be restricted by date/time, use count (burnable pins), and keypad device
+1. Click on Apps-->then click Hubitat Safety Monitor 
 
-* To use the Iris V2's instant arming, no pin required, create a User profile with pin code 0000. It is not accepted for OFF
+2. Click on Custom
 
-* You may define "Panic Pins" designed for use on keypads without a Panic key, but may be used on any keypad
+3. Click Create New Monitoring Rule --> Name this Custom Monitoring Rule-- enter Panic -->
+
+4. Rule settings
+What kind of device do you want to use: select Contact Sensor<br />
+Select Contact Sensors: check Keypad devices using user provided Keypad Driver, click Update<br />
+What do you want to monitor?: Set Sensor Opens on/true<br />
+Set Alerts for Text, Audio, Siren and Lights<br />
+Click on the Arm This Rule
+Click Done
 
 [:arrow_up_small: Back to top](#top)
 <a name="testing"></a>
