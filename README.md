@@ -27,7 +27,7 @@ Nyckepharpa is a user created Hubitat Home Security Monitor (HSM) extension, pro
 ## 2. Features
 
 * Under user control, forces HSM arming when a contact is open.<br /> 
-Why is this needed? HSM does not arm the system when a contact is open. Examples:<br />It's 1AM, you want to arm the system for night, but a contact is broken.<br /> You are away from home, forgot to arm the system, and when you try, oops the back door is open. 
+Why is this needed? HSM does not arm the system when a contact is open. Examples:<br /><br />It's 1AM, you want to arm the system for night, but a contact is broken.<br /><br />You are away from home, forgot to arm the system, and when you try, oops the back door is open. 
 * Adjusts Hubitat's mode when HSM's arm state changes. (HSM adjusts HSM's arm state when the mode changes)
 * Provides an easy to use security related message control center with output to TTS, Speakers, and Pushover
 
@@ -80,9 +80,11 @@ There are four modules and an optional Keypad Device Handler (DH) associated wit
   </tr>
 </table> 
 
-* Using the link below, let's begin by installing the Nyckelharpa parent module into Hubitat (HE) from this Github repository.<br /> OAuth is not required and should be skipped.<br /> Should you want to used the Install's Import button each module's Github raw address is availabe at the beginning of the module.<br />
-https://docs.hubitat.com/index.php?title=How_to_Install_Custom_Apps <br />
-Then then install Modefix, Talker, Contact and User, ignore OAuth, and do not add these modules as User Apps.
+* https://docs.hubitat.com/index.php?title=How_to_Install_Custom_Apps <br />
+* let's begin by installing the Nyckelharpa parent module into Hubitat (HE) from this Github repository.<br />
+* OAuth is not required and should be skipped.<br /> 
+* Should you want to used the Install's Import button each module's Github raw address is availabe at the beginning of the module.<br />
+* Then then install Modefix, Talker, and User, ignore OAuth, and do not add these modules as User Apps.
 
 * Should you be using the user Centralite Keypad driver follow these directions<br />
 https://docs.hubitat.com/index.php?title=How_to_Install_Custom_Drivers
