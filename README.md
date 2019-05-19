@@ -273,7 +273,7 @@ Set Alerts for Text, Audio, Siren and Lights<br />
 Click the "Arm This Rule" button<br />
 Click Done
 
-5. Do a Panic test: Press the keypad's Panic button, or enter a Panic pin number on Centralite, On Iris: enter Panic Pin then Off (Partial and On work but not recommended)
+5. Do a Panic test: Press the Iris keypad's Panic button, on Centralite V3 simultaneously press both "Police Icon" buttons,  or enter a Panic pin number on Centralite, or on Iris: enter Panic Pin then Off (Partial and On work but not recommended)
 
 [:arrow_up_small: Back to top](#top)
 <a name="testing"></a>
