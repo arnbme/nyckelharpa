@@ -16,7 +16,8 @@
 [11. User/Pin Profiles](#userpin)<br />
 [12. Create Custom HSM Panic Rule](#panicrules)<br />
 [13. Debugging](#testing)<br />
-[14. Get Help, report an issue, or contact information](#help)
+[14. Uninstalling](#uninstall)<br />
+[15. Get Help, report an issue, or contact information](#help)
 <a name="purpose"></a>
 ## 1. Purpose
 Nyckepharpa is a user created Hubitat Home Security Monitor (HSM) extension, providing features not available in HSM. Additionally, it simplifies setting up security related messaging. 
@@ -281,8 +282,15 @@ Create and save a Modefix profile
 A user reported the Snapshot app somehow interfered with Nyclelharpa's forced arming, and removing or disabling Snapshot fixed the issue. This does not make sense to me, merely reporting what i was told by the user.
 
 [:arrow_up_small: Back to top](#top)
+<a name="uninstall"></a>
+## 14. Uninstalling
+1. If using forced arming, change NCKL-child devices used in HSM to real devices<br />
+2. If using Panic Key or Panic pins, remove custom Panic rule from HSM<br />
+3. it is now safe to remove Nyckelharpa, child devices are deleted during removal process
+
+[:arrow_up_small: Back to top](#top)
 <a name="help"></a>
-## 14. Get Help, report an issue, and contact information
+## 15. Get Help, report an issue, and contact information
 * [Use the HE Community's Nyckelharpa forum](https://community.hubitat.com/t/release-nyckelharpa/15062) to request assistance, or to report an issue. Direct private messages to user @arnb
 
 [:arrow_up_small: Back to top](#top)
