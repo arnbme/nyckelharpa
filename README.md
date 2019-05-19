@@ -229,11 +229,13 @@ The app's Keypad Device Handler was created by Mitch Pond on SmartThings where i
 
 _This DH may be used with the Centralite V2, Centralite V3, Iris V2, and UEI(beta) keypads_
 
-1. After installing the keypad DH, go to devices, change Type to Centralitex Keypad, Save Device
+1. After installing the keypad DH, edit keypad devices changing Type to Centralitex Keypad, Save Device
 
 2. Remove keypad from HSM, Add keypad to Nyckelharpa Global Settings
 
 3. Create User pin profiles
+
+4. Create HSM Custom Panic Rule
 
 [:arrow_up_small: Back to top](#top)
 <a name="userpin"></a>
@@ -253,7 +255,7 @@ When using the app's keypad Device Handler
 <a name="panicrules"></a>
 ## 12. Create Custom HSM Panic Rule
 
-A custom HSM Rule is required to force an HSM response to a Panic key press, or Panic pin entry, enabling an instant Panic response even when the system is disarmed
+*A custom HSM Rule is required* to force an HSM response to a Panic key press, or Panic pin entry, enabling an instant Panic response even when the system is disarmed
 
 1. Click on Apps-->then click Hubitat Safety Monitor 
 
@@ -279,7 +281,7 @@ Keypad may be selected as an Optional Alarm device. Remove it as an Alarm device
 Create and save a Modefix profile
 
 3. Forced arming does not occur<br />
-A user reported the Snapshot app somehow interfered with Nyclelharpa's forced arming, and removing or disabling Snapshot fixed the issue. This does not make sense to me, merely reporting what i was told by the user.
+A user reported the Snapshot app somehow interfered with Nyclelharpa's forced arming, and removing or disabling Snapshot fixed the issue. This does not make sense to me, merely reporting what I was told by the user.
 
 [:arrow_up_small: Back to top](#top)
 <a name="uninstall"></a>
