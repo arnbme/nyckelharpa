@@ -39,7 +39,7 @@ Why is this needed? HSM does not arm the system when a contact is open. Examples
 [:arrow_up_small: Back to top](#top)
 <a name="support"></a>
 ## 3. Support this project
-This app is free. Howeverr, if you like it, derived benefit from it, and want to express your support, donations are appreciated.
+This app is free. However, if you like it, derived benefit from it, and want to express your support, donations are appreciated.
 * Paypal: https://www.paypal.me/arnbme 
 
 [:arrow_up_small: Back to top](#top)
