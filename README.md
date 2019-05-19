@@ -32,8 +32,8 @@ Why is this needed? HSM does not arm the system when a contact is open. Examples
 * Adjusts Hubitat's mode when HSM's arm state changes. (HSM adjusts HSM's arm state when the mode changes)
 * Provides an easy to use security related message control center with output to TTS, Speakers, and Pushover
 
-* Keypads: Centralite V2 and V3, Iris V2, and UEI(beta) devices may use a ported version of Mitch Pond's Keypad DH making he keypad function as it did in SmartThings with the SHM Delay App, with an easy to use Pin maintenance module with available Panic pins, burnable pins aka maximum use count, restricted date and time, and restricted keypad devices.
-* When the keypad's Panic key is pressed, or a Panic Pin is entered, using the Cntralitex Keypad driver, along with the Nyckelharpa app, and a properly configured HSM Custom rule is active:<br /> 
+* Keypads: Centralite V2 and V3, Iris V2, and UEI(beta) devices may use a ported version of Mitch Pond's Keypad DH, Centralitex Keypad making he keypad function as it did in SmartThings with the SHM Delay App, with an easy to use Pin maintenance module with available Panic pins, burnable pins aka maximum use count, restricted date and time, and restricted keypad devices.
+* When the keypad's Panic key is pressed, or a Panic Pin is entered, using the Centralitex Keypad driver along with the Nyckelharpa app, and a properly configured HSM Custom rule is active:<br /> 
 *The system immediately executes the custom rule's alert functions*
 
 [:arrow_up_small: Back to top](#top)
