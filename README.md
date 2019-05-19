@@ -27,14 +27,14 @@ Nyckepharpa is a user created Hubitat Home Security Monitor (HSM) extension, pro
 <a name="features"></a>
 ## 2. Features
 
-* Under user control, forces HSM arming when a contact is open.<br /> 
+* HSM arming when a contact is open, with easy user control<br /> 
 Why is this needed? HSM does not arm the system when a contact is open. Examples:<br /><br />It's 1AM, you want to arm the system for night, but a contact is broken.<br /><br />You are away from home, forgot to arm the system, and when you try, oops the back door is open. 
 * Adjusts Hubitat's mode when HSM's arm state changes. (HSM adjusts HSM's arm state when the mode changes)
 * Provides an easy to use security related message control center with output to TTS, Speakers, and Pushover
 
 * Keypads: Centralite V2 and V3, Iris V2, and UEI(beta) devices may use a ported version of Mitch Pond's Keypad DH, Centralitex Keypad making he keypad function as it did in SmartThings with the SHM Delay App, with an easy to use Pin maintenance module with available Panic pins, burnable pins aka maximum use count, restricted date and time, and restricted keypad devices.
-* When the keypad's Panic key is pressed, or a Panic Pin is entered, using the Centralitex Keypad driver along with the Nyckelharpa app, and a properly configured HSM Custom rule is active:<br /> 
-*The system immediately executes the custom rule's alert functions*
+* Keypad Panic Alerts: When the keypad's Panic key is pressed, or a Panic Pin is entered, using the Centralitex Keypad driver, a properly configured active HSM Custom Panic rule, and the Nyckelharpa app when Panic Pins are used:<br /> 
+*The system immediately executes the custom HSM rule's alert functions*
 
 [:arrow_up_small: Back to top](#top)
 <a name="support"></a>
