@@ -275,6 +275,8 @@ Click Done
 
 5. Do a Panic test: Press the Iris keypad's Panic button, on Centralite V3 simultaneously press both "Police Icon" buttons,  or enter a Panic pin number on Centralite / UEI, or on Iris: enter Panic Pin then Off (Partial and On work but not recommended)
 
+6. The Panic Alert may be stopped by entering a valid user pin on Centralite / UEI, or a valid pin and OFF on an Iris; or the "Cancel Alerts" button from HE App HSM options
+
 [:arrow_up_small: Back to top](#top)
 <a name="testing"></a>
 ## 13. Debugging
