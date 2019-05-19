@@ -290,7 +290,7 @@ A user reported the Snapshot app somehow interfered with Nyclelharpa's forced ar
 [:arrow_up_small: Back to top](#top)
 <a name="uninstall"></a>
 ## 14. Uninstalling
-1. If using forced arming, change NCKL-child devices used in HSM to real devices<br />
+1. If using forced arming, change HSM settings NCKL-child devices to real devices<br />
 2. If using Panic Key or Panic pins, remove custom Panic rule from HSM<br />
 3. it is now safe to remove Nyckelharpa, child devices are deleted during removal process
 
