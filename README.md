@@ -263,7 +263,7 @@ A custom HSM Rule is required to force an HSM response to a Panic key press, or 
 
 4. Rule settings
 What kind of device do you want to use: select Contact Sensor<br />
-Select Contact Sensors: check Keypad devices using user provided Keypad Driver, click Update<br />
+Select Contact Sensors: *check the Keypad Devices using user provided Centralitex Keypad Driver*, click Update<br />
 What do you want to monitor?: Set Sensor Opens on/true<br />
 Set Alerts for Text, Audio, Siren and Lights<br />
 Click the "Arm This Rule" button<br />
