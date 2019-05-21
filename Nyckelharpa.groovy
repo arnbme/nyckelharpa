@@ -22,6 +22,10 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  * 
+ *	May 21, 2019 v0.1.9	add logic to show user Json file get error and not crash
+ *	May 19, 2019 v0.1.9	add SimKeypad back into the mix
+ *						add logic originally from CobraMax. verify all user modules and keypad driver are current
+ *						compare current version to external file
  *	May 18, 2019 v0.1.8	add support for using Panic Pin contact for HSM Custom Panic rule, HSM arming not required 
  *						Use existing DH command panicContact changed to allow external call, when Panic pin is entered	
  *						DH already supports using the device Panic pin for a Panic rule
@@ -104,24 +108,22 @@ preferences {
 
 def version()
 	{
-	return "0.1.8";
+	return "0.1.9";
 	}
 def main()
 	{
+	
 	dynamicPage(name: "main", install: true, uninstall: true)
 		{
 		if (app.getInstallationState() == 'COMPLETE')	//note documentation shows as lower case, but returns upper
-			{  
-			def modeFixChild="Create"
-			getChildApps().each
-				{ 
-				if (it.getLabel()=='Nyckelharpa ModeFix')	
-					{
-					modeFixChild="Update"
-					}
-				}
-			if (modeFixChild=='Create')
+			{
+			def appVersions=getAppVersions()
+			def verMsg=genVersionMsg(appVersions) 
+			def modeFixChild="Update"
+			def appVerString=appVersions as String
+			if (!appVerString.contains("Nyckelharpa_ModeFix"))
 				{
+				modeFixChild='Create'
 				section 
 					{
 					paragraph "<b>Warning: A Modefix profile must be created, otherwise keypad exit delay tones, and Talker open/close contact messages are not generated" 
@@ -132,6 +134,8 @@ def main()
 				{
 				input "logDebugs", "bool", required: false, defaultValue:false,
 					title: "Log debugging messages? Nyckelharpa module only. Normally off/false"
+				if (verMsg>"")
+					paragraph verMsg.substring(1,)
 				}
 			section
     			{
@@ -143,29 +147,23 @@ def main()
 //				}
 			section
 				{
-				if (globalFixMode && modeFixChild == "Create")
-					{
-					app(name: "ModeFixProfile", appName: "Nyckelharpa ModeFix", namespace: "arnbme", title: "${fixtitle}", multiple: false)
-					}	
-				else
-					{
-					app(name: "ModeFixProfile", appName: "Nyckelharpa ModeFix", namespace: "arnbme", title: "${fixtitle}", multiple: false)
-					}	
+				app(name: "ModeFixProfile", appName: "Nyckelharpa ModeFix", namespace: "arnbme", title: "${fixtitle}", multiple: false)
 				}
 			section 
 				{
-				app(name: "TalkerProfile", appName: "Nyckelharpa Talker", namespace: "arnbme", title: "Create A New Talker Profile", multiple: true)
+				app(name: "TalkerProfile", appName: "Nyckelharpa Talker", namespace: "arnbme", 
+					title: "Create A New Talker Profile", multiple: true)
 				}
-			if (globalKeypadDevices)
+			section 
+				{
+				app(name: "SimKypdProfile", appName: "Nyckelharpa Simkeypad", namespace: "arnbme", title: "Create A New Sim Keypad Profile", multiple: true)
+				}
+			if (globalKeypadDevices || SimKypdProfile)
 				{
 				section 
 					{
 					app(name: "UserProfile", appName: "Nyckelharpa User", namespace: "arnbme", title: "Create A New User Profile", multiple: true)
 					}
-//				section 
-//					{
-//					app(name: "SimKypdProfile", appName: "Nyckelharpa Simkypd", namespace: "arnbme", title: "Create A New Sim Keypad Profile", multiple: true)
-//					}
 				}	
 			}
 		else
@@ -1866,5 +1864,108 @@ def delayBeep()
 def delaysetDisarmed()
 	{
 	globalKeypadDevices.setDisarmed()
-	}	
+	}
+
+
+/*	Hightly modified Version check code from CobraMax
+ *	https://github.com/CobraVmax/Hubitat/tree/master/Update%20Code
+ */
+def genVersionMsg(appVersions)
+	{
+	def jsonData
+	def err=false
+	def wkMsg
+//	Get remote manually maintained JSON file containing: module name : current version number
+//	was a separate routine but could not figure out how to retrun a error in json format
+	def paramsUD = [uri: "https://www.arnb.org/shmdelay/versions.json"]
+   	try {
+        httpGet(paramsUD) 
+        	{ respUD ->
+				jsonData=respUD.data
+			}
+		}	
+	catch (e)
+		{
+		log.error "getJsonFile: Contact app author. Something went wrong: -  $e"
+		err=e
+		}
+
+	if (err)
+		wkMsg="\nError getting version file, please contact app author "+err
+	else
+		{
+	//	def appVersions=getAppVersions()		//needed at beginning, so passed it instead
+		log.debug jsonData
+		wkMsg=versionCheck("Nyckelharpa", jsonData, appVersions)
+		wkMsg+=versionCheck("Nyckelharpa ModeFix", jsonData, appVersions)
+		wkMsg+=versionCheck("Nyckelharpa Talker", jsonData, appVersions)
+		wkMsg+=versionCheck("Nyckelharpa User", jsonData, appVersions)
+		wkMsg+=versionCheck("Centralitex Keypad", jsonData, appVersions, device=true)
+		}
+	return wkMsg
+	}
 	
+/*
+ *	get app version based upon child apps and Json app names
+ */
+def getAppVersions()
+	{
+	def map = [Nyckelharpa: version()]	//name of this, the parent app 
+	def appMapName
+	getChildApps().each 
+		{
+		appMapName=it.getName().replace(" ", "_")
+		if (map."${appMapName}" <= "") 
+			map << ["$appMapName": it?.version()]
+		}	
+	if (globalKeypadDevices)
+		{
+		globalKeypadDevices.find
+			{
+			if (it.typeName=='Centralitex Keypad')
+				{
+//				map << [Centralitex_Keypad: it.version()]	//version returning null???
+//				log.debug "version ${it.version()}"
+				map << [Centralitex_Keypad: it.currentValue('driverVersion')]	//get stored attribute version
+				return true
+				}
+			}	
+		}			
+	return map	
+	}	
+
+
+//	test each found app and driver	
+def versionCheck(moduleName, jsonData, appVersions, device=false)
+	{
+//	def copyrightRead = (jsonData.copyright)
+	def moduleNameJson=moduleName.replace(" ", "_")
+	def newVer
+	def appText='Module'
+	if (device)
+		{
+		appText='Driver'
+		newVer = (jsonData.versions.Driver."${moduleName}") as String
+		}
+	else
+		newVer = (jsonData.versions.Application."${moduleName}") as String
+	currentVer = appVersions."${moduleNameJson}"
+
+	if(newVer == null)
+		return "\n<b>$moduleName missing on Json file, contact app author</b>"       
+
+	if(currentVer == null)
+		return ""
+//		return "\n<b>$moduleName not installed</b>"       
+
+	if(newVer == "NLS")
+		return "\n<b>$moduleName no longer supported</b>"       
+
+	if(currentVer == newVer)
+		return ""					//module is current
+  
+	if(currentVer < newVer)
+		return ("\n<b>${appText}: $moduleName, Version: $newVer available</b>")
+	
+	return ("\n<b>${appText}: $moduleName, beta version: $currentVer in use</b>")
+	}
