@@ -22,6 +22,7 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  * 
+ *	May 21, 2019 v0.1.9	add logic to show user Json file get error and not crash
  *	May 19, 2019 v0.1.9	add SimKeypad back into the mix
  *						add logic originally from CobraMax. verify all user modules and keypad driver are current
  *						compare current version to external file
@@ -1871,37 +1872,39 @@ def delaysetDisarmed()
  */
 def genVersionMsg(appVersions)
 	{
-	def jsonData=getJsonFile()
-//	def appVersions=getAppVersions()		//needed at beginning, so passed it instead
-	def wkMsg=versionCheck("Nyckelharpa", jsonData, appVersions)
-	wkMsg+=versionCheck("Nyckelharpa ModeFix", jsonData, appVersions)
-	wkMsg+=versionCheck("Nyckelharpa Talker", jsonData, appVersions)
-	wkMsg+=versionCheck("Nyckelharpa User", jsonData, appVersions)
-	wkMsg+=versionCheck("Centralitex Keypad", jsonData, appVersions, device=true)
-	return wkMsg
-	}
-	
-/*
- * Get remote manually maintained JSON file containing: module name : current version number
- */
-def getJsonFile()
-	{
-//	logdebug "getJsonFile entered"
+	def jsonData
+	def err=false
+	def wkMsg
+//	Get remote manually maintained JSON file containing: module name : current version number
+//	was a separate routine but could not figure out how to retrun a error in json format
 	def paramsUD = [uri: "https://www.arnb.org/shmdelay/versions.json"]
    	try {
         httpGet(paramsUD) 
         	{ respUD ->
-				return respUD.data
+				jsonData=respUD.data
 			}
 		}	
 	catch (e)
 		{
-//		logdebug "Contact app author. Something went wrong: -  $e"
-		return ("$e")
+		log.error "getJsonFile: Contact app author. Something went wrong: -  $e"
+		err=e
 		}
+
+	if (err)
+		wkMsg="\nError getting version file, please contact app author "+err
+	else
+		{
+	//	def appVersions=getAppVersions()		//needed at beginning, so passed it instead
+		log.debug jsonData
+		wkMsg=versionCheck("Nyckelharpa", jsonData, appVersions)
+		wkMsg+=versionCheck("Nyckelharpa ModeFix", jsonData, appVersions)
+		wkMsg+=versionCheck("Nyckelharpa Talker", jsonData, appVersions)
+		wkMsg+=versionCheck("Nyckelharpa User", jsonData, appVersions)
+		wkMsg+=versionCheck("Centralitex Keypad", jsonData, appVersions, device=true)
+		}
+	return wkMsg
 	}
-
-
+	
 /*
  *	get app version based upon child apps and Json app names
  */
@@ -1922,6 +1925,7 @@ def getAppVersions()
 			if (it.typeName=='Centralitex Keypad')
 				{
 //				map << [Centralitex_Keypad: it.version()]	//version returning null???
+//				log.debug "version ${it.version()}"
 				map << [Centralitex_Keypad: it.currentValue('driverVersion')]	//get stored attribute version
 				return true
 				}
