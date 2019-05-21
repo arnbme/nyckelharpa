@@ -14,8 +14,10 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
- * 	May 20, 2019 v0.2.0 allowed routine version() to be externally called, but it does not return value on external call
- *							placed version in into attribute driverVersion for use by nyckelharpa parent module
+ * 	May 21, 2019 v0.2.0 use updateDataValue to store deviceVersion in device Data. Used with Nyckelharpa version testing.
+ *							calling version from an external app returns null (sigh) known issue not going to be fixed
+ *							add Command "version" allowing external call
+ *							version() return works when called from device code													
  * 	May 18, 2019 v0.1.9 Make existing routine panicCommand useable from external modules
  *							Used by Nyckelharpa for Panic Pin procssing
  *							Add Enable Panic setting similar HE Device Handlers, unable to get setting name
@@ -79,7 +81,6 @@ metadata {
 		
 		attribute "armMode", "String"
         attribute "lastUpdate", "String"
-		attribute "driverVersion", "String"
 		
 		command "setDisarmed"
 		command "setArmedAway"
@@ -120,18 +121,9 @@ metadata {
 
 def version()
 	{
+	updateDataValue("driverVersion", "0.2.0")	//Stores in device Data
 	return "0.2.0";
 	}
-
-def installed() {
-    log.info "Installed with settings: ${settings}"
-	sendEvent(name: "driverVersion", value: version())
-}
-
-def updated() {
-    log.info "Updated with settings: ${settings}"
-	sendEvent(name: "driverVersion", value: version())
-}
 
 // Statuses:
 // 00 - Command: setDisarmed   Centralite all icons off / Iris Off button on

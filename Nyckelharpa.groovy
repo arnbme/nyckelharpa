@@ -22,10 +22,12 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  * 
- *	May 21, 2019 v0.1.9	add logic to show user Json file get error and not crash
+ *	May 21, 2019 v0.1.9	add logic to handle failure of Json file httpget and produce visible message
+ *						get the Centralitex Keypad version from Device.getDaValue driverVersion field
+ *						directly calling keypads version() routine returns null
  *	May 19, 2019 v0.1.9	add SimKeypad back into the mix
  *						add logic originally from CobraMax. verify all user modules and keypad driver are current
- *						compare current version to external file
+ *						compare current version to external JSON file
  *	May 18, 2019 v0.1.8	add support for using Panic Pin contact for HSM Custom Panic rule, HSM arming not required 
  *						Use existing DH command panicContact changed to allow external call, when Panic pin is entered	
  *						DH already supports using the device Panic pin for a Panic rule
@@ -1867,7 +1869,7 @@ def delaysetDisarmed()
 	}
 
 
-/*	Hightly modified Version check code from CobraMax
+/*	Highly modified Version check code from CobraMax
  *	https://github.com/CobraVmax/Hubitat/tree/master/Update%20Code
  */
 def genVersionMsg(appVersions)
@@ -1876,7 +1878,7 @@ def genVersionMsg(appVersions)
 	def err=false
 	def wkMsg
 //	Get remote manually maintained JSON file containing: module name : current version number
-//	was a separate routine but could not figure out how to retrun a error in json format
+//	was a separate routine but could not figure out how to return an error in json format
 	def paramsUD = [uri: "https://www.arnb.org/shmdelay/versions.json"]
    	try {
         httpGet(paramsUD) 
@@ -1895,7 +1897,7 @@ def genVersionMsg(appVersions)
 	else
 		{
 	//	def appVersions=getAppVersions()		//needed at beginning, so passed it instead
-		log.debug jsonData
+	//	log.debug jsonData
 		wkMsg=versionCheck("Nyckelharpa", jsonData, appVersions)
 		wkMsg+=versionCheck("Nyckelharpa ModeFix", jsonData, appVersions)
 		wkMsg+=versionCheck("Nyckelharpa Talker", jsonData, appVersions)
@@ -1924,13 +1926,14 @@ def getAppVersions()
 			{
 			if (it.typeName=='Centralitex Keypad')
 				{
-//				map << [Centralitex_Keypad: it.version()]	//version returning null???
-//				log.debug "version ${it.version()}"
-				map << [Centralitex_Keypad: it.currentValue('driverVersion')]	//get stored attribute version
+// fails		map << [Centralitex_Keypad: it.version()]	//version returning null???
+				it.version() 		//force refresh of device.Data.driverVersion
+				map << [Centralitex_Keypad: it.getDataValue('driverVersion')]	//get stored data version
 				return true
 				}
 			}	
-		}			
+		}
+//	log.debug map	
 	return map	
 	}	
 
@@ -1938,7 +1941,6 @@ def getAppVersions()
 //	test each found app and driver	
 def versionCheck(moduleName, jsonData, appVersions, device=false)
 	{
-//	def copyrightRead = (jsonData.copyright)
 	def moduleNameJson=moduleName.replace(" ", "_")
 	def newVer
 	def appText='Module'
