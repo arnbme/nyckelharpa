@@ -27,19 +27,19 @@ Nyckepharpa is a user created Hubitat Home Security Monitor (HSM) extension, pro
 <a name="features"></a>
 ## 2. Features
 
-* Under user control, forces HSM arming when a contact is open.<br /> 
+* HSM arming when a contact is open, with easy user control<br /> 
 Why is this needed? HSM does not arm the system when a contact is open. Examples:<br /><br />It's 1AM, you want to arm the system for night, but a contact is broken.<br /><br />You are away from home, forgot to arm the system, and when you try, oops the back door is open. 
 * Adjusts Hubitat's mode when HSM's arm state changes. (HSM adjusts HSM's arm state when the mode changes)
 * Provides an easy to use security related message control center with output to TTS, Speakers, and Pushover
 
-* Keypads: Centralite V2 and V3, Iris V2, and UEI(beta) devices may use a ported version of Mitch Pond's Keypad DH making he keypad function as it did in SmartThings with the SHM Delay App, and it uses an easy to use Pin maintenance module with available use count, time. and devices restrictions.
-* When the Panic key is pressed or a Panic Pin is entered using the ported version of Mitch Pond's keypad with the Nyckelharpa app, and a properly configured HSM Custom rule is active:<br /> 
-The system immediately executes the custom rule's alert functions
+* Keypads: Centralite V2 and V3, Iris V2, and UEI(beta) devices may use a ported version of Mitch Pond's Keypad DH, Centralitex Keypad making he keypad function as it did in SmartThings with the SHM Delay App, with an easy to use Pin maintenance module with available Panic pins, burnable pins aka maximum use count, restricted date and time, and restricted keypad devices.
+* Keypad Panic Alerts: When the keypad's Panic key is pressed, or a Panic Pin is entered, using the Centralitex Keypad driver, a properly configured active HSM Custom Panic rule, and the Nyckelharpa app when Panic Pins are used:<br /> 
+*The system immediately executes the custom HSM rule's alert functions*
 
 [:arrow_up_small: Back to top](#top)
 <a name="support"></a>
 ## 3. Support this project
-This app is free and very much beta code. However, if you like it, derived benefit from it, and want to express your support, donations are appreciated.
+This app is free. However, if you like it, derived benefit from it, and want to express your support, donations are appreciated.
 * Paypal: https://www.paypal.me/arnbme 
 
 [:arrow_up_small: Back to top](#top)
@@ -84,8 +84,10 @@ There are four modules and an optional Keypad Device Handler (DH) associated wit
 * https://docs.hubitat.com/index.php?title=How_to_Install_Custom_Apps <br />
 * let's begin by installing the Nyckelharpa parent module into Hubitat (HE) from this Github repository.<br />
 * OAuth is not required and should be skipped.<br /> 
-* Should you want to used the Install's Import button each module's Github raw address is availabe at the beginning of the module.<br />
-* Then then install Modefix, Talker, and User, ignore OAuth, and do not add these modules as User Apps.
+* Save the the Nyckeharpa module
+* Using Install's Import button: each module's Github raw address is availabe at the beginning of the module.<br />
+* Then install Modefix, Talker, and User, ignore OAuth, and do not add these modules as User Apps.
+* In Apps: click the "Add User App" button, select the Nycklharpa, click Done
 
 * Should you be using the user Centralite Keypad driver follow these directions<br />
 https://docs.hubitat.com/index.php?title=How_to_Install_Custom_Drivers
@@ -167,56 +169,67 @@ Table with Reason Issued and Message Issued.
   <tr>
     <th>Reason Issued</th>
     <th>Default Message</th>
+   <th>Destinations</th> 
    <th>Issueing Module</th> 
   </tr>
   <tr>
     <td>Contact Sensor Opens, arm state disarmed</td>
     <td>%device is now open</td>
+   <td>TTS, Speaker</td>
    <td>Nyckelharpa</td>
   </tr>
   <tr>
     <td>Contact Sensor Closes, arm state disarmed</td>
    <td>%device is now closed</td>
+   <td>TTS, Speaker</td>
    <td>Nyckelharpa</td>
  </tr>
   <tr>
     <td>Exit Delay</td>
     <td>Alarm system is arming in %nn seconds. Please exit the facility</td>
+   <td>TTS, Speaker</td>
    <td>Nyckelharpa Modefix</td>
   </tr>
   <tr>
     <td>Entry Delay</td>
     <td>Please enter your pin on the keypad</td>
+    <td>TTS, Speaker</td>
    <td>Nyckelharpa</td>
   </tr>
   <tr>
     <td>System Armed</td>
     <td>Alarm System is now armed in %hsmStatus Mode</td>
+   <td>TTS, Speaker</td>
    <td>Nyckelharpa Modefix</td>
   </tr>
   <tr>
     <td>System Disarmed</td>
     <td>System Disarmed</td>
+   <td>TTS, Speaker</td>
    <td>Nyckelharpa Modefix</td>
   </tr>
   <tr>
     <td>Valid Pin Entered</td>
     <td>%keypad.displayname set HSM state to %armState with pin for %userName</td>
-    <td>Nyckelharpa</td>
+   <td>User Defined in global Settings</td>
+   <td>Nyckelharpa</td>
   </tr> 
   <tr>
     <td>Bad Pin Entered</td>
     <td>%keypad.displayname Invalid pin entered: %pinCode</td>
+    <td>User Defined in global Settings</td>
     <td>Nyckelharpa</td>
   </tr>
    <tr>
     <td>Arming Canceled Open Contact</td>
     <td>Arming Canceled %contact name(s) is open. Rearming within 15 seconds will force arming </td>
+    <td>User Defined in global Settings</td>
     <td>Nyckelharpa</td>    
   </tr> 
   <tr>
     <td>Arming Forced Open Contact</td>
     <td>Arming Forced %contact name(s) is open.
+    <td>User Defined in global Settings</td>
    </td><td>Nyckelharpa</td>
   </tr>
   </table>
@@ -229,11 +242,13 @@ The app's Keypad Device Handler was created by Mitch Pond on SmartThings where i
 
 _This DH may be used with the Centralite V2, Centralite V3, Iris V2, and UEI(beta) keypads_
 
-1. After installing the keypad DH, go to devices, change Type to Centralitex Keypad, Save Device
+1. After installing the keypad DH, edit keypad devices changing Type to Centralitex Keypad, Save Device
 
 2. Remove keypad from HSM, Add keypad to Nyckelharpa Global Settings
 
 3. Create User pin profiles
+
+4. Create HSM Custom Panic Rule
 
 [:arrow_up_small: Back to top](#top)
 <a name="userpin"></a>
@@ -253,7 +268,7 @@ When using the app's keypad Device Handler
 <a name="panicrules"></a>
 ## 12. Create Custom HSM Panic Rule
 
-A custom HSM Rule is required to force an HSM response to a Panic key press, or Panic pin entry, enabling an instant Panic response even when the system is disarmed
+*A custom HSM Rule is required* to force an HSM response to a Panic key press, or Panic pin entry, enabling an instant Panic response even when the system is disarmed
 
 1. Click on Apps-->then click Hubitat Safety Monitor 
 
@@ -263,11 +278,15 @@ A custom HSM Rule is required to force an HSM response to a Panic key press, or 
 
 4. Rule settings
 What kind of device do you want to use: select Contact Sensor<br />
-Select Contact Sensors: check Keypad devices using user provided Keypad Driver, click Update<br />
+Select Contact Sensors: *check the Keypad Devices using user provided Centralitex Keypad Driver*, click Update<br />
 What do you want to monitor?: Set Sensor Opens on/true<br />
 Set Alerts for Text, Audio, Siren and Lights<br />
 Click the "Arm This Rule" button<br />
 Click Done
+
+5. Do a Panic test: Press the Iris keypad's Panic button, on Centralite V3 simultaneously press both "Police Icon" buttons,  or enter a Panic pin number on Centralite / UEI, or on Iris: enter Panic Pin then Off (Partial and On work but not recommended)
+
+6. The Panic Alert may be stopped by entering a valid user pin on Centralite / UEI, or a valid pin and OFF on an Iris; or the "Cancel Alerts" button from HE App HSM options
 
 [:arrow_up_small: Back to top](#top)
 <a name="testing"></a>
@@ -279,12 +298,12 @@ Keypad may be selected as an Optional Alarm device. Remove it as an Alarm device
 Create and save a Modefix profile
 
 3. Forced arming does not occur<br />
-A user reported the Snapshot app somehow interfered with Nyclelharpa's forced arming, and removing or disabling Snapshot fixed the issue. This does not make sense to me, merely reporting what i was told by the user.
+A user reported the Snapshot app somehow interfered with Nyclelharpa's forced arming, and removing or disabling Snapshot fixed the issue. This does not make sense to me, merely reporting what I was told by the user.
 
 [:arrow_up_small: Back to top](#top)
 <a name="uninstall"></a>
 ## 14. Uninstalling
-1. If using forced arming, change NCKL-child devices used in HSM to real devices<br />
+1. If using forced arming, change HSM settings NCKL-child devices to real devices<br />
 2. If using Panic Key or Panic pins, remove custom Panic rule from HSM<br />
 3. it is now safe to remove Nyckelharpa, child devices are deleted during removal process
 
