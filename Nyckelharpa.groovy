@@ -22,6 +22,7 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  * 
+ *	May 24, 2019 v0.2.0	Arming canceled and Arming forced not sent to push devices. Fixed
  *	May 23, 2019 v0.2.0	adjust text for Hubitat Phoneapp use as a notification device
  *	May 23, 2019 v0.2.0	version check logic from May 19, 2019 did not work for all module names, recoded
  *	May 21, 2019 v0.1.9	add logic to handle failure of Json file httpget and produce visible message
@@ -1613,7 +1614,7 @@ def checkOpenContacts (contactList, notifyOptions, keypad)
 		}
 	if (contactmsg>'')
 		{
-		contactmsg += 'is open.'
+		contactmsg += ' is open.'
 		if (checkOpenReturn==false)
 			contactmsg += ' Rearming within 15 seconds will force arming'
 		notifyOptions.each
@@ -1623,7 +1624,7 @@ def checkOpenContacts (contactList, notifyOptions, keypad)
 				sendNotificationEvent(contactmsg)
 				}
 			else
-			if (it=='Push Msg')
+			if (it=='Push')
 				{
 				if (sendPushMessage)
 					sendPushMessage.deviceNotification(contactmsg)
