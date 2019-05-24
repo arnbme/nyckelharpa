@@ -228,9 +228,21 @@ Table with Reason Issued and Message Issued.
   </tr> 
   <tr>
     <td>Arming Forced Open Contact</td>
-    <td>Arming Forced %contact name(s) is open.
+    <td>Arming Forced %contact name(s) is open.</td>
     <td>User Defined in global Settings</td>
    </td><td>Nyckelharpa</td>
+  </tr>
+  <tr>
+    <td>Intrusion Message</td>
+   <td>Defined in HSM</td>
+    <td>User Defined HSM</td>
+   </td><td>HSM</td>
+  </tr>
+<tr>
+    <td>Panic Message</td>
+   <td>Defined in HSM Custom Rule</td>
+    <td>User Defined Custom HSM Rule (see Section 12)</td>
+   </td><td>HSM</td>
   </tr>
   </table>
 
