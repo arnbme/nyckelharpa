@@ -26,6 +26,7 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *	May 23, 2019 v0.0.8 Allow each message to have it's own optional set of target devices
  *	May 18, 2019 v0.0.7 Minor text change on page two heading
  *	May 03, 2019 v0.0.6 Move hsmAlert subscribe to Nyckelharpa to handle siren chirps and make this module truly optional
  *	May 02, 2019 v0.0.5 Fix error displaying Open and Close messages as Null
@@ -61,7 +62,7 @@ definition(
 
 def version()
 	{
-	return "0.0.7";
+	return "0.0.8";
 	}
 
 preferences {
@@ -136,9 +137,9 @@ def pageOne()
 			input "theVolume", "number", required: true, range: "1..100", defaultValue: 40,
 				title: "Speaker Volume Level from 1 to 100"
 			if (parent.sendPushMessage)
-				paragraph "Pushover messages sent to devices: ${sendPushMessage}"
+				paragraph "Global Default Notification Devices including Hubitat Phone App and Pushover: ${parent.sendPushMessage}"
 			else	
-				paragraph "Pushover messaging is inactive"
+				paragraph "No Default Notification Devices"
 			}
 		}
 	}	
@@ -244,6 +245,12 @@ def pageTwo(error_data)
 				}
 			else	
 				paragraph "No Speaker Devices are defined"
+			if (theVolume)
+				paragraph "Default Speaker Volume Level is $theVolume"
+			if (parent.sendPushMessage)
+				paragraph "Global Default Notification Devices including Hubitat Phone App and Pushover: ${parent.sendPushMessage}"
+			else	
+				paragraph "No default Notification Devices"
 			paragraph "Module Nyckelharpa Talker ${version()}"
 			}	
 		}

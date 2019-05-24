@@ -22,6 +22,14 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  * 
+ *	May 24, 2019 v0.2.0	Arming canceled and Arming forced not sent to push devices. Fixed
+ *	May 23, 2019 v0.2.0	adjust text for Hubitat Phoneapp use as a notification device
+ *	May 23, 2019 v0.2.0	version check logic from May 19, 2019 did not work for all module names, recoded
+ *	May 21, 2019 v0.1.9	add logic to handle failure of Json file httpget and produce visible message
+ *						get the Centralitex Keypad version from Device.getDaValue driverVersion field
+ *						directly calling keypads version() routine returns null
+ *	May 19, 2019 v0.1.9	add logic originally from CobraMax. verify all user modules and keypad driver are current
+ *						compare current version to external JSON file
  *	May 18, 2019 v0.1.8	add support for using Panic Pin contact for HSM Custom Panic rule, HSM arming not required 
  *						Use existing DH command panicContact changed to allow external call, when Panic pin is entered	
  *						DH already supports using the device Panic pin for a Panic rule
@@ -104,24 +112,22 @@ preferences {
 
 def version()
 	{
-	return "0.1.8";
+	return "0.2.0";
 	}
 def main()
 	{
+	
 	dynamicPage(name: "main", install: true, uninstall: true)
 		{
 		if (app.getInstallationState() == 'COMPLETE')	//note documentation shows as lower case, but returns upper
-			{  
-			def modeFixChild="Create"
-			getChildApps().each
-				{ 
-				if (it.getLabel()=='Nyckelharpa ModeFix')	
-					{
-					modeFixChild="Update"
-					}
-				}
-			if (modeFixChild=='Create')
+			{
+			def appVersions=getAppVersions()
+			def verMsg=genVersionMsg(appVersions) 
+			def modeFixChild="Update"
+			def appVerString=appVersions as String
+			if (!appVerString.contains("Nyckelharpa ModeFix"))
 				{
+				modeFixChild='Create'
 				section 
 					{
 					paragraph "<b>Warning: A Modefix profile must be created, otherwise keypad exit delay tones, and Talker open/close contact messages are not generated" 
@@ -132,6 +138,8 @@ def main()
 				{
 				input "logDebugs", "bool", required: false, defaultValue:false,
 					title: "Log debugging messages? Nyckelharpa module only. Normally off/false"
+				if (verMsg>"")
+					paragraph verMsg.substring(1,)
 				}
 			section
     			{
@@ -143,29 +151,23 @@ def main()
 //				}
 			section
 				{
-				if (globalFixMode && modeFixChild == "Create")
-					{
-					app(name: "ModeFixProfile", appName: "Nyckelharpa ModeFix", namespace: "arnbme", title: "${fixtitle}", multiple: false)
-					}	
-				else
-					{
-					app(name: "ModeFixProfile", appName: "Nyckelharpa ModeFix", namespace: "arnbme", title: "${fixtitle}", multiple: false)
-					}	
+				app(name: "ModeFixProfile", appName: "Nyckelharpa ModeFix", namespace: "arnbme", title: "${fixtitle}", multiple: false)
 				}
 			section 
 				{
-				app(name: "TalkerProfile", appName: "Nyckelharpa Talker", namespace: "arnbme", title: "Create A New Talker Profile", multiple: true)
+				app(name: "TalkerProfile", appName: "Nyckelharpa Talker", namespace: "arnbme", 
+					title: "Create A New Talker Profile", multiple: true)
 				}
+//			section 
+//				{
+//				app(name: "SimKypdProfile", appName: "Nyckelharpa Simkeypad", namespace: "arnbme", title: "Create A New Sim Keypad Profile", multiple: true)
+//				}
 			if (globalKeypadDevices)
 				{
 				section 
 					{
 					app(name: "UserProfile", appName: "Nyckelharpa User", namespace: "arnbme", title: "Create A New User Profile", multiple: true)
 					}
-//				section 
-//					{
-//					app(name: "SimKypdProfile", appName: "Nyckelharpa Simkypd", namespace: "arnbme", title: "Create A New Sim Keypad Profile", multiple: true)
-//					}
 				}	
 			}
 		else
@@ -223,7 +225,7 @@ def globalsPage(error_msg)
 					input "globalPinLog", "bool", required: false, defaultValue:true,
 						title: "Log Pin to log.trace?"
 					input "globalPinPush", "bool", required: false, defaultValue:true,
-						title: "Send Pin Pushover Notification?"
+						title: "Send Pin Push Notification?"
 					input "globalPinPhone", "phone", required: false, 
 						title: "Send Pin text message to this number. For multiple SMS recipients, separate phone numbers with a pound sign(#), or semicolon(;)"
 					}
@@ -244,21 +246,21 @@ def globalsPage(error_msg)
 				title: "(Optional!) Contact Sensors that should be closed prior to arming Away"
 			if (globalAwayContacts)
 				{
-				input (name: "globalAwayNotify", type:"enum", required: false, options: ["Pushover Msg", "SMS","Talk"],multiple:true,
+				input (name: "globalAwayNotify", type:"enum", required: false, options: ["Push", "SMS","Talk"],multiple:true,
 					title: "How to notify contact is open when arming Away")
 				}
 			input "globalHomeContacts", "capability.contactSensor", required: false, submitOnChange: true, multiple:true,
 				title: "(Optional!) Contact sensors that should be closed prior to arming Home (Stay)!"
 			if (globalHomeContacts)
 				{
-				input (name: "globalHomeNotify", type:"enum", required: false, options: ["PushOver Msg", "SMS","Talk"],multiple:true,
+				input (name: "globalHomeNotify", type:"enum", required: false, options: ["Push", "SMS","Talk"],multiple:true,
 					title: "How to notify contact is open arming Home (Stay)")
 				}
 			input "globalNightContacts", "capability.contactSensor", required: false, submitOnChange: true, multiple:true,
 				title: "(Optional!) Contact sensors that should be closed prior to arming Night"
 			if (globalNightContacts)
 				{
-				input (name: "globalNightNotify", type:"enum", required: false, options: ["PushOver Msg", "SMS","Talk"],multiple:true,
+				input (name: "globalNightNotify", type:"enum", required: false, options: ["Push", "SMS","Talk"],multiple:true,
 					title: "How to notify contact is open arming Night")
 				}
 			paragraph "<b>Other Open/Close contacts not specified above to monitor for Open and Close Messages only. Do not select the Child Virtual Contact Sensors. These contacts do not generate a child device.</b>"
@@ -266,7 +268,7 @@ def globalsPage(error_msg)
 				title: "(Optional!) Other Contact sensors not selected above to monitor for Open and Close messages"
 			if (globalOtherContacts)
 				{
-				input (name: "globalOtherNotify", type:"enum", required: false, options: ["PushOver Msg", "SMS","Talk"],multiple:true,
+				input (name: "globalOtherNotify", type:"enum", required: false, options: ["Push", "SMS","Talk"],multiple:true,
 					title: "How to notify when these contacts are open or closed")
 				}
 /*			This seems redundant and useless in HE, HSM cant arm with open contacts,
@@ -280,7 +282,7 @@ def globalsPage(error_msg)
  *				{
  *				input "globalOpenMsgDelay", "number", required: false, range: "1..15", defaultValue: 1,
  *					title: "Number of minutes between open door messages from 1 to 15"  	
- *				input (name: "globalOpenNotify", type:"enum", required: false, options: ["PushOver Msg", "SMS","Talk"],multiple:true,
+ *				input (name: "globalOpenNotify", type:"enum", required: false, options: ["Push", "SMS","Talk"],multiple:true,
  *					title: "How to notify when these contacts remain open")
  *				}	
  */	
@@ -303,7 +305,7 @@ def globalsPage(error_msg)
 				}
 			else
 				paragraph "Simulated Device Prefix: ${globalChildPrefix}. (Remove app to reset)"
-			input "sendPushMessage", "capability.notification", title: "Devices receiving Pushover notifications", multiple: true, required: false
+			input "sendPushMessage", "capability.notification", title: "Notification Devices: Hubitat PhoneApp or Pushover", multiple: true, required: false
 			}
 		}
 	}	
@@ -376,7 +378,7 @@ def pageTwo()
 						if (globalPinLog)
 							workMsg += "log.trace "
 						if (globalPinPush)
-							workMsg += "Pushover "
+							workMsg += "Push "
 						if (globalPinPhone)
 							workMsg += "SMS $globalPinPhone"
 						workMsg +=']'
@@ -394,7 +396,7 @@ def pageTwo()
 						if (globalBadPinLog)
 							workMsg += "log.trace "
 						if (globalBadPinPush)
-							workMsg += "Pushover "
+							workMsg += "Push "
 						if (globalBadPinPhone)
 							workMsg += "SMS $globalPinPhone"
 						workMsg +=']'
@@ -470,9 +472,9 @@ def pageTwo()
 				paragraph workMsg
 			
 			if (sendPushMessage)
-				paragraph "Devices receiving Pushover notifications: $sendPushMessage"
+				paragraph "Devices receiving Push notifications: $sendPushMessage"
 			else
-				paragraph "Pushover devices are not defined"
+				paragraph "Push devices are not defined"
 			}
 		}
 	}
@@ -594,10 +596,11 @@ Stay					Stay		stay			Stay		Stay
 Night					Night		stay			GoodNight	Night			
 Away					Away		away			GoodBye!	Away		
 */
+
 def keypadCodeHandler(evt)
 	{
 //	User entered a code on a keypad	
-	logdebug "keypadCodeHandler entered"
+	logdebug "keypadCodeHandler entered ${evt.value} ${evt.data}"
 	if (globalDisable)
 		{return false}			//just in case
 	def keypad = evt.getDevice();
@@ -1611,7 +1614,7 @@ def checkOpenContacts (contactList, notifyOptions, keypad)
 		}
 	if (contactmsg>'')
 		{
-		contactmsg += 'is open.'
+		contactmsg += ' is open.'
 		if (checkOpenReturn==false)
 			contactmsg += ' Rearming within 15 seconds will force arming'
 		notifyOptions.each
@@ -1621,7 +1624,7 @@ def checkOpenContacts (contactList, notifyOptions, keypad)
 				sendNotificationEvent(contactmsg)
 				}
 			else
-			if (it=='Push Msg')
+			if (it=='Push')
 				{
 				if (sendPushMessage)
 					sendPushMessage.deviceNotification(contactmsg)
@@ -1866,5 +1869,106 @@ def delayBeep()
 def delaysetDisarmed()
 	{
 	globalKeypadDevices.setDisarmed()
-	}	
+	}
+
+
+/*	Highly modified Version check code from CobraMax
+ *	https://github.com/CobraVmax/Hubitat/tree/master/Update%20Code
+ */
+def genVersionMsg(appVersions)
+	{
+	def jsonData
+	def err=false
+	def wkMsg=""
+//	Get remote manually maintained JSON file containing: module name : current version number
+//	was a separate routine but could not figure out how to return an error in json format
+	def paramsUD = [uri: "https://www.arnb.org/shmdelay/versions.json"]
+   	try {
+        httpGet(paramsUD) 
+        	{ respUD ->
+				jsonData=respUD.data
+			}
+		}	
+	catch (e)
+		{
+		log.error "getJsonFile: Contact app author. Something went wrong: -  $e"
+		err=e
+		}
+
+	if (err)
+		wkMsg="\nError getting version file, please contact app author "+err
+	else
+		{
+	//	def appVersions=getAppVersions()		//needed at beginning, so passed it instead
+	//	log.debug jsonData
+	//	log.debug appVersions
+		def part
+		appVersions.each
+			{
+			itstr=it as String
+			part=itstr.split("[=]")
+			wkMsg+=versionCheck(part[0], jsonData, part[1])
+			}
+		}
+	return wkMsg
+	}
 	
+/*
+ *	get app version based upon child apps and Json app names
+ */
+def getAppVersions()
+	{
+	def map = [Nyckelharpa: version()]	//name of this, the parent app 
+	def appMapName
+	getChildApps().each 
+		{
+		appMapName=it.getName()
+		if (map."${appMapName}" <= "") 
+			map << ["$appMapName": it?.version()]
+		}	
+	if (globalKeypadDevices)
+		{
+		globalKeypadDevices.find
+			{
+			if (it.typeName=='Centralitex Keypad')
+				{
+// fails		map << [Centralitex Keypad: it.version()]	//version returning null???
+				it.version() 		//force refresh of device.Data.driverVersion
+				map << [(it.typeName): it.getDataValue('driverVersion')]	//get stored data version
+				return true
+				}
+			}	
+		}
+	return map	
+	}	
+
+def versionCheck(moduleName, jsonData, currentVer)
+	{
+	def newVer
+	def appText='Module'
+	newVer = (jsonData.versions.Application."${moduleName}") as String
+	if (newVer==null)
+		{
+		newVer = (jsonData.versions.Driver."${moduleName}") as String
+		appText='Driver'
+		if (newVer==null)
+			return "\n<b>$moduleName missing on Json file, contact app author</b>"       
+		}	
+
+//	currentVer = appVersions."${moduleNameJson}"	remnant from prior incarnation of versionCheck
+	logdebug "versionsCheck processing module: $moduleName targetVer: $newVer actualVer: $currentVer"
+
+	if(currentVer == null)
+		return "\n<b>$moduleName null illogical condition</b>"       
+
+	if(newVer == "NLS")
+		return "\n<b>$moduleName no longer supported</b>"       
+
+	if(currentVer == newVer)
+		return ""					//module is current
+  
+	if(currentVer < newVer)
+		return ("\n<b>${appText}: $moduleName, Version: $newVer available</b>")
+	
+	return ("\n<b>${appText}: $moduleName, beta version: $currentVer in use</b>")
+	}
