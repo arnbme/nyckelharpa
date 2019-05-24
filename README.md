@@ -17,7 +17,9 @@
 [12. Create Custom HSM Panic Rule](#panicrules)<br />
 [13. Debugging](#testing)<br />
 [14. Uninstalling](#uninstall)<br />
-[15. Get Help, report an issue, or contact information](#help)
+[15. Get Help, report an issue, or contact information](#help)<br />
+[16. Known Issues](#issues)
+
 <a name="purpose"></a>
 ## 1. Purpose
 Nyckepharpa is a user created Hubitat Home Security Monitor (HSM) extension, providing features not available in HSM. Additionally, it simplifies setting up security related messaging. 
@@ -117,13 +119,13 @@ Global Settings is reached by: clicking Apps in the menu, then click the Nyckelh
 
 2. <b>Prepare for Forced Arming:</b> <i>For each armState</i> select real contact sensor devices that will allow HSM arming when the device is Open.
 * _When Global Settings is saved, each selectd contact generates a child Virtual Contact Sensor named NCKL-contact-sensor-name that must be used to Adjust HSM Settings for Forced HSM Arming
-* Specify optional destinations for "arming canceled contact open" and "arming forced messages: Pushover, SMS, Talk. No destinations: these messages are not generated
+* Specify optional destinations for "Arming canceled contact open" and "Arming forced messages: Push, SMS, Talk. Optional, but must be set to output these messages
 3. Select any contact to be monitored for Open / Close Talker messages only, that are not used with Forced HSM Arming
 
 4. Select any alarms and beeps as required
 5. Set the Virtual Child Device prefix, Default NCKL. Once set, it displays but cannot be changed.
 
-6. Set any Pushover messaging devices
+6. Set any Hubitat PhoneApp and Pushover messaging devices
 
 7. *When finished, click Next, then click Done*
 
@@ -325,3 +327,10 @@ A user reported the Snapshot app somehow interfered with Nyclelharpa's forced ar
 * [Use the HE Community's Nyckelharpa forum](https://community.hubitat.com/t/release-nyckelharpa/15062) to request assistance, or to report an issue. Direct private messages to user @arnb
 
 [:arrow_up_small: Back to top](#top)
+
+<a name="issues"></a>
+## 16. Known Issues
+* Messages need individual custom destination settings
+
+[:arrow_up_small: Back to top](#top)
+
