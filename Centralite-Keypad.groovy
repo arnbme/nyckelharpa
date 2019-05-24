@@ -14,6 +14,10 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ * 	May 21, 2019 v0.2.0 use updateDataValue to store deviceVersion in device Data. Used with Nyckelharpa version testing.
+ *							calling version from an external app returns null (sigh) known issue not going to be fixed
+ *							add Command "version" allowing external call
+ *							version() return works when called from device code													
  * 	May 18, 2019 v0.1.9 Make existing routine panicCommand useable from external modules
  *							Used by Nyckelharpa for Panic Pin procssing
  *							Add Enable Panic setting similar HE Device Handlers, unable to get setting name
@@ -90,6 +94,7 @@ metadata {
 		command "sendInvalidKeycodeResponse"
 		command "acknowledgeArmRequest",['number']
 		command "panicContact"
+		command "version"
 //		HSM commands		
 		command "armNight"						//not set as part of device capabilities
 		
@@ -99,7 +104,7 @@ metadata {
 	}
 	
 	preferences{
-		input ("version", "text", title: "Version (for display only)", defaultValue: "${version()}" )
+		input ("version_donotuse", "text", title: "Version: ${version()}<br />(Do not set display only)", required: false )
         input ("panicEnabled", "bool", title: "Enable Panic Key (when available) and Panic Pins. Default (True)", defaultValue: true)
 		input ("tempOffset", "number", title: "Enter an offset to adjust the reported temperature",
 				defaultValue: 0, displayDuringSetup: false)
@@ -116,7 +121,8 @@ metadata {
 
 def version()
 	{
-	return "0.1.9" as String;	
+	updateDataValue("driverVersion", "0.2.0")	//Stores in device Data
+	return "0.2.0";
 	}
 
 // Statuses:
