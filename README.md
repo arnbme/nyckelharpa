@@ -69,7 +69,7 @@ There are four modules and an optional Keypad Device Handler (DH) associated wit
   </tr>
   <tr>
     <td>Nyckelharpa Talker</td>
-    <td>Creates security related output to TTS, speakers, Pushover</td>
+    <td>Creates security related output to TTS, speakers, and Notification devices such as: Hubitat Phoneapp and Pushover</td>
     <td>Optional</td>
   </tr>
   <tr>
