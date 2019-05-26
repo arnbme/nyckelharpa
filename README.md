@@ -138,7 +138,7 @@ Global Settings is reached by: clicking Apps in the menu, then click the Nyckelh
 Forced Arming is a two step process: An standard initial HSM arming that fails normally, followed by a second arming within 15 seconds that forces HSM to arm. It works from any arming source, including: keypads, locks, dashboards, and the HSM app
 
 1. Required Basic Setup: 
-* Follow instrucions in Section 6 above, generating the NCKL-child-contact-sensors, and the NCKL-Panic Contact 
+* Follow instrucions in Section 6 above, generating the NCKL-child-contact-sensors 
 
 2. Setup HSM's devices for Forced Arming: 
 * In Intrusion-Away, Intrusion-Home, and Intrusion-Night, "Contact Sensors": replace the real contact-sensor-name(s) with the virtual NCKL-contact-sensor-name(s)
