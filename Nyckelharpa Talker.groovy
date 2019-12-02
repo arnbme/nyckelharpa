@@ -26,6 +26,8 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *	Dec 02, 2019 v0.0.9 Correct logic and coding error with Do not talk times. 
+ *                      Allow it to be totally ignored by new setting theQuiet so fields do not have to be erased/empty
  *	May 23, 2019 v0.0.8 Allow each message to have it's own optional set of target devices
  *	May 18, 2019 v0.0.7 Minor text change on page two heading
  *	May 03, 2019 v0.0.6 Move hsmAlert subscribe to Nyckelharpa to handle siren chirps and make this module truly optional
@@ -62,7 +64,7 @@ definition(
 
 def version()
 	{
-	return "0.0.8";
+	return "0.0.9";
 	}
 
 preferences {
@@ -126,8 +128,13 @@ def pageOne()
 					defaultValue: "Alarm System is now armed in %hsmStatus Mode"
 			input "theDisarmMsg", "string", required: false, title: "Disarm message", 
 					defaultValue: "System Disarmed"
-			input(name: 'theStartTime', type: 'time', title: 'Do not talk: Start Time', required: false)
-			input(name: 'theEndTime', type: 'time', title: 'Do not talk: End Time', required: false)
+			input "theQuiet", defaultValue: false, "bool", required: false,  submitOnChange: true,
+				title: "Do not talk during quiet time?  Default: Off - Talks all the time"
+			if (theQuiet)
+				{
+				input(name: 'theStartTime', type: 'time', title: 'Do not talk: Start Time', required: false)
+				input(name: 'theEndTime', type: 'time', title: 'Do not talk: End Time', required: false)
+				}
 			input "theSoundChimes", "bool", defaultValue: true, required: false,
 				title: "Sound TTS Chimes with messages Default: On/True"
 			input "theTTS", "capability.speechSynthesis", required: false, multiple: true, submitOnChange: true,
@@ -158,6 +165,9 @@ def pageOneVerify() 				//edit page one info, go to pageTwo when valid
 	if (error_data != "")
 		{}
 	else	
+	if (!theQuiet)
+		{}
+	else
 	if (theStartTime>"" && theEndTime>"")
 		{}
 	else
@@ -227,7 +237,7 @@ def pageTwo(error_data)
 				paragraph "The Disarm Message:\n${theDisarmMsg}"
 			else	
 				paragraph "The Disarm Message is not defined"
-			if (theStartTime>"" && theEndTime>"")
+			if (theQuiet && theStartTime>"" && theEndTime>"")
 				paragraph "Quiet time active from ${theStartTime.substring(11,16)} to ${theEndTime.substring(11,16)}"	
 			else
 				paragraph "Quiet time is inactive"
@@ -278,16 +288,40 @@ def TalkerHandler(evt)
 	def delaydata=evt?.data			//get the delay time or whatever was passed for message 
 	def msgout
 
+//	0.0.9 Dec 2, 2019 failing in Hubitat, totally revise code
 //	1.0.3 Nov 4, 2018 check time values for quiet
-	if (theStartTime>"" && theEndTime>"")
+/*	date formats
+Date: Mon Dec 02 14:02:09 EST 2019
+Time: 2019-12-02T00:00:00.000-0500
+*/	
+	if (theQuiet && theStartTime>"" && theEndTime>"")
 		{
-		def between = timeOfDayIsBetween(theStartTime.substring(11,16), theEndTime.substring(11,16), new Date(), location.timeZone)
-		if (between)
+		def String nowis = new Date()
+		def timenow = nowis.substring(11,16)
+		logdebug ("${nowis} ${timenow} ${theStartTime.substring(11,16)} ${theEndTime.substring(11,16)}")
+		if (theEndTime.substring(11,16)>theStartTime.substring(11,16))	
 			{
-//			logdebug ("it is quiet time")	
+//			end > start 
+			if (timenow>=theStartTime.substring(11,16) && timenow<theEndTime.substring(11,16))
+				{
+//				log.debug ("it is quiet time with end > start")	
+				return false
+				}
+			}	
+		else
+//		end<start meaning: talk time is endtime to starttime
+		if (timenow>=theEndTime.substring(11,16) && timenow<=theStartTime.substring(11,16))
+			{
+//			log.debug ("it is time to talk with end < start")	
+			}
+		else
+			{
+//			log.debug ("it is quiet time with end < start")	
 			return false
 			}
-		}
+		}	
+//	else
+//		logdebug ('quiet time not active')
 
 	if (evt.value=="entryDelay" && theEntryMsg>"")
 		{
