@@ -477,7 +477,7 @@ Time: 2019-12-02T00:00:00.000-0500
 //	Sonos driver from Hubitat does not have playTextAndResume, this is a workaround 
 def playTextAnd(msg,vlm,speaker)
 	{
-	if (dvc.hasCommand("playTextAndResume"))
+	if (speaker.hasCommand("playTextAndResume"))
 		speaker.playTextAndResume(msg,vlm)
 	else
 		speaker.playTextAndRestore(msg)
