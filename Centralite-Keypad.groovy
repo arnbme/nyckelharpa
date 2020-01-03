@@ -14,6 +14,13 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ * 	Dec 30, 2019 v0.2.3 Add support and fingerprint for Iris V3 keypad. Does not send pin on ON(Away) or Partial (Night)
+ * 	Jun 17, 2019 v0.2.2 need to handle ping from this client to server in the socketChat.php module. 
+ *						for now disabled the ping from this module by setting pingInterval to -1
+ * 	Jun 14, 2019 v0.2.2 add webSocket client logic  
+ * 	Jun 07, 2019 v0.2.1 add ssekey command used to pass javascript communication ssekey from keypad simulator  
+ * 	Jun 02, 2019 v0.2.1 add attribue pinStatus to return pin status on Maker API call  
+ * 	May 23, 2019 v0.2.1 allow Maker API for internet keypad.  
  * 	May 21, 2019 v0.2.0 use updateDataValue to store deviceVersion in device Data. Used with Nyckelharpa version testing.
  *							calling version from an external app returns null (sigh) known issue not going to be fixed
  *							add Command "version" allowing external call
@@ -81,6 +88,7 @@ metadata {
 		
 		attribute "armMode", "String"
         attribute "lastUpdate", "String"
+        attribute "pinStatus", "String"
 		
 		command "setDisarmed"
 		command "setArmedAway"
@@ -95,12 +103,16 @@ metadata {
 		command "acknowledgeArmRequest",['number']
 		command "panicContact"
 		command "version"
+		command "ssekey",["string"]
+		command "armCode",["string"]
+		command "pinStatusSet",["string"]		//called by Nyckelharpa module
 //		HSM commands		
 		command "armNight"						//not set as part of device capabilities
 		
 		fingerprint endpointId: "01", profileId: "0104", deviceId: "0401", inClusters: "0000,0001,0003,0020,0402,0500,0B05", outClusters: "0019,0501", manufacturer: "CentraLite", model: "3400", deviceJoinName: "Xfinity 3400-X Keypad"
 		fingerprint endpointId: "01", profileId: "0104", deviceId: "0401", inClusters: "0000,0001,0003,0020,0402,0500,0501,0B05,FC04", outClusters: "0019,0501", manufacturer: "CentraLite", model: "3405-L", deviceJoinName: "Iris 3405-L Keypad"
  		fingerprint endpointId: "01", profileId: "0104", deviceId: "0401", inClusters: "0000,0001,0003,0020,0402,0500,0B05", outClusters: "0003,0019,0501", manufacturer: "Universal Electronics Inc", model: "URC4450BC0-X-R", deviceJoinName: "Xfinity XHK1-UE Keypad" 
+ 		fingerprint endpointId: "01", profileId: "0104", deviceId: "0401", inClusters: "0000,0001,0003,0020,0402,0405,0500,0501,0B05,FC01,FC02", outClusters: " 0003,0019,0501", manufacturer: "iMagic by GreatStar", model: "1112-S", deviceJoinName: "Iris V3 1112-S Keypad" 
 	}
 	
 	preferences{
@@ -111,7 +123,7 @@ metadata {
 		input ("beepLength", "number", title: "Enter length of beep in seconds",
 				defaultValue: 1, displayDuringSetup: false)
         input ("motionTime", "number", title: "Time in seconds for Motion to become Inactive (Default:10, 0=disabled)",	defaultValue: 10, displayDuringSetup: false)
-        input ("showVolts", "bool", title: "Turn on to show actual battery voltage. Default (Off) is percentage", defaultValue: false, displayDuringSetup: false)
+        input ("showVolts", "bool", title: "Turn on to show actual battery voltage x 10 as %. Default (Off) is calculated percentage", defaultValue: false, displayDuringSetup: false)
         input ("logdebugs", "bool", title: "Log debugging messages", defaultValue: false, displayDuringSetup: false)
         input ("logtraces", "bool", title: "Log trace messages", defaultValue: false, displayDuringSetup: false)
 //		paragraph "Centralitex Keypad Plus UEI Version ${version()}" Does not work in HE
@@ -119,11 +131,101 @@ metadata {
 
 }
 
+//	Needed for Web Socket client
+import hubitat.helper.InterfaceUtils
+
+//called by client Keypad html/javascript module
+def ssekey(ssekey)							
+	{
+	log.debug "sskey entered $ssekey"
+	updateDataValue("sseKey","$ssekey")
+//	updateDataValue("sseKeyTime",now())			//unix time since Jan 1, 1970 in milliseconds
+	}
+
 def version()
 	{
-	updateDataValue("driverVersion", "0.2.0")	//Stores in device Data
-	return "0.2.0";
+	updateDataValue("driverVersion", "0.2.3")	//Stores in device Data
+	return "0.2.3";
 	}
+
+def installed() {
+    log.info "Installed with settings: ${settings}"
+    initialize()
+}
+
+def updated() {
+    log.info "Updated with settings: ${settings}"
+    //Unschedule any existing, mainly socket runin scheduled executions
+    unschedule()
+    
+    //Create a 30 minute timer for debug logging
+//  if (logEnable) runIn(1800,logsOff)
+	initialize()    
+}
+
+def initialize() 
+	{
+    logdebug "initialize() entered"
+    
+    //Connect the webSocket
+    try {
+        InterfaceUtils.webSocketConnect(device, "ws://192.168.0.101:9000/cz/shmdelay/SocketChat.php?o=035c625e481", pingInterval:-1)
+    	} 
+    catch(e) 
+    	{
+        log.error "WebSocket connect failed initialize error: ${e.message}"
+    	}
+	}
+
+def socket_sendMsg(s) {
+	logdebug "socket_sendMsg entered "+s		//convert whatever was passed to Json, then send
+    InterfaceUtils.sendWebSocketMessage(device, new groovy.json.JsonOutput().toJson(s))
+
+}
+
+def webSocketStatus(String status)
+	{
+    logdebug "webSocketStatus entered: ${status}"
+
+    if(status.startsWith('failure: '))
+    	{
+        log.warn("failure message from web socket ${status}")
+		reconnectWebSocket()
+    	} 
+    else if(status == 'status: open')
+    	{
+        log.info "websocket is open"		
+        if (device?.data.sseKey)
+        	{
+        	socket_sendMsg([target: 'loginDvc', sseKey: device.data.sseKey]) //create then send login object			
+			}
+        pauseExecution(1000)
+        state.reconnectDelay = 1	//reset reconnect delay
+        if (device?.data.sseKey)
+        	{
+        	socket_sendMsg([target: 'simKeypad', sseKey: device.data.sseKey, alert: 'big issue']) //create test message			
+			}
+		
+    	} 
+    else if (status == "status: closing")
+    	{
+        log.warn "WebSocket connection closing."
+    	} 
+    else 
+    	{
+        log.warn "WebSocket error, reconnecting."
+		reconnectWebSocket()
+    	}
+	}
+
+def reconnectWebSocket() {
+    // first delay is 2 seconds, doubles every time
+    state.reconnectDelay = (state.reconnectDelay ?: 1) * 2
+    // don't let delay get too crazy, max it out at 10 minutes
+    if(state.reconnectDelay > 600) state.reconnectDelay = 600
+    //When the Server Socket is offline, give it some time before trying to reconnect
+    runIn(state.reconnectDelay, initialize)
+}
 
 // Statuses:
 // 00 - Command: setDisarmed   Centralite all icons off / Iris Off button on
@@ -141,81 +243,94 @@ def version()
 // 12 - ?
 // 13 - ?
 
-// parse events into attributes
-def parse(String description) {
-	logdebug "Parsing '${description}'";
-	def results = [];
-	
-	//------Miscellaneous Zigbee message------//
-	if (description?.startsWith('catchall:')) {
-		def message = zigbee.parseDescriptionAsMap(description);
-		//------ZDO packets - drop ------//
-		if (message.profileId == '0000') return []
-		//------Profile-wide command (rattr responses, errors, etc.)------//
-		else if (message?.isClusterSpecific == false) {
-			//------Default response------//
-			if (message?.command == '0B') {
-				if (message?.data[1] == '81') 
-					log.error "Device: unrecognized command: "+description;
-				else if (message?.data[1] == '80') 
-					log.error "Device: malformed command: "+description;
-			}
-			//------Read attributes responses------//
-			else if (message?.command == '01') {
-				if (message?.clusterId == '0402') {
-					logdebug "Device: read attribute response: "+description;
+// parse hardware events into attributes,and process websocket messages
+def parse(String description) 
+	{
+	logdebug "Parsing ${description}";
+	if (description?.startsWith('{"type":'))		//intercept websocket messages
+		{
+		log.debug "WebSocket message: ${description}"
+		}
+	else
+		{
+		def results = [];
 
-					results = parseTempAttributeMsg(message)
-				}}
-			else 
-				log.info "Unhandled profile-wide command: "+description;
-		}
-		//------Cluster specific commands------//
-		else if (message?.isClusterSpecific) {
-			//------Poll Control - drop------//
-			if (message?.clusterId == '0020') return []
-			//------IAS ACE------//
-			else if (message?.clusterId == '0501') {
-				if (message?.command == '07') {
-                	motionON()
+		//------Miscellaneous Zigbee message------//
+		if (description?.startsWith('catchall:')) {
+			def message = zigbee.parseDescriptionAsMap(description);
+			//------ZDO packets - drop ------//
+			if (message.profileId == '0000') return []
+			//------Profile-wide command (rattr responses, errors, etc.)------//
+			else if (message?.isClusterSpecific == false) {
+				//------Default response------//
+				if (message?.command == '0B') {
+					if (message?.data[1] == '81') 
+						log.error "Device: unrecognized command: "+description;
+					else if (message?.data[1] == '80') 
+						log.error "Device: malformed command: "+description;
 				}
-                else if (message?.command == '04') 
-                	{
-                	if (panicEnabled)
-                		{
-                		results = createEvent(name: "button", value: "pushed", data: [buttonNumber: 1], descriptionText: "$device.displayName panic button was pushed", isStateChange: true)
-						siren()	
-                	    panicContact()
-                		}
-                	}
-				else if (message?.command == '00') {
-					results = handleArmRequest(message)
-					logtrace results
-				}
+				//------Read attributes responses------//
+				else if (message?.command == '01') {
+					if (message?.clusterId == '0402') {
+						logdebug "Device: read attribute response: "+description;
+
+						results = parseTempAttributeMsg(message)
+					}}
+				else 
+					log.info "Unhandled profile-wide command: "+description;
 			}
-			else log.warn "Unhandled cluster-specific command: "+message
+			//------Cluster specific commands------//
+			else if (message?.isClusterSpecific) {
+				//------Poll Control - drop------//
+				if (message?.clusterId == '0020') return []
+				//------IAS ACE------//
+				else if (message?.clusterId == '0501') {
+					if (message?.command == '07') {
+						motionON()
+					}
+					else if (message?.command == '04') 
+						{
+						if (panicEnabled)
+							{
+							results = createEvent(name: "button", value: "pushed", data: [buttonNumber: 1], descriptionText: "$device.displayName panic button was pushed", isStateChange: true)
+							siren()	
+	//                	    panicContact()		do not use for real keypad
+							if (panicEnabled)
+								{
+								sendEvent(name: "contact", value: "open", displayed: true, isStateChange: true)
+								runIn(3, "panicContactClose")
+								}
+							}
+						}
+					else if (message?.command == '00') {
+						results = handleArmRequest(message)
+						logtrace results
+					}
+				}
+				else log.warn "Unhandled cluster-specific command: "+message
+			}
 		}
-	}
-	//------IAS Zone Enroll request------//
-	else if (description?.startsWith('enroll request')) {
-		logtrace "Sending IAS enroll response..."
-		results = zigbee.enrollResponse()
-	}
-	//------Read Attribute response------//
-	else if (description?.startsWith('read attr -')) {
-		results = parseReportAttributeMessage(description)
-	}
-	//------Temperature Report------//
-	else if (description?.startsWith('temperature: ')) {
-		logdebug "Got ST-style temperature report.."
-		results = createEvent(getTemperatureResult(zigbee.parseHATemperatureValue(description, "temperature: ", getTemperatureScale())))
-		logdebug results
-	}
-    else if (description?.startsWith('zone status ')) {
-    	results = parseIasMessage(description)
-    }
-	return results
-}
+		//------IAS Zone Enroll request------//
+		else if (description?.startsWith('enroll request')) {
+			logtrace "Sending IAS enroll response..."
+			results = zigbee.enrollResponse()
+		}
+		//------Read Attribute response------//
+		else if (description?.startsWith('read attr -')) {
+			results = parseReportAttributeMessage(description)
+		}
+		//------Temperature Report------//
+		else if (description?.startsWith('temperature: ')) {
+			logdebug "Got ST-style temperature report.."
+			results = createEvent(getTemperatureResult(zigbee.parseHATemperatureValue(description, "temperature: ", getTemperatureScale())))
+			logdebug results
+		}
+		else if (description?.startsWith('zone status ')) {
+			results = parseIasMessage(description)
+		}
+		return results
+		}
+	}	
 
 
 def configure() {
@@ -371,13 +486,22 @@ def motionOFF() {
     sendEvent(name: "motion", value: "inactive", displayed:true, isStateChange: true)
 }
 
+/*
+ * Used for simulated keypad, Maker API commands, and device command Panic events
+ * Do not use this routine with a real device (for now)	
+ */ 
 def panicContact() {
 	logdebug "PanicContact routine entered, Panic enabled: $panicEnabled"
 	if (panicEnabled)
 		{
     	sendEvent(name: "contact", value: "open", displayed: true, isStateChange: true)
-    	runIn(3, "panicContactClose")
-    	}
+   		runIn(3, "panicContactClose")
+    	def currentArmMode = device.currentState("armMode")
+    	if (currentArmMode.value.substring(0,3) !='***')		//handle multiple panic button hits
+     		sendEvent(name: "armMode", value: "***Panic*** ${currentArmMode.value} ***Panic***", displayed:true, isStateChange: true)
+		pauseExecution(1000)									//allows async send events to execute
+		currentArmMode = device.currentState("armMode",true)	//somehow forces returned Maker API attribute armMode to update
+		}
 }
 
 def panicContactClose()
@@ -394,11 +518,11 @@ private getBatteryResult(rawValue) {
 	def volts = rawValue / 10
 	def excessVolts=3.5			
 	def maxVolts=3.0
-	def minVolts=2.6
-	if (device.data.model.substring(0,3)!='340')	//adjust voltages if not Centralite 3400 or Iris 3405 V2 keypads
+	def minVolts=2.5
+	if (device.data.model.substring(0,3)!='340')	//UEI and Iris V3 use 4AA batteries, 6volts
 		{
-		excessVolts=7.2
-		maxVolts=6.8
+		excessVolts=6.8
+		maxVolts=6.0
 		minVolts=5.2
 		}
 	if (volts > excessVolts)
@@ -435,7 +559,7 @@ private Map getTemperatureResult(value) {
 		def v = value as int
 		value = v + offset
 	}
-	def descriptionText = "${linkText} was ${value}°${temperatureScale}"
+	def descriptionText = "${linkText} was ${value}�${temperatureScale}"
 	return [
 		name: 'temperature',
 		value: value,
@@ -445,8 +569,12 @@ private Map getTemperatureResult(value) {
 
 //------Command handlers------//
 private handleArmRequest(message){
-	def keycode = new String(message.data[2..-2].join().decodeHex(),"UTF-8")
+	def keycode
 	def reqArmMode = message.data[0].substring(1)
+	if (device.data.model == '1112-S' && reqArmMode != '0')		//Iris V3 sends pin on disarm only, otherwise set to 0000 
+		keycode = '0000'
+	else
+		keycode = new String(message.data[2..-2].join().decodeHex(),"UTF-8")
 	//state.lastKeycode = keycode
 	logdebug "Received arm command with keycode/armMode: ${keycode}/${reqArmMode}"
 
@@ -469,10 +597,32 @@ private handleArmRequest(message){
 	createCodeEntryEvent(keycode, reqArmMode)
 }
 
+
+def armCode(message) 
+	{
+	logtrace "armMode entered: message $message"
+	def keycode = message.substring(1,5) as String
+	def armMode = message.substring(0,1)
+//	sendEvent used not in parse routine Nyckelharpa gets both events	
+	sendEvent([name: "codeEntered", value: keycode as String, data: armMode as String, 
+				isStateChange: true, displayed: false])
+	pauseExecution(1000)
+	def currentArmMode = device.currentState("armMode",true)	//forces returned Maker API attribute armMode to update
+	}
+
+def pinStatusSet(pinStatus) 
+	{
+//	set pinstatus for Maker API returned attributes used by simulated keypad	
+	logtrace "pinStatusSet entered: message $message"
+	sendEvent([name: "pinStatus", value: pinStatus, data: pinStatus, 
+				isStateChange: true, displayed: false])
+	}
+	
 def createCodeEntryEvent(keycode, armMode) {
+	logtrace "createCodeEntryEvent entered keycode: $keycode armMode: $armMode"
 	createEvent(name: "codeEntered", value: keycode as String, data: armMode as String, 
 				isStateChange: true, displayed: false)
-}
+	}
 
 private sendStatusToDevice(armModex='') {
 	logdebug 'Entering sendStatusToDevice armModex: '+armModex+', Device.armMode: '+device.currentValue('armMode',true)  	
@@ -490,7 +640,7 @@ private sendStatusToDevice(armModex='') {
 	def status = ''
 	if (armMode == null || armMode == 'disarmed') status = 0
 	else if (armMode == 'armedAway') status = 3
-	else if (armMode == 'armedStay') status = 1	
+	else if (armMode == 'armedHome') status = 1	
 	else if (armMode == 'armedNight') status = 2
 	else logdebug 'Invalid Arm Mode in sendStatusToDevice: '+armMode
 	
@@ -531,7 +681,7 @@ def setDisarmed() {
 	setModeHelper("disarmed",0)
 	}
 def setArmedAway(def delay=0) { setModeHelper("armedAway",delay) }
-def setArmedStay(def delay=0) { setModeHelper("armedStay",delay) }
+def setArmedStay(def delay=0) { setModeHelper("armedHome",delay) }		//was Stay in SmartThings
 def setArmedNight(def delay=0) { setModeHelper("armedNight",delay) }
 //	Hubitat Command set V1.0.1 Feb 21, 2019, 
 //on Mar 31, 2019 HE sent disarm 3 times, ignore when mode is correct on device
@@ -551,7 +701,7 @@ def armAway(def delay=0)
 def armHome(def delay=0)
 	{
 	logdebug ('armHome entered')
-//	if (device.currentValue('armMode',true) != 'armedStay')
+//	if (device.currentValue('armMode',true) != 'armedHome')
 //		setModeHelper("armedStay",delay)
 	}
 def armNight(def delay=0) 
@@ -636,7 +786,7 @@ private setModeHelper(String armMode, delay) {
 }
 
 private setKeypadArmMode(armMode){
-	Map mode = [disarmed: '00', armedAway: '03', armedStay: '01', armedNight: '02', entryDelay: '', exitDelay: '']
+	Map mode = [disarmed: '00', armedAway: '03', armedHome: '01', armedNight: '02', entryDelay: '', exitDelay: '']
     if (mode[armMode] != '')
     {
 		return ["raw 0x501 {09 01 04 ${mode[armMode]}00}",
