@@ -266,6 +266,8 @@ _This DH may be used with the Centralite V2, Centralite V3, Iris V2, Iris V3 and
 
 4. Create HSM Custom Panic Rule
 
+5. When using an Iris keypad set if Partial key creates Home (default) or Night arming mode
+
 [:arrow_up_small: Back to top](#top)
 <a name="userpin"></a>
 ## 11. User pin Profiles
