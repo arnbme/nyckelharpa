@@ -35,7 +35,7 @@ Why is this needed? HSM does not arm the system when a contact is open. Examples
 * Adjusts Hubitat's mode when HSM's arm state changes. (HSM adjusts HSM's arm state when the mode changes)
 * Provides an easy to use security related message control center with output to TTS, Speakers, and Notification devices such as: Hubitat PhoneApp and Pushover
 
-* Keypads: Centralite V2 and V3, Iris V2, and UEI(beta) devices may use a ported version of Mitch Pond's Keypad DH, Centralitex Keypad making he keypad function as it did in SmartThings with the SHM Delay App, with an easy to use Pin maintenance module with available Panic pins, burnable pins aka maximum use count, restricted date and time, and restricted keypad devices.
+* Keypads: Centralite V2 and V3, Iris V2 and V3, and UEI devices may use a ported version of Mitch Pond's Keypad DH, Centralitex Keypad making he keypad function as it did in SmartThings with the SHM Delay App, with an easy to use Pin maintenance module with available Panic pins, burnable pins aka maximum use count, restricted date and time, and restricted keypad devices.
 * Keypad Panic Alerts: When the keypad's Panic key is pressed, or a Panic Pin is entered, using the Centralitex Keypad driver, a properly configured active HSM Custom Panic rule, and the Nyckelharpa app when Panic Pins are used:<br /> 
 *The system immediately executes the custom HSM rule's alert functions*
 
@@ -276,6 +276,8 @@ When using the app's keypad Device Handler
 * Pin codes may be restricted by date/time, use count (burnable pins), and keypad device
 
 * To use the Iris V2's instant arming, no pin required, create a User profile with pin code 0000. It is not accepted for OFF
+
+* *The Iris V3 requires a User profile with pin code 0000, or it will not arm.* It is not accepted for OFF.
 
 * You may define "Panic Pins" designed for use on keypads without a Panic key, but may be used on any keypad
 
