@@ -262,7 +262,7 @@ _This DH may be used with the Centralite V2, Centralite V3, Iris V2, Iris V3 and
 
 2. Remove keypad from HSM, Add keypad to Nyckelharpa Global Settings
 
-3. Create User pin profiles. When using an Iris V3 User pin code 0000 is required and used for instant arming, but will not disarm. 
+3. Create User pin profiles. When using an Iris V3 User pin code 0000 is required and used for instant arming, but will not disarm. This keypad does not send a pin, even if entered, when arming.
 
 4. Create HSM Custom Panic Rule
 
