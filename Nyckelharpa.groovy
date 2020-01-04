@@ -6,7 +6,7 @@
  *		Acts as a container/controller for Child modules
  *		Process all Keypad activity
  * 
- *  Copyright 2017-2019 Arn Burkhoff
+ *  Copyright 2017-2020 Arn Burkhoff
  * 
  * 	Changes to Apache License
  *	4. Redistribution. Add paragraph 4e.
@@ -22,6 +22,9 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  * 
+ *	Jun 10, 2019 v0.2.1	When rule triggers an alert use rule name for sse alert name
+ *	Jun 09, 2019 v0.2.1	When a pin is rejected for an open contact, execute keypad.pinStatusSet("OpenContact")
+ *	Jun 02, 2019 v0.2.1	Set keypad attribute pinStatus (requires updated keypad driver)
  *	May 24, 2019 v0.2.0	Arming canceled and Arming forced not sent to push devices. Fixed
  *	May 23, 2019 v0.2.0	adjust text for Hubitat Phoneapp use as a notification device
  *	May 23, 2019 v0.2.0	version check logic from May 19, 2019 did not work for all module names, recoded
@@ -112,7 +115,7 @@ preferences {
 
 def version()
 	{
-	return "0.2.0";
+	return "0.2.1";
 	}
 def main()
 	{
@@ -211,7 +214,7 @@ def globalsPage(error_msg)
 //			input "globalKeypadControl", "bool", required: true, defaultValue: true, submitOnChange: true,
 //				title: "A real or simulated Keypad is used to arm and disarm Home Security Monitor (HSM). Default: On/True"
 			input "globalKeypadDevices", "capability.securityKeypad", required: false, multiple: true, submitOnChange: true,
-				title: "Iris V2, and Centralite V2/V3 devices using Nyckelharpa Centralite Device Handler to arm and disarm HSM"
+				title: "Iris V2/V3, and Centralite V2/V3, UEI, real and simulated devices using Nyckelharpa Centralite Keypad Device Handler to arm and disarm HSM"
 			if (globalKeypadDevices)
 				{
 //				input "globalPanic", "bool", required: true, defaultValue: true,
@@ -497,7 +500,7 @@ def initialize()
 		subscribe(globalKeypadDevices, 'codeEntered',  keypadCodeHandler)
 //		if (globalPanic)
 //			{
-//		    subscribe (globalKeypadDevices, "contact.open", keypadPanicHandler)
+//		    subscribe (globalKeypadDevices, "contact.open", qssehe_alert_panic)
 //		    }
 		globalKeypadDevices?.each
 			{
@@ -609,6 +612,7 @@ def keypadCodeHandler(evt)
 	def modeEntered = evt.data as Integer				//the selected mode off(0), stay(1), night(2), away(3)
 	def itext = [dummy: "dummy"]						//external find it data or dummy map to fake it when pin not found										
 	def fireBadPin=true									//flag to stop double band pin fire. Caused by timing issue 
+	def	pinStatus='Rejected'
 //															with Routine, Piston and UserRoutinePiston processing	
 	if (modeEntered < 0 || modeEntered> 3)				//catch an unthinkable bad mode, this is catastrophic 
 		{
@@ -751,15 +755,19 @@ def keypadCodeHandler(evt)
 					case 'User':
 					case 'UserRoutinePiston':		//process arming now or get a possible keypad timeout
 						userName=it.theusername
+						pinStatus='Accepted'
 						break
 					case 'Disabled':
 						error_message = keypad.displayName + " disabled pin entered for " + it.theusername
+						pinStatus='Disabled'
 						break
 					case 'Ignore':
 						error_message = keypad.displayName + " ignored pin entered for " + it.theusername
+						pinStatus='Ignored'
 						break
 					case 'Routine':
 //						forced to do acknowledgeArmRequest here due to a hardware timeout on keypad
+						pinStatus='Exec Routine'
 						if (!globalRboyDth)		//Nov 3, 2018 rBoy DTH already issues the acknowledgement
 							keypad.acknowledgeArmRequest(4)				
 						acknowledgeArmRequest(4,keypad);
@@ -778,14 +786,18 @@ def keypadCodeHandler(evt)
 							error_message = keypad.displayName + " Panic Pin entered for " + it.theusername
 //							keypadPanicHandler(evt)					
 							itthepinusage='Panic'
+							pinStatus='Panic'
 //							}
+
 //						else	
 //							{
+//							pinStatus='Panic Inactive'
 //							error_message = keypad.displayName + " Panic Pin entered but globalPanic flag disabled with pin for " + it.theusername
 //							}
 						break
 					case 'Piston':
 //						forced to do acknowledgeArmRequest here due to a possible hardware timeout on keypad
+						pinStatus='Piston'
 						if (!globalRboyDth)		//Nov 3, 2018 rBoy DTH already issues the acknowledgement
 							keypad.acknowledgeArmRequest(4)				
 						acknowledgeArmRequest(4,keypad);
@@ -800,6 +812,7 @@ def keypadCodeHandler(evt)
 							error_message = "Process Piston returned bad data: ${dmap} "
 						break
 					default:
+						pinStatus='Bad pin type'
 						userName=it.theusername	
 						break
 					}		
@@ -829,6 +842,7 @@ def keypadCodeHandler(evt)
 	but not working that way. Look at this when I get some time
 */	
 
+    keypad.pinStatusSet(pinStatus)
 	if (badPin)
 		{
 		if (fireBadPin)
@@ -840,6 +854,8 @@ def keypadCodeHandler(evt)
 			if (itthepinusage=='Panic')
 				keypad.panicContact()			//have dh open contact trigger panic with Custome HSM rule
 			}
+		else
+			pinStatus='Rejected'
 		if (globalBadPinMsgs && badPin_message !="")
 			doBadPinNotifications (badPin_message, itext)
 /*	
@@ -868,8 +884,10 @@ def keypadCodeHandler(evt)
 					keypad.sendInvalidKeycodeResponse()	//sounds a medium duration beep
 				acknowledgeArmRequest(4,keypad);
 				}
-    		}	
-*/		return;
+    		}
+*/	
+		
+		return;
  		}
 
 		
@@ -889,19 +907,28 @@ def keypadCodeHandler(evt)
 	if (modeEntered == 3 && globalAwayContacts)
 		{
 		if (!checkOpenContacts(globalAwayContacts, globalAwayNotify, keypad))
+			{
+		    keypad.pinStatusSet("OpenContact")
 			return
+			}
 		}
 	else
 	if (modeEntered == 2 && globalHomeContacts)
 		{
 		if(!checkOpenContacts(globalHomeCotacts, globalHomeNotify, keypad))
+			{
+		    keypad.pinStatusSet("OpenContact")
 			return
+			}
 		}	
 	else
 	if (modeEntered == 1 && globalNightContacts)
 		{
 		if(!checkOpenContacts(globalNightContacts, globalNightNotify, keypad))
+			{
+		    keypad.pinStatusSet("OpenContact")
 			return
+			}
 		}	
 //	if (!globalRboyDth)		//Nov 3, 2018 rBoy DTH already issues the acknowledgement
 		keypad.acknowledgeArmRequest(modeEntered) 		//keypad demands a followup light setting or all lights blink
@@ -1023,6 +1050,44 @@ def ackResponseHandler(response, data)
     	sendNotificationEvent("Nyckelharpa qsse.php HTTP Error = ${response.getStatus()}")
 	}
 
+def qssehe_alert_panic(evt)			//executed when keypad's contact is opened for panic
+	{
+	qssehe_alert('PANIC')
+	}
+def qssehe_alert(alert)
+//	store the HE hsmAlert value into Arnb.org db table shmdelay_oauthhe for all keypads with a sseKey
+	{
+	log.debug "qssehe_alert entered ${alert}"
+	def sseKey
+	def uri
+	if (globalKeypadDevices)
+		{
+		globalKeypadDevices.each
+			{
+			sseKey = it?.getDataValue('sseKey')
+			if (sseKey >" ")
+				{
+				uri='http://192.168.0.101/cz/shmdelay/qssehe.php'
+				uri+='?i='+ sseKey
+				uri+='&a='+ alert
+				log.debug "qssehe uri "+uri
+				try {
+					asynchttpGet('qssehe_AsyncHandler', [uri: uri])
+					}
+				catch (e)
+					{
+					logdebug "qssehe.php Execution failed ${e}"
+					}
+				}
+			}	
+		}
+	}
+	
+def qssehe_AsyncHandler(response, data)
+	{
+    if(response.getStatus() != 200)
+    	log.error ("Nyckelharpa Modefix qssehe.php HTTP Error = ${response.getStatus()}")
+	}
 def execRoutine(aMap) 
 	{
 	def armMode = aMap.armMode
@@ -1860,7 +1925,17 @@ def alertHandler(evt)
 		runInMillis(500, delaysetDisarmed)
 		runInMillis(1200, delayBeep)
 		}
+	if (evt.value != 'rule')									//if rule use rule name minus red alert text
+		qssehe_alert(evt.value)									//update remote sse data
+	else
+		{
+		def matcher
+		def mask=/([^<]*)</					//format descriptionText=Panic<span style="color:red"> ALERT!</span>
+		if ((matcher = evt?.descriptionText =~ mask))
+			qssehe_alert(matcher[0][1])
+		}
 	}
+
 def delayBeep()
 	{
 	globalKeypadDevices.beep(2)		
