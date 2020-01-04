@@ -277,6 +277,8 @@ When using the app's keypad Device Handler
 
 * To use the Iris V2's instant arming, no pin required, create a User profile with pin code 0000. It is not accepted for OFF
 
+* *The Iris V3 requires a User profile with pin code 0000, or it will not arm.* It is not accepted for OFF.
+
 * You may define "Panic Pins" designed for use on keypads without a Panic key, but may be used on any keypad
 
 [:arrow_up_small: Back to top](#top)
