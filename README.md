@@ -256,13 +256,13 @@ Table with Reason Issued and Message Issued.
 
 The app's Keypad Device Handler was created by Mitch Pond on SmartThings where it is still used by a few Smartapps including SHM Delay. With Mitch's assistance and Zigbee skills it was ported to HE, then I added the Alarm capability that sounds a fast high pitch tone until set off on the Iris V2, and beeps for 255 seconds on the Centralite. 
 
-_This DH may be used with the Centralite V2, Centralite V3, Iris V2, and UEI(beta) keypads_
+_This DH may be used with the Centralite V2, Centralite V3, Iris V2, Iris V3 and UEI keypads_
 
 1. After installing the keypad DH, edit keypad devices changing Type to Centralitex Keypad, Save Device
 
 2. Remove keypad from HSM, Add keypad to Nyckelharpa Global Settings
 
-3. Create User pin profiles
+3. Create User pin profiles. When using an Iris V3 User pin code 0000 is required and used for instant arming, but will not disarm. 
 
 4. Create HSM Custom Panic Rule
 
