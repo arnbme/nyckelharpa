@@ -22,6 +22,7 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  * 
+ *	Jan 06, 2020 v0.2.2 Fix non terminating error executing qssehe_alert(). Pre alpha code for software / internet keypad
  *	Jun 10, 2019 v0.2.1	When rule triggers an alert use rule name for sse alert name
  *	Jun 09, 2019 v0.2.1	When a pin is rejected for an open contact, execute keypad.pinStatusSet("OpenContact")
  *	Jun 02, 2019 v0.2.1	Set keypad attribute pinStatus (requires updated keypad driver)
@@ -115,7 +116,7 @@ preferences {
 
 def version()
 	{
-	return "0.2.1";
+	return "0.2.2";
 	}
 def main()
 	{
@@ -1057,7 +1058,8 @@ def qssehe_alert_panic(evt)			//executed when keypad's contact is opened for pan
 def qssehe_alert(alert)
 //	store the HE hsmAlert value into Arnb.org db table shmdelay_oauthhe for all keypads with a sseKey
 	{
-	log.debug "qssehe_alert entered ${alert}"
+	return
+	logdebug "qssehe_alert entered ${alert}"
 	def sseKey
 	def uri
 	if (globalKeypadDevices)
