@@ -337,6 +337,7 @@ A user reported the Snapshot app somehow interfered with Nyclelharpa's forced ar
 <a name="issues"></a>
 ## 16. Known Issues
 * Messages need individual custom destination settings
+* SMS was disabled by Hubitat, but is still defined as a destination. Do not use SMS
 
 [:arrow_up_small: Back to top](#top)
 
