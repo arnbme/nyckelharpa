@@ -81,7 +81,7 @@ There are four modules and an optional Keypad Device Handler (DH) associated wit
   </tr>
   <tr>
     <td>Centralite Keypad</td>
-    <td>Keypad device handler for models: Centralite V2 and V3, Iris V2, and UEI(beta). Created and converted to HE by Mitch Pond</td>
+    <td>Keypad device handler for models: Centralite/Xfinity 3400, Centralite 3400-G, Iris V2, Iris V3, and UEI. Created and converted to HE by Mitch Pond</td>
     <td>Optional</td>
   </tr>
 </table> 
