@@ -916,7 +916,7 @@ def keypadCodeHandler(evt)
 	else
 	if (modeEntered == 2 && globalHomeContacts)
 		{
-		if(!checkOpenContacts(globalHomeCotacts, globalHomeNotify, keypad))
+		if(!checkOpenContacts(globalHomeContacts, globalHomeNotify, keypad))
 			{
 		    keypad.pinStatusSet("OpenContact")
 			return
