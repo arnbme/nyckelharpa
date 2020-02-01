@@ -260,13 +260,16 @@ _This DH may be used with the Centralite/Xfinity 3400, Centralite 3400-G, Iris V
 
 1. After installing the keypad DH, edit keypad devices changing Type to Centralitex Keypad, Save Device
 
-2. Remove keypad from HSM, Add keypad to Nyckelharpa Global Settings
+2. Remove keypad from HSM. In HSM section Configure Arming/Disarming/Cancel Options --> Use keypad(s) to arm/disarm: 
+remove keypads using the Centralitex driver.
 
-3. Create User pin profiles. When using an Iris V3 User pin code 0000 is required and used for instant arming, but will not disarm. This keypad does not send a pin, even if entered, when arming.
+3. Add keypad to Nyckelharpa Global Settings
 
-4. Create HSM Custom Panic Rule
+4. Create User pin profiles. When using an Iris V3 User pin code 0000 is required and used for instant arming, but will not disarm. This keypad does not send a pin, even if entered, when arming.
 
-5. When using an Iris keypad set if Partial key creates Home (default) or Night arming mode
+5. Create HSM Custom Panic Rule
+
+6. When using an Iris keypad set if Partial key creates Home (default) or Night arming mode
 
 [:arrow_up_small: Back to top](#top)
 <a name="userpin"></a>
