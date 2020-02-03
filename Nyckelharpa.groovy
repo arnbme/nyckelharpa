@@ -22,10 +22,15 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  * 
- *	Jan 06, 2020 v0.2.2 Fix non terminating error executing qssehe_alert(). Pre alpha code for software / internet keypad
- *	Jun 10, 2019 v0.2.1	When rule triggers an alert use rule name for sse alert name
- *	Jun 09, 2019 v0.2.1	When a pin is rejected for an open contact, execute keypad.pinStatusSet("OpenContact")
- *	Jun 02, 2019 v0.2.1	Set keypad attribute pinStatus (requires updated keypad driver)
+ *  Feb 03, 2020 v0.2.3	Correct error reported by @theroonie
+ *										~ line 923 change	if(!checkOpenContacts(globalHomeCotacts, globalHomeNotify, keypad))
+ *										to 							if(!checkOpenContacts(globalHomeContacts, globalHomeNotify, keypad))
+ *  Jan 08, 2020 v0.2.3	Direct SMS deprecated by Hubitat. Replace with notification devices including Twilio SMS, and HE phone app	 	
+ *										a work in progress, needs thought and work, but functional
+ *	Jan 06, 2020 v0.2.2	Fix non terminating error executing qssehe_alert(). Pre alpha code for software / internet keypad
+ *	Jun 10, 2019 v0.2.1		When rule triggers an alert use rule name for sse alert name
+ *	Jun 09, 2019 v0.2.1		When a pin is rejected for an open contact, execute keypad.pinStatusSet("OpenContact")
+ *	Jun 02, 2019 v0.2.1		Set keypad attribute pinStatus (requires updated keypad driver)
  *	May 24, 2019 v0.2.0	Arming canceled and Arming forced not sent to push devices. Fixed
  *	May 23, 2019 v0.2.0	adjust text for Hubitat Phoneapp use as a notification device
  *	May 23, 2019 v0.2.0	version check logic from May 19, 2019 did not work for all module names, recoded
@@ -116,7 +121,7 @@ preferences {
 
 def version()
 	{
-	return "0.2.2";
+	return "0.2.3";
 	}
 def main()
 	{
@@ -230,8 +235,8 @@ def globalsPage(error_msg)
 						title: "Log Pin to log.trace?"
 					input "globalPinPush", "bool", required: false, defaultValue:true,
 						title: "Send Pin Push Notification?"
-					input "globalPinPhone", "phone", required: false, 
-						title: "Send Pin text message to this number. For multiple SMS recipients, separate phone numbers with a pound sign(#), or semicolon(;)"
+					input "globalPinPhone", "capability.notification", required: false, multiple:true,
+						title: "Send Pin text message notification to these devices"
 					}
 				input "globalBadPinMsgs", "bool", required: false, defaultValue: true, submitOnChange: true,
 					title: "Log invalid keypad entries, pins not found in a User Profile Default: On/True"
@@ -241,8 +246,8 @@ def globalsPage(error_msg)
 						title: "Log Bad Pins to log.trace?"
 					input "globalBadPinPush", "bool", required: false, defaultValue:true,
 						title: "Send Bad Pin Push Notification?"
-					input "globalBadPinPhone", "phone", required: false, 
-						title: "Send Invalid Bad Pin text message to this number. For multiple SMS recipients, separate phone numbers with a pound sign(#), or semicolon(;)"
+					input "globalBadPinPhone", "capability.notification", required: false, multiple:true, 
+						title: "Send Bad Pin text message notification to these devices"
 					}
 				}	
 			paragraph "<b>Allow the following contacts to remain open when Arming HSM. Each contact generates a Virtual Contact Sensor that must be set in HSM following directions in section 7 of the Github Readme.md file. These contacts also generate Open and Close messages</b>"
@@ -309,7 +314,7 @@ def globalsPage(error_msg)
 				}
 			else
 				paragraph "Simulated Device Prefix: ${globalChildPrefix}. (Remove app to reset)"
-			input "sendPushMessage", "capability.notification", title: "Notification Devices: Hubitat PhoneApp or Pushover", multiple: true, required: false
+			input "sendPushMessage", "capability.notification", title: "Notification Devices: example: HE PhoneApp, Pushover, Twilio", multiple: true, required: false
 			}
 		}
 	}	
@@ -384,7 +389,7 @@ def pageTwo()
 						if (globalPinPush)
 							workMsg += "Push "
 						if (globalPinPhone)
-							workMsg += "SMS $globalPinPhone"
+							workMsg += "Notify $globalPinPhone"
 						workMsg +=']'
 						}	
 					else
@@ -402,7 +407,7 @@ def pageTwo()
 						if (globalBadPinPush)
 							workMsg += "Push "
 						if (globalBadPinPhone)
-							workMsg += "SMS $globalPinPhone"
+							workMsg += "Notify $globalBadPinPhone"
 						workMsg +=']'
 						}	
 					else
@@ -453,7 +458,7 @@ def pageTwo()
 
 
 			if (globalAlarmDevices)
-				paragraph "These devices beep or sound tones at Entry Delay $globalAlarmDevices" 
+				paragraph "In addition to keypads, these devices beep or sound tones at Entry Delay $globalAlarmDevices" 
 			if (globalBeeperDevices)
 				{
 				workMsg = "These devices beep or sound tones when system is disarmed and monitored contact opens $globalBeeperDevices"
@@ -1523,11 +1528,7 @@ def doPinNotifications(localmsg, it)
 			}
 		if (it.UserPinPhone)
 			{
-			def phones = it.UserPinPhone.split("[;#]")
-			for (def i = 0; i < phones.size(); i++)
-				{
-				sendSmsMessage(phones[i], localmsg)
-				}
+			globalPinPhone.deviceNotification(localmsg)
 			}
 		}
 	else
@@ -1544,11 +1545,7 @@ def doPinNotifications(localmsg, it)
 			}
 		if (globalPinPhone)
 			{
-			def phones = globalPinPhone.split("[;#]")
-			for (def i = 0; i < phones.size(); i++)
-				{
-				sendSmsMessage(phones[i], localmsg)
-				}
+			globalPinPhone.deviceNotification(localmsg)
 			}
 		}
 	}
@@ -1567,11 +1564,7 @@ def doBadPinNotifications(localmsg, it)
 		}
 	if (globalBadPinPhone)
 		{
-		def phones = globalBadPinPhone.split("[;#]")
-		for (def i = 0; i < phones.size(); i++)
-			{
-			sendSmsMessage(phones[i], localmsg)
-			}
+		globalBadPinPhone.deviceNotification(localmsg)
 		}
 	}
 
@@ -1609,20 +1602,12 @@ def doPanicNotifications(keypad)
 		sendPushMessage.deviceNotification(message)
 	if (globalPinPhone)
 		{
-		def phones = globalPinPhone.split("[;#]")
-		for (def i = 0; i < phones.size(); i++)
-			{
-			sendSmsMessage(phones[i], message)
-			}
+		globalPinPhone.deviceNotification(message)
 		}
 	else
 	if (globalBadPinPhone)
 		{
-		def phones = globalBadPinPhone.split("[;#]")
-		for (def i = 0; i < phones.size(); i++)
-			{
-			sendSmsMessage(phones[i], message)
-			}
+		globalBadPinPhone.deviceNotification(message)
 		}
 	}
 
@@ -1699,11 +1684,7 @@ def checkOpenContacts (contactList, notifyOptions, keypad)
 			else
 			if (it=='SMS' && globalPinPhone)
 				{
-				def phones = globalPinPhone.split("[;#]")
-				for (def i = 0; i < phones.size(); i++)
-					{
-					sendSmsMessage(phones[i], contactmsg)
-					}
+				it.deviceNotification(contactmsg)
 				}
 			else
 			if (it=='Talk')
@@ -1900,7 +1881,7 @@ def alertHandler(evt)
 		if (globalKeypadDevices)
 			globalKeypadDevices.setEntryDelay(evt.jsonData.seconds)
 		def locevent = [name:"Nyckelharpatalk", value: "entryDelay", isStateChange: true,
-			displayed: true, descriptionText: "Issue enrty delay talk event", linkText: "Issue entry delay talk event",
+			displayed: true, descriptionText: "Issue entry delay talk event", linkText: "Issue entry delay talk event",
 			data: evt.jsonData.seconds]
 		sendLocationEvent(locevent)
 		if (globalAlarmDevices)

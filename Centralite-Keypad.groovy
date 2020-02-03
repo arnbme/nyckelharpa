@@ -14,6 +14,8 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ * 	Feb 03, 2020 v0.2.5 When device not removed from HSM, causes HSM Command "entry" error and app fails to function.
+ *											Add command "entry" statement and issue log warning
  * 	Jan 04, 2020 v0.2.4 Set flag for Iris 2 & 3 allowing Partial Key to set Home or Night arming state
  * 	Jan 04, 2020 v0.2.4 Disable webSocket for live production module
  * 	Dec 30, 2019 v0.2.3 Add support and fingerprint for Iris V3 keypad. Does not send pin on ON(Away) or Partial (Night)
@@ -110,6 +112,7 @@ metadata {
 		command "pinStatusSet",["string"]		//called by Nyckelharpa module
 //		HSM commands		
 		command "armNight"						//not set as part of device capabilities
+		command "entry"								//Feb 03, 2020 V0.2.5
 		
 		fingerprint endpointId: "01", profileId: "0104", deviceId: "0401", inClusters: "0000,0001,0003,0020,0402,0500,0B05", outClusters: "0019,0501", manufacturer: "CentraLite", model: "3400", deviceJoinName: "Xfinity 3400-X Keypad"
 		fingerprint endpointId: "01", profileId: "0104", deviceId: "0401", inClusters: "0000,0001,0003,0020,0402,0500,0501,0B05,FC04", outClusters: "0019,0501", manufacturer: "CentraLite", model: "3405-L", deviceJoinName: "Iris 3405-L Keypad"
@@ -148,8 +151,8 @@ def ssekey(ssekey)
 
 def version()
 	{
-	updateDataValue("driverVersion", "0.2.4")	//Stores in device Data
-	return "0.2.4";
+	updateDataValue("driverVersion", "0.2.5")	//Stores in device Data
+	return "0.2.5";
 	}
 
 def installed() {
@@ -565,7 +568,7 @@ private Map getTemperatureResult(value) {
 		def v = value as int
 		value = v + offset
 	}
-	def descriptionText = "${linkText} was ${value}�${temperatureScale}"
+	def descriptionText = "${linkText} was ${value}°${temperatureScale}"
 	return [
 		name: 'temperature',
 		value: value,
@@ -723,8 +726,10 @@ def armNight(def delay=0)
 
 def entry(delay=0)
 	{
-	logdebug "entry entered delay: ${delay}"
+//	logdebug "entry entered delay: ${delay}"
 //	setEntryDelay(delay)	//disabled until I understand why this is issued when setting away from actiontiles
+//	v.0.2.5 not used by Nyckelharpa, but device should be removed from HSM, issue warning message
+	log.warn "Centralitex DH says: Remove $device.displayName from HSM Configure Arming/Disarming/Cancel Options --> Use keypad(s) to arm/disarm"
 	}
 	
 def setEntryDelay(delay) {
