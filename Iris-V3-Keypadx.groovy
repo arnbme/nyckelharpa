@@ -1052,7 +1052,7 @@ def parse(String description)
 						siren()	
 						sendEvent(name: "contact", value: "open", displayed: true, isStateChange: true)
 						runIn(3, "panicContactClose")
-						rerturn results
+						return results
 						} 
 					}	
                 else 
@@ -1108,4 +1108,9 @@ def entry(delay=0)
 //	v.0.2.5 not used by Nyckelharpa, but device should be removed from HSM, issue warning message
 	log.warn "Centralitex DH says: Remove $device.displayName from HSM Configure Arming/Disarming/Cancel Options --> Use keypad(s) to arm/disarm"
 	}
+	
+def panicContactClose()
+{
+	sendEvent(name: "contact", value: "closed", displayed: true, isStateChange: true)
+}	
 
