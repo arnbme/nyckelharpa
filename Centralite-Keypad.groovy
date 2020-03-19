@@ -14,6 +14,11 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ * 	Mar 19, 2020 v0.2.6 Symptom Iris V3 battery short life, V3 loses system arm state.
+ *										  Cause Iris V3 motion message loop
+ *										  Fix: add logic from HE Iris V3 DH
+ *										  Decided not to support alternate Beep tones for now.
+ *										  Exit, Entry and Beep sounds are erratic on the V3, Siren works	
  * 	Feb 03, 2020 v0.2.5 When device not removed from HSM, causes HSM Command "entry" error and app fails to function.
  *											Add command "entry" statement and issue log warning
  * 	Jan 04, 2020 v0.2.4 Set flag for Iris 2 & 3 allowing Partial Key to set Home or Night arming state
@@ -122,12 +127,15 @@ metadata {
 	
 	preferences{
 		input ("version_donotuse", "text", title: "Version: ${version()}<br />(Do not set display only)", required: false )
+//		if (device?.data?.model == '1112-S')
+//	        input ("altBeepEnable", "bool", title: "Enable Iris V3 alternate beep sound Default (False)", defaultValue: false)
         input ("panicEnabled", "bool", title: "Enable Panic Key (when available) and Panic Pins. Default (True)", defaultValue: true)
 		input ("tempOffset", "number", title: "Enter an offset to adjust the reported temperature",
 				defaultValue: 0, displayDuringSetup: false)
 		input ("beepLength", "number", title: "Enter length of beep in seconds",
 				defaultValue: 1, displayDuringSetup: false)
-        input ("motionTime", "number", title: "Time in seconds for Motion to become Inactive (Default:10, 0=disabled)",	defaultValue: 10, displayDuringSetup: false)
+		if (device?.data?.model != '1112-S')
+        	input ("motionTime", "number", title: "Time in seconds for Motion to become Inactive (Default:10, 0=disabled)",	defaultValue: 10, displayDuringSetup: false)
         input ("showVolts", "bool", title: "Turn on to show actual battery voltage x 10 as %. Default (Off) is calculated percentage", defaultValue: false, displayDuringSetup: false)
 		if (device?.data?.model == '1112-S' || device?.data?.model == '3405-L')
 	        input ("irisPartialSwitch", "bool", title: "When On/True Partial key arms Night, when Off/false: arms Home. Default (Off)", defaultValue: false, displayDuringSetup: false)
@@ -151,8 +159,8 @@ def ssekey(ssekey)
 
 def version()
 	{
-	updateDataValue("driverVersion", "0.2.5")	//Stores in device Data
-	return "0.2.5";
+	updateDataValue("driverVersion", "0.2.6")	//Stores in device Data
+	return "0.2.6";
 	}
 
 def installed() {
@@ -255,7 +263,8 @@ def reconnectWebSocket() {
 // parse hardware events into attributes,and process websocket messages
 def parse(String description) 
 	{
-	logdebug "Parsing ${description}";
+	if (logdebugs)
+		log.debug "Parse entered ${description}";
 	if (description?.startsWith('{"type":'))		//intercept websocket messages
 		{
 		log.debug "WebSocket message: ${description}"
@@ -293,10 +302,15 @@ def parse(String description)
 				//------Poll Control - drop------//
 				if (message?.clusterId == '0020') return []
 				//------IAS ACE------//
-				else if (message?.clusterId == '0501') {
-					if (message?.command == '07') {
-						motionON()
-					}
+				else if (message?.clusterId == '0501') 
+					{
+					if (message?.command == '07')
+						{
+						if (device?.data?.model == '1112-S' )
+							getMotionResult('active')
+						else	
+							motionON()
+						}
 					else if (message?.command == '04') 
 						{
 						if (panicEnabled)
@@ -311,10 +325,11 @@ def parse(String description)
 								}
 							}
 						}
-					else if (message?.command == '00') {
+					else if (message?.command == '00')
+						{
 						results = handleArmRequest(message)
 						logtrace results
-					}
+						}
 				}
 				else log.warn "Unhandled cluster-specific command: "+message
 			}
@@ -466,7 +481,7 @@ private Map parseIasMessage(String description) {
     return resultMap
 }
 
-
+/*	deprecated V026 Mar 19, 2020
 private Map getMotionResult(value) {
 	String linkText = getLinkText(device)
 	String descriptionText = value == 'active' ? "${linkText} detected motion" : "${linkText} motion has stopped"
@@ -476,16 +491,17 @@ private Map getMotionResult(value) {
 		descriptionText: descriptionText
 	]
 }
+*/
 def motionON() {
-//    logdebug "--- Motion Detected"
-    sendEvent(name: "motion", value: "active", displayed:true, isStateChange: true)
+  logdebug "--- Motion Detected"
     
 	//-- Calculate Inactive timeout value
 	def motionTimeRun = (settings.motionTime?:0).toInteger()
-
+	
 	//-- If Inactive timeout was configured
 	if (motionTimeRun > 0) {
-//		logdebug "--- Will become inactive in $motionTimeRun seconds"
+    	sendEvent(name: "motion", value: "active", displayed:true, isStateChange: true)
+		logdebug "--- Will become inactive in $motionTimeRun seconds"
 		runIn(motionTimeRun, "motionOFF")
 	}
 }
@@ -835,17 +851,36 @@ def sendInvalidKeycodeResponse(){
 }
 
 def beep(def beepLength = settings.beepLength as Integer) {
+//	logdebug "beep entered: ${beepLength} ${altBeepEnable}"
 	if ( beepLength == null )
 	{
 		beepLength = 1
 	}
-
 	def len = zigbee.convertToHexString(beepLength, 2)
 //	List cmds = ["raw 0x501 {09 01 04 05${len}}", 'delay 200',
 //				 "send 0x${device.deviceNetworkId} 1 1", 'delay 500']
-	List cmds = ["raw 0x501 {09 01 04 05${len}}",
+//    if (altBeepEnable)
+//    	{
+//    	logdebug "altbeep execute: ${beepLength} ${altBeepEnable}"
+//		List cmds = ["raw 0xFC04 {15 4E 05${len}}",
+//			 "send 0x${device.deviceNetworkId} 0 0", 'delay 100']
+//		}
+//	else
+//    	{
+//    	logdebug "normal beep execute: ${beepLength} ${len} ${altBeepEnable}"
+		List cmds = ["raw 0x501 {09 01 04 05${len}}",
 				 "send 0x${device.deviceNetworkId} 1 1", 'delay 100']
+//		}	 
 	cmds
+
+//List<String> beep(){
+//        return ["he raw 0x${device.deviceNetworkId} 1 1 0x0501 {09 01 04 05 01 01 01}"]
+//    } else {
+//        return ["he raw 0x${device.deviceNetworkId} 1 1 0xFC04 {15 4E 10 00 00 00}"]
+//    }
+//}
+
+
 //	return (cmds?.collect{ new hubitat.device.HubAction(it, hubitat.device.Protocol.ZIGBEE) }
 }
 
@@ -920,3 +955,48 @@ def logtrace(txt)
    	if (logtraces)
    		log.trace ("${txt}")
     }
+    
+/*		V026 logic used with Iris V3 to fix hardware motion message send loop			
+		Copied from HE's Iris V3 DH. This device needs a response on motion
+*/      
+
+private getMotionResult(value) 
+	{
+    logdebug "getMotionResult: ${value} current: ${device?.currentValue('motion')}"
+    if (device?.currentValue("motion") != "active")
+    	{
+        runIn(30,motionOFF)
+        def descriptionText = "${device?.displayName} is ${value}"
+        sendEvent(name: "motion",value: value,descriptionText: "${descriptionText}")
+    	}
+	sendPanelResponse(false)		//Iris V3 needs a response or it goes beserk
+	}
+
+/*	only using portion of logic in this routine from HE dh  */
+private sendPanelResponse(alert = false)
+	{
+    def resp = []
+	def status = 0
+	armMode = device.currentValue("armMode",true)
+//	if (armMode == null || armMode == 'disarmed') status = 0
+	if (armMode == 'armedAway') status = 3
+	else if (armMode == 'armedHome') status = 1	
+	else if (armMode == 'armedNight') status = 2
+//	else logdebug 'Invalid Arm Mode in sendStatusToDevice: '+armMode
+//    def remaining = (state.delayExpire ?: now()) - now()
+//    remaining = Math.ceil(remaining /= 1000).toInteger()
+//    if (remaining > 3) {
+//        runIn(2,"sendPanelResponse")
+//        resp.add("he raw 0x${device.deviceNetworkId} 1 1 0x0501 {19 01 05 ${intToHexStr(status)} ${intToHexStr(remaining)} 01 01}")
+//    } else {
+//        if (alert) {
+//            resp.addAll(["he raw 0x${device.deviceNetworkId} 1 1 0x0501 {19 01 05 05 01 01 01}","delay 400"])
+//        }
+   resp.add("he raw 0x${device.deviceNetworkId} 1 1 0x0501 {19 01 05 ${intToHexStr(status) ?: "00"} 00 00 00}")
+//   if (resp)
+//   		{	
+//		logdebug "Panel response ${resp}"
+		sendHubCommand(new hubitat.device.HubMultiAction(resp, hubitat.device.Protocol.ZIGBEE))
+//		}
+}
+	
