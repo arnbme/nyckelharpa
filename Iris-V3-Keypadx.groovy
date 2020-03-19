@@ -1,4 +1,4 @@
-/*
+/*	DO NOT USE TEST Module Only
 	Iris V3 Keypad
 	2019-03-18 Arn Burkhoff Got it working, it is a total mess of a hack, less than Alpha code in  my opinion but it seems to work
 						killed motion time seems to need 30 seconds for motion or it continues to go berserk
@@ -671,7 +671,7 @@ def updated(){
         //send new event on offSet change
         if (newOffset.toString() != prevOffset.toString()){
             state.tempOffset = newOffset
-            def map = [name: "temperature", value: "${newTemp}", descriptionText: "${device.displayName} temperature offset was set to ${newOffset}°${location.temperatureScale}"]
+            def map = [name: "temperature", value: "${newTemp}", descriptionText: "${device.displayName} temperature offset was set to ${newOffset}Â°${location.temperatureScale}"]
             if (txtEnable) log.info "${map.descriptionText}"
             sendEvent(map)
         }
@@ -747,9 +747,9 @@ private getTemperatureResult(valueRaw){
         value =  (value.toFloat() + state.tempOffset.toFloat()).round(2).toString()
     }
     def name = "temperature"
-    def descriptionText = "${device.displayName} ${name} is ${value}°${location.temperatureScale}"
+    def descriptionText = "${device.displayName} ${name} is ${value}Â°${location.temperatureScale}"
     if (txtEnable) log.info "${descriptionText}"
-    sendEvent(name: name,value: value,descriptionText: descriptionText, unit: "°${location.temperatureScale}")
+    sendEvent(name: name,value: value,descriptionText: descriptionText, unit: "Â°${location.temperatureScale}")
 }
 
 /*
