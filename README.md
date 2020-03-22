@@ -343,8 +343,6 @@ A user reported the Snapshot app somehow interfered with Nyclelharpa's forced ar
 
 * SMS was disabled by Hubitat, but is still defined as a destination. Do not use SMS
 
-* Iris V3 Keypad: Exit, Entry and Beep sounds are erratic or fail to sound on the V3 using this DH and from my experience the HE Iris V3 DH. However HSM operation is correct using Nyckelharpa.
-
 * Iris V3 Keypad: When Panic is activated on the V3, it sometimes fails to stop when entering pin then OFF. Workaround: Tap Partial, then enter pin, then OFF until it stops 
 
 [:arrow_up_small: Back to top](#top)
