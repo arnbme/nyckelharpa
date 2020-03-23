@@ -343,7 +343,7 @@ A user reported the Snapshot app somehow interfered with Nyclelharpa's forced ar
 
 * SMS was disabled by Hubitat, but is still defined as a destination. Do not use SMS
 
-* Iris V3 Keypad: When Panic is activated on the V3, it sometimes fails to stop when entering pin then OFF. Workaround: Tap Partial, then enter pin, then OFF until it stops 
+* Iris V3 Keypad: Lights don't shut off when device sitting on table or flat surface. Issue: Devices motion or proximity sensor is activated. Move to edge of table, or lay flat on table, or mount on wall. 
 
 [:arrow_up_small: Back to top](#top)
 
