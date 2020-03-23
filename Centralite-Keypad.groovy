@@ -14,6 +14,8 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ * 	Mar 23, 2020 v0.2.8 Symptom Iris V3 Siren stops when motion occurs on device and sendPanelResponse responds
+ *							Fixed in set and unset active siren boolean, then test for active siren in sendPanelResponse
  * 	Mar 21, 2020 v0.2.7 Symptom Iris V3 light status did not match HSM status.
  * 							Fixed in routine sendPanelResponse. Use hsmStatus for Iris V3 motion response
  *						Symptom Erratic or missing entry and exit delay tones.
@@ -165,8 +167,8 @@ def ssekey(ssekey)
 
 def version()
 	{
-	updateDataValue("driverVersion", "0.2.7")	//Stores in device Data
-	return "0.2.7";
+	updateDataValue("driverVersion", "0.2.8")	//Stores in device Data
+	return "0.2.8";
 	}
 
 def installed() {
@@ -251,14 +253,14 @@ def reconnectWebSocket() {
 }
 
 // Statuses:
-// 00 - Command: setDisarmed   Centralite all icons off / Iris Off button on
+// 00 - Command: setDisarmed   Centralite all icons off / Iris Off button on, Ready to Arm
 // 01 - Command: setArmedStay  lights Centralite Stay button / Iris Partial
-// 02 - Command: setArmedNight lights Centralite Night button / Iris does nothing
+// 02 - Command: setArmedNight lights Centralite Night button / Iris V2 does nothing / Iris V3 lights Partial
 // 03 - Command: setArmedAway  lights Centralite Away button / Iris ON
 // 04 - Panic Sound, uses seconds for duration (siren on everything but 3400 use beep instead, max 255)
 // 05 - Command: Beep and SetEntryDelay Fast beep (1 per second, uses seconds for duration, max 255) Appears to keep the status lights as it was, used for entry delay command
-// 06 - Amber status blink (Runs forever until Off or some command issued)
-// 07 - ?
+// 06 - Not ready to Arm Centralite - Amber status blink (Runs forever until Off or some command issued on Centralite, Iris V3 wont Arm)
+// 07 - Zigbee In Alarm: sounds Siren on Iris V2/V3
 // 08 - Command: setExitStay  Blink Stay Icon/Partial light all devices, Slow beep on Iris only (1 per second, accelerating to 2 beep per second for the last 10 seconds) - With red flashing status - lights Stay icon/Iris Partial Uses seconds
 // 09 - Command: setExitNight Blink Night Icon on Centralite and UEI devices no beeps, with red flashing status - lights Night icon/ Uses seconds  (does nothing on Iris)
 // 10 - Command: setExitAway  Blink Away Icon / ON light on all devices (1 per second, accelerating to 2 beep per second for the last 10 seconds) - With red flashing status - lights Away Uses/Iris ON seconds
@@ -712,6 +714,7 @@ def notifyPanelStatusChanged(status) {
 
 def setDisarmed() {
 	logdebug ('setDisarm entered')
+	state.alert=false
 	setModeHelper("disarmed",0)
 	}
 def setArmedAway(def delay=0) { setModeHelper("armedAway",delay) }
@@ -784,6 +787,7 @@ def both()
 	}
 def off()
 	{
+	state.alert=false
 	if (device.data.model.contains ('3400') || device.data.model.substring(0,3)=='URC')
 		beep(0)
 	else
@@ -798,6 +802,7 @@ def siren()
 /*	device.data.model not available in ST
  *  siren command does not work on Centralite 3400 V2 and 3400-G (V3) or UEI
  */
+	state.alert = true					//used only by Iris V3 in sendPanelResponse
 	if (device.data.model.contains ('3400') || device.data.model.substring(0,3)=='URC')
 		beep(255)
 	else
@@ -992,6 +997,8 @@ Note: delayExpire is set when setEntrydelay is entered, so in this module it's u
 */
 private sendPanelResponse()
 	{
+	if (state?.alert)			//check if siren active, requires arm or disarm to stop it
+		return false
 	def resp = []
 	def hsmstatus = location.hsmStatus
 	def status = [disarmed : 0, armedHome: 1, armedNight: 2, armedAway: 3, allDisarmed: 0, armingHome: 8, armingNight: 9, armingAway: 10][hsmstatus] ?: 0
