@@ -139,8 +139,6 @@ metadata {
 
 	preferences{
 		input ("version_donotuse", "text", title: "Version: ${version()}<br />(Do not set display only)", required: false )
-		if (device?.data?.model == '1112-S' || device?.data?.model== '3405-L')
-	        input ("altBeepEnable", "bool", title: "Enable old style beep sound Default (False). If no beep sound set on", defaultValue: false)
 //		if (device?.data?.model.substring(0,3) !='340" throws error Cannot invoke method substring() on null object
         if (device?.data?.model == '1112-S' || device?.data?.model== 'URC4450BC0-X-R')
         	input ("BatteryType", "enum", title: "Battery Type", required: true, options:["Alkaline", "Lithium", "Rechargeable"])
@@ -148,8 +146,11 @@ metadata {
 		input ("tempOffset", "number", title: "Enter an offset to adjust the reported temperature",
 				defaultValue: 0, displayDuringSetup: false)
 		if (device?.data?.model == '1112-S' || device?.data?.model== '3405-L')
-			input ("beepLength", "number", title: "Enter length of old style beep in seconds",
+			{
+	        input ("altBeepEnable", "bool", title: "Enable old style beep sound Default (False). If no beep sound set on", defaultValue: false)
+			input ("beepLength", "number", title: "Enter length of old style beep in seconds. Iris V3 firmware locked at 1 beep",
 				defaultValue: 1, displayDuringSetup: false)
+			}
 		else
 			input ("beepLength", "number", title: "Enter length of beep in seconds",
 				defaultValue: 1, displayDuringSetup: false)
