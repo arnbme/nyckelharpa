@@ -14,6 +14,7 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ * 	Mar 25, 2020 v1.0.0 Add support for HE pins and pin processing
  * 	Mar 24, 2020 v0.2.9 Symptom Iris V3 device goes into hardware motion loop during panic or siren sounding
  *							Fixed in sendPanelResponse(): sends a response that does not stop siren, kill keys. or create hardware motion messages
  *						Add support for new beep sound in Iris V2 and V3 Depending on firmware my need to use old beep sound
@@ -56,7 +57,7 @@
  *					of the UEI XHK1 keypad.  Changed voltages from 3.5 to 7.2 (voltage too high),
  *					3.5 to 5.2 (MinVolts), 3.0 to 6.8 (MaxVolts).
  *	May 11, 2019 added version number, initially set to 0.1.7 17 changes from initial porting
- *	May 11, 2019 Generate beeps for 3400-G Keypad, Centralite V3 does not respond to Siren Command
+ *	May 11, 2019 Generate beeps for 3400-G Keypad, Centralite does not respond to Siren Command
  *	May 05, 2019 Restore button capability as pushableButton, capability ContactSensor add update Url
  *	Apr 30, 2019 HSM hijacked command setExitDelay to send all HSM delay to keypad
  *								avoid confusion by changing ours to setExitAway
@@ -89,6 +90,8 @@
  * 			otherwise alarm sounds after rearm
  *  Jul 12, 2017 in sendStatustoDevice light Night button not HomeStay button (no such mode in SmartHome)
  */
+import groovy.json.JsonSlurper
+import groovy.json.JsonOutput
 metadata {
 	definition (name: "Centralitex Keypad", namespace: "mitchpond", author: "Mitch Pond", vid: "generic-motion") {
 		capability "SecurityKeypad"
@@ -139,6 +142,8 @@ metadata {
 
 	preferences{
 		input ("version_donotuse", "text", title: "Version: ${version()}<br />(Do not set display only)", required: false )
+	    input ("lockManagerPins", "bool", title: "When Off/False<br />Use Nyckelharpa user pin manager. (Default)<br /><br />When On/True<br />Use Lock Manager Pins.", defaultValue: false)
+        input name: "optEncrypt", type: "bool", title: "Enable Lock Manager Code encryption", defaultValue: false, description: ""
 //		if (device?.data?.model.substring(0,3) !='340" throws error Cannot invoke method substring() on null object
         if (device?.data?.model == '1112-S' || device?.data?.model== 'URC4450BC0-X-R')
         	input ("BatteryType", "enum", title: "Battery Type", required: true, options:["Alkaline", "Lithium", "Rechargeable"])
@@ -148,19 +153,22 @@ metadata {
 		if (device?.data?.model == '1112-S' || device?.data?.model== '3405-L')
 			{
 	        input ("altBeepEnable", "bool", title: "Enable old style beep sound Default (False). If no beep sound set on", defaultValue: false)
-			input ("beepLength", "number", title: "Enter length of old style beep in seconds. Iris V3 firmware locked at 1 beep",
-				defaultValue: 1, displayDuringSetup: false)
+			input ("beepLength", "number", title: "Enter length of old style beep in seconds. Iris V3 firmware locked at 1 beep.", defaultValue: 1, displayDuringSetup: false)
+			if (device?.data?.model== '3405-L')
+				{
+				input name: "pinOnArmAway", type: "bool", title: "Verify pin to arm away", defaultValue: false, description: ""
+				input name: "pinOnArmHome", type: "bool", title: "Verify pin to arm home/night", defaultValue: false, description: ""
+				}
 			}
 		else
-			input ("beepLength", "number", title: "Enter length of beep in seconds",
-				defaultValue: 1, displayDuringSetup: false)
+			input ("beepLength", "number", title: "Enter length of beep in seconds", defaultValue: 1, displayDuringSetup: false)
 		if (device?.data?.model != '1112-S')
         	input ("motionTime", "number", title: "Time in seconds for Motion to become Inactive (Default:10, 0=disabled)",	defaultValue: 10, displayDuringSetup: false)
         input ("showVolts", "bool", title: "Turn on to show actual battery voltage x 10 as %. Default (Off) is calculated percentage", defaultValue: false, displayDuringSetup: false)
 		if (device?.data?.model == '1112-S' || device?.data?.model == '3405-L')
 	        input ("irisPartialSwitch", "bool", title: "When On/True Partial key arms Night, when Off/false: arms Home. Default (Off)", defaultValue: false, displayDuringSetup: false)
-        input ("logdebugs", "bool", title: "Log debugging messages", defaultValue: false, displayDuringSetup: false)
-        input ("logtraces", "bool", title: "Log trace messages", defaultValue: false, displayDuringSetup: false)
+        input ("logEnable", "bool", title: "Log debugging messages", defaultValue: false, displayDuringSetup: false)
+        input ("txtEnable", "bool", title: "Log trace messages", defaultValue: false, displayDuringSetup: false)
 //		paragraph "Centralitex Keypad Plus UEI Version ${version()}" Does not work in HE
 	}
 
@@ -179,8 +187,8 @@ def ssekey(ssekey)
 
 def version()
 	{
-	updateDataValue("driverVersion", "0.2.9")	//Stores in device Data
-	return "0.2.9";
+	updateDataValue("driverVersion", "1.0.0")	//Stores in device Data
+	return "1.0.0";
 	}
 
 def installed() {
@@ -346,8 +354,15 @@ def parse(String description)
 						}
 					else if (message?.command == '00')
 						{
-						results = handleArmRequest(message)
-						logtrace results
+						if (lockManagerPins)		//use HE lock manager pin codes
+							{
+							lmPins(message)
+							}
+						else
+							{
+							results = handleArmRequest(message)
+							logtrace results
+							}
 						}
 				}
 				else log.warn "Unhandled cluster-specific command: "+message
@@ -890,9 +905,13 @@ def sendInvalidKeycodeResponse(){
 	sendStatusToDevice()
 }
 
+/*
+ * Iris V3 may not sound default new beep if it has old firmware
+ * Iris V3 generates 1 (old) beep no matter what number is given
+ */
 def beep(def beepLength = settings.beepLength as Integer)
 	{
-//	log.debug "beep entered: ${beepLength} ${altBeepEnable}"
+	logdebug "beep entered: ${beepLength} ${altBeepEnable}"
 	if ( beepLength == null )
 		{
 		beepLength = 1
@@ -900,13 +919,14 @@ def beep(def beepLength = settings.beepLength as Integer)
 	def len = zigbee.convertToHexString(beepLength, 2)
 	if (device.data.model == '1112-S' || device.data.model== '3405-L')
 		{
-//		log.debug "its an Iris altBeepEnable: ${altBeepEnable}"
+//		logdebug "its an Iris altBeepEnable: ${altBeepEnable}"
 		if (!altBeepEnable)
 			{
 //			log.debug 'Using FC04 cluster beep'
         	return ["he raw 0x${device.deviceNetworkId} 1 1 0xFC04 {15 4E 10 00 00 00}"]
         	}
 		}
+//	log.debug "old beep used: ${beepLength} ${len} ${altBeepEnable}"
     return ["he raw 0x${device.deviceNetworkId} 1 1 0x0501 {09 01 04 05 ${len} 01 01}"]
 	}
 
@@ -973,12 +993,12 @@ private testingTesting() {
 
 def logdebug(txt)
 	{
-   	if (logdebugs)
+   	if (logEnable)
    		log.debug ("${txt}")
     }
 def logtrace(txt)
 	{
-   	if (logtraces)
+   	if (txtEnable)
    		log.trace ("${txt}")
     }
 
@@ -1038,3 +1058,251 @@ private sendPanelResponse()
 		logdebug "no response2: ${hsmstatus} status: ${status} ${intToHexStr(status)} state.delayExpire: ${state.delayExpire?: 0}"
 		}
 	}
+
+/*
+		The following code is used for compatabilitty with HE pins and pin processing
+*/
+
+private changeIsValid(codeMap,codeNumber,code,name){
+    def result = true
+    def codeLength = device.currentValue("codeLength")?.toInteger() ?: 4
+    def maxCodes = device.currentValue("maxCodes")?.toInteger() ?: 20
+    def isBadLength = codeLength != code.size()
+    def isBadCodeNum = maxCodes < codeNumber
+    if (lockCodes) {
+        def nameSet = lockCodes.collect{ it.value.name }
+        def codeSet = lockCodes.collect{ it.value.code }
+        if (codeMap) {
+            nameSet = nameSet.findAll{ it != codeMap.name }
+            codeSet = codeSet.findAll{ it != codeMap.code }
+        }
+        def nameInUse = name in nameSet
+        def codeInUse = code in codeSet
+        if (nameInUse || codeInUse) {
+            if (logEnable && nameInUse) { log.warn "changeIsValid:false, name:${name} is in use:${ lockCodes.find{ it.value.name == "${name}" } }" }
+            if (logEnable && codeInUse) { log.warn "changeIsValid:false, code:${code} is in use:${ lockCodes.find{ it.value.code == "${code}" } }" }
+            result = false
+        }
+    }
+    if (isBadLength || isBadCodeNum) {
+        if (logEnable && isBadLength) { log.warn "changeIsValid:false, length of code ${code} does not match codeLength of ${codeLength}" }
+        if (logEnable && isBadCodeNum) { log.warn "changeIsValid:false, codeNumber ${codeNumber} is larger than maxCodes of ${maxCodes}" }
+        result = false
+    }
+    return result
+}
+
+private getCodeMap(lockCodes,codeNumber){
+    if (logEnable) log.debug "getCodeMap- lockCodes:${lockCodes}, codeNumber:${codeNumber}"
+    def codeMap = [:]
+    def lockCode = lockCodes?."${codeNumber}"
+    if (lockCode) {
+        codeMap = ["name":"${lockCode.name}", "code":"${lockCode.code}"]
+    }
+    return codeMap
+}
+
+private getLockCodes() {
+    def lockCodes = device.currentValue("lockCodes")
+    def result = [:]
+    if (lockCodes) {
+        if (lockCodes[0] == "{") result = new JsonSlurper().parseText(lockCodes)
+        else result = new JsonSlurper().parseText(decrypt(lockCodes))
+    }
+    return result
+}
+
+private updateLockCodes(lockCodes){
+    if (logEnable) log.debug "updateLockCodes: ${lockCodes}"
+    def data = new groovy.json.JsonBuilder(lockCodes)
+    if (optEncrypt) data = encrypt(data.toString())
+    sendEvent(name:"lockCodes",value:data,isStateChange:true)
+}
+
+private updateEncryption(){
+    def lockCodes = device.currentValue("lockCodes") //encrypted or decrypted
+    if (lockCodes){
+        if (optEncrypt && lockCodes[0] == "{") {	//resend encrypted
+            sendEvent(name:"lockCodes",value: encrypt(lockCodes), isStateChange:true)
+        } else if (!optEncrypt && lockCodes[0] != "{") {	//resend decrypted
+            sendEvent(name:"lockCodes",value: decrypt(lockCodes), isStateChange:true)
+        } else {
+            sendEvent(name:"lockCodes",value: lockCodes, isStateChange:true)
+        }
+    }
+}
+
+void setCodeLength(length){
+    String descriptionText = "${device.displayName} codeLength set to 4"
+    if (txtEnable) log.info "${descriptionText}"
+    sendEvent(name:"codeLength",value:"${4}",descriptionText:descriptionText)
+}
+
+void setCode(codeNumber, code, name = null) {
+    if (!name) name = "code #${codeNumber}"
+
+    def lockCodes = getLockCodes()
+    def codeMap = getCodeMap(lockCodes,codeNumber)
+    def data = [:]
+    def value
+    //verify proposed changes
+    if (!changeIsValid(codeMap,codeNumber,code,name)) return
+
+    if (logEnable) log.debug "setting code ${codeNumber} to ${code} for lock code name ${name}"
+
+    if (codeMap) {
+        if (codeMap.name != name || codeMap.code != code) {
+            codeMap = ["name":"${name}", "code":"${code}"]
+            lockCodes."${codeNumber}" = codeMap
+            data = ["${codeNumber}":codeMap]
+            if (optEncrypt) data = encrypt(JsonOutput.toJson(data))
+            value = "changed"
+        }
+    } else {
+        codeMap = ["name":"${name}", "code":"${code}"]
+        data = ["${codeNumber}":codeMap]
+        lockCodes << data
+        if (optEncrypt) data = encrypt(JsonOutput.toJson(data))
+        value = "added"
+    }
+    updateLockCodes(lockCodes)
+    sendEvent(name:"codeChanged",value:value,data:data, isStateChange: true)
+}
+
+def deleteCode(codeNumber) {
+    def codeMap = getCodeMap(lockCodes,"${codeNumber}")
+    def result = [:]
+    if (codeMap) {
+        lockCodes.each{
+            if (it.key != "${codeNumber}"){
+                result << it
+            }
+        }
+        updateLockCodes(result)
+        def data =  ["${codeNumber}":codeMap]
+        if (optEncrypt) data = encrypt(JsonOutput.toJson(data))
+        sendEvent(name:"codeChanged",value:"deleted",data:data, isStateChange: true)
+    }
+}
+
+def getCodes(){
+    updateEncryption()
+}
+
+private getDefaultLCdata(){
+    return [
+            isValid:true
+            ,isInitiator:false
+            ,code:"0000"
+            ,name:"not required"
+            ,codeNumber: -1
+    ]
+}
+
+//	This code handles the HE Pin processing
+def lmPins(descMap)
+	{
+	logdebug "lmPins entered ${device?.data?.model} ${descMap}"
+	def armRequest = descMap.data[0]
+	def nyckelArmRequest=armRequest
+	def asciiPin = "0000"
+	switch (device?.data?.model)
+		{
+		case '1112-S' :
+			if (armRequest == "00")
+				asciiPin = descMap.data[2..5].collect{ (char)Integer.parseInt(it, 16) }.join()
+			if (irisPartialSwitch && armRequest== '01')
+				nyckelArmRequest='02'
+			createLmCodeEntryEvent(asciiPin,nyckelArmRequest.substring(1),isValidPinV3(asciiPin, armRequest))
+		break
+		case '3405-L' :
+			asciiPin = descMap.data[2..5].collect{ (char)Integer.parseInt(it, 16) }.join()
+			if (irisPartialSwitch && armRequest== '01')
+				nyckelArmRequest='02'
+			createLmCodeEntryEvent(asciiPin,nyckelArmRequest.substring(1),isValidPinV2(asciiPin, armRequest))
+		break
+		default:
+			asciiPin = descMap.data[2..5].collect{ (char)Integer.parseInt(it, 16) }.join()
+			createLmCodeEntryEvent(asciiPin,armRequest.substring(1),isValidPin(asciiPin, armRequest))
+		break
+		}
+	}
+
+private isValidPinV3(code, armRequest)
+	{
+    def data = getDefaultLCdata()
+    if (armRequest == "00")
+    	{
+        //verify pin
+        def lockCode = lockCodes.find{ it.value.code == "${code}" }
+        if (lockCode)
+        	{
+            data.codeNumber = lockCode.key
+            data.name = lockCode.value.name
+            data.code = code
+//          descriptionText = "${device.displayName} was disarmed by ${data.name}"
+//          sendEvent(name: "lastCodeName", value: data.name, descriptionText: descriptionText, isStateChange: true)
+        	}
+        else
+        	{
+            data.isValid = false
+            if (txtEnable) log.warn "Invalid pin entered [${code}] for arm command [${getArmCmd(armRequest)}]"
+        	}
+	    }
+    return data
+	}
+
+private isValidPinV2(code, armRequest)
+	{
+    def data = getDefaultLCdata()
+    if (code=='0000' && (armRequest =='03' || armRequest== '01'))		//allow no pin used for arming
+    	{}
+    else
+    if ((pinOnArmAway && armRequest == "03") || (pinOnArmHome && armRequest == "01") || armRequest == "00")
+    	{
+		//verify pin
+		def lockCode = lockCodes.find{ it.value.code == "${code}" }
+		if (lockCode)
+			{
+			data.codeNumber = lockCode.key
+			data.name = lockCode.value.name
+			data.code = code
+			}
+		else
+			{
+			data.isValid = false
+			if (txtEnable) log.warn "Invalid pin entered [${code}] for arm command [${getArmCmd(armRequest)}]"
+			}
+		}
+    return data
+  	}
+
+// Centralite 3400s and UEI
+private isValidPin(code, armRequest)
+	{
+    def data = getDefaultLCdata()
+	def lockCode = lockCodes.find{ it.value.code == "${code}" }
+	if (lockCode)
+		{
+		data.codeNumber = lockCode.key
+		data.name = lockCode.value.name
+		data.code = code
+		}
+	else
+		{
+		data.isValid = false
+		if (txtEnable) log.warn "Invalid pin entered [${code}] for arm command [${getArmCmd(armRequest)}]"
+		}
+    return data
+  	}
+
+def createLmCodeEntryEvent(keycode, armMode, lmPinMap) {
+//	Map data is sent, but it returns in Nyckelharpa as a JSON string that must be reformatted with Jsonslurper into a Map
+	def lmPinMapx=lmPinMap
+	lmPinMapx.armMode=armMode as String
+	logtrace "createLmCodeEntryEvent entered keycode: $keycode armMode: $armMode lmMap: $lmPinMap"
+	sendEvent(name: "codeEntered", value: keycode as String, data: lmPinMapx,
+				isStateChange: true, displayed: false)
+	}
+
+
