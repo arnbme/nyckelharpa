@@ -14,6 +14,10 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ * 	Mar 24, 2020 v0.2.9 Symptom Iris V3 device goes into hardware motion loop during panic or siren sounding
+ *							Fixed in sendPanelResponse(): sends a response that does not stop siren, kill keys. or create hardware motion messages
+ *						Add support for new beep sound in Iris V2 and V3 Depending on firmware my need to use old beep sound
+ *						Add support for battery type on Iris V3 and XHK1-UE keypads
  * 	Mar 23, 2020 v0.2.8 Symptom Iris V3 Siren stops when motion occurs on device and sendPanelResponse responds
  *							Fixed in set and unset active siren boolean, then test for active siren in sendPanelResponse
  * 	Mar 21, 2020 v0.2.7 Symptom Iris V3 light status did not match HSM status.
@@ -135,12 +139,20 @@ metadata {
 
 	preferences{
 		input ("version_donotuse", "text", title: "Version: ${version()}<br />(Do not set display only)", required: false )
-//		if (device?.data?.model == '1112-S')
-//	        input ("altBeepEnable", "bool", title: "Enable Iris V3 alternate beep sound Default (False)", defaultValue: false)
+//		if (device?.data?.model.substring(0,3) !='340" throws error Cannot invoke method substring() on null object
+        if (device?.data?.model == '1112-S' || device?.data?.model== 'URC4450BC0-X-R')
+        	input ("BatteryType", "enum", title: "Battery Type", required: true, options:["Alkaline", "Lithium", "Rechargeable"])
         input ("panicEnabled", "bool", title: "Enable Panic Key (when available) and Panic Pins. Default (True)", defaultValue: true)
 		input ("tempOffset", "number", title: "Enter an offset to adjust the reported temperature",
 				defaultValue: 0, displayDuringSetup: false)
-		input ("beepLength", "number", title: "Enter length of beep in seconds",
+		if (device?.data?.model == '1112-S' || device?.data?.model== '3405-L')
+			{
+	        input ("altBeepEnable", "bool", title: "Enable old style beep sound Default (False). If no beep sound set on", defaultValue: false)
+			input ("beepLength", "number", title: "Enter length of old style beep in seconds. Iris V3 firmware locked at 1 beep",
+				defaultValue: 1, displayDuringSetup: false)
+			}
+		else
+			input ("beepLength", "number", title: "Enter length of beep in seconds",
 				defaultValue: 1, displayDuringSetup: false)
 		if (device?.data?.model != '1112-S')
         	input ("motionTime", "number", title: "Time in seconds for Motion to become Inactive (Default:10, 0=disabled)",	defaultValue: 10, displayDuringSetup: false)
@@ -167,8 +179,8 @@ def ssekey(ssekey)
 
 def version()
 	{
-	updateDataValue("driverVersion", "0.2.8")	//Stores in device Data
-	return "0.2.8";
+	updateDataValue("driverVersion", "0.2.9")	//Stores in device Data
+	return "0.2.9";
 	}
 
 def installed() {
@@ -553,10 +565,26 @@ private getBatteryResult(rawValue) {
 	def minVolts=2.5
 	if (device.data.model.substring(0,3)!='340')	//UEI and Iris V3 use 4AA batteries, 6volts
 		{
-		excessVolts=6.8
-		maxVolts=6.0
-		minVolts=5.2
+		switch (BatteryType)
+			{
+			case "Rechargeable":
+				excessVolts = (1.35 * 4)
+				minVolts = (1.0 * 4)
+				maxVolts = (1.2 * 4)
+			break
+			case "Lithium":
+				excessVolts = (1.8 * 4)
+				minVolts = (1.1 * 4)
+				maxVolts = (1.7 * 4)
+			break
+			default:					//assumes alkaline
+				excessVolts=6.8
+				maxVolts=6.0
+				minVolts=4.6
+			break
+			}
 		}
+
 	if (volts > excessVolts)
 		{
 		result.descriptionText = "${linkText} battery voltage: $volts, exceeds max voltage: $excessVolts"
@@ -591,7 +619,7 @@ private Map getTemperatureResult(value) {
 		def v = value as int
 		value = v + offset
 	}
-	def descriptionText = "${linkText} was ${value}Â°${temperatureScale}"
+	def descriptionText = "${linkText} was ${value}°${temperatureScale}"
 	return [
 		name: 'temperature',
 		value: value,
@@ -862,40 +890,25 @@ def sendInvalidKeycodeResponse(){
 	sendStatusToDevice()
 }
 
-def beep(def beepLength = settings.beepLength as Integer) {
-//	logdebug "beep entered: ${beepLength} ${altBeepEnable}"
-	if ( beepLength == null )
+def beep(def beepLength = settings.beepLength as Integer)
 	{
+//	log.debug "beep entered: ${beepLength} ${altBeepEnable}"
+	if ( beepLength == null )
+		{
 		beepLength = 1
-	}
+		}
 	def len = zigbee.convertToHexString(beepLength, 2)
-//	List cmds = ["raw 0x501 {09 01 04 05${len}}", 'delay 200',
-//				 "send 0x${device.deviceNetworkId} 1 1", 'delay 500']
-//    if (altBeepEnable)
-//    	{
-//    	logdebug "altbeep execute: ${beepLength} ${altBeepEnable}"
-//		List cmds = ["raw 0xFC04 {15 4E 05${len}}",
-//			 "send 0x${device.deviceNetworkId} 0 0", 'delay 100']
-//		}
-//	else
-//    	{
-//    	log.debug "normal beep execute: ${beepLength} ${len} ${altBeepEnable}"
-//		List cmds = ["raw 0xFC04 {15 4E 10 00 00 00}",  works on irris v2 not my v3
-		List cmds = ["raw 0x501 {09 01 04 05 ${len}}",
-				 "send 0x${device.deviceNetworkId} 1 1", 'delay 100']
-//		}
-	cmds
-
-//List<String> beep(){
-//        return ["he raw 0x${device.deviceNetworkId} 1 1 0x0501 {09 01 04 05 01 01 01}"]
-//    } else {
-//        return ["he raw 0x${device.deviceNetworkId} 1 1 0xFC04 {15 4E 10 00 00 00}"]
-//    }
-//}
-
-
-//	return (cmds?.collect{ new hubitat.device.HubAction(it, hubitat.device.Protocol.ZIGBEE) }
-}
+	if (device.data.model == '1112-S' || device.data.model== '3405-L')
+		{
+//		log.debug "its an Iris altBeepEnable: ${altBeepEnable}"
+		if (!altBeepEnable)
+			{
+//			log.debug 'Using FC04 cluster beep'
+        	return ["he raw 0x${device.deviceNetworkId} 1 1 0xFC04 {15 4E 10 00 00 00}"]
+        	}
+		}
+    return ["he raw 0x${device.deviceNetworkId} 1 1 0x0501 {09 01 04 05 ${len} 01 01}"]
+	}
 
 //------Utility methods------//
 
@@ -997,9 +1010,14 @@ Note: delayExpire is set when setEntrydelay is entered, so in this module it's u
 */
 private sendPanelResponse()
 	{
-	if (state?.alert)			//check if siren active, requires arm or disarm to stop it
-		return false
 	def resp = []
+	if (state?.alert)			//check if siren active, requires disarm to stop it
+		{
+		logdebug "sending Alert Response, Alert: ${state.alert}"
+		resp.add("he raw 0x${device.deviceNetworkId} 1 1 0x0501 {19 01 05 04 00 00 00}")	//Siren stays on, no hardware message loop
+		sendHubCommand(new hubitat.device.HubMultiAction(resp, hubitat.device.Protocol.ZIGBEE))
+		return
+		}
 	def hsmstatus = location.hsmStatus
 	def status = [disarmed : 0, armedHome: 1, armedNight: 2, armedAway: 3, allDisarmed: 0, armingHome: 8, armingNight: 9, armingAway: 10][hsmstatus] ?: 0
 	if (status < 4)
