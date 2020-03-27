@@ -654,10 +654,15 @@ def keypadCodeHandler(evt)
 	def pinKeypadsOK=false;
 	def damap=[dummy: "dummy"]				//dummy return map for Routine and Piston processing
 	def itthepinusage
-	if (lmpin && lmPinValid)
+	if (lmpin)
 		{
-		pinStatus='Accepted'
-		badPin=false
+		if (lmPinValid)
+			{
+			pinStatus='Accepted'
+			badPin=false
+			}
+		else
+			error_message = badPin_message
 		}
 	else
 		{
