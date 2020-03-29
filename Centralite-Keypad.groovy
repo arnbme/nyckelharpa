@@ -119,7 +119,7 @@ metadata {
 		command "setArmedNight"
 		command "setExitAway", ['number']		//this was setExitDelay in ST
 		command "setExitStay", ['number']
-//		command "setExitNight", ['number']		//defined by Hubitat capability
+		command "setExitNight", ['number']		//defined by Hubitat capability
 //		command "setEntryDelay", ['number']		//issue same hardware command as Beep command defined by Hubitat capability
 		command "testCmd", ['number']
 		command "sendInvalidKeycodeResponse"
@@ -1211,13 +1211,14 @@ def lmPins(descMap)
 		case '1112-S' :
 			if (armRequest == "00")
 				asciiPin = descMap.data[2..5].collect{ (char)Integer.parseInt(it, 16) }.join()
-			if (irisPartialSwitch && armRequest== '01')
+			else
+			if (armRequest== '01' && irisPartialSwitch)
 				nyckelArmRequest='02'
 			createLmCodeEntryEvent(asciiPin,nyckelArmRequest.substring(1),isValidPinV3(asciiPin, armRequest))
 		break
 		case '3405-L' :
 			asciiPin = descMap.data[2..5].collect{ (char)Integer.parseInt(it, 16) }.join()
-			if (irisPartialSwitch && armRequest== '01')
+			if (armRequest== '01' && irisPartialSwitch)
 				nyckelArmRequest='02'
 			createLmCodeEntryEvent(asciiPin,nyckelArmRequest.substring(1),isValidPinV2(asciiPin, armRequest))
 		break

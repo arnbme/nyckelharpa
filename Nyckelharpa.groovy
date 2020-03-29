@@ -1909,7 +1909,7 @@ def alertHandler(evt)
 	if (['intrusion-delay','intrusion-home-delay','intrusion-night-delay'].contains(evt.value))
 		{
 		if (globalKeypadDevices)
-			globalKeypadDevices.setEntryDelay(evt.jsonData.seconds, evt.value)
+			globalKeypadDevices.setEntryDelay(evt.jsonData.seconds)
 		def locevent = [name:"Nyckelharpatalk", value: "entryDelay", isStateChange: true,
 			displayed: true, descriptionText: "Issue entry delay talk event", linkText: "Issue entry delay talk event",
 			data: evt.jsonData.seconds]
