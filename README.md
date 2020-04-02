@@ -205,7 +205,7 @@ Table with Reason Issued and Message Issued.
   </tr>
   <tr>
     <td>Entry Delay</td>
-    <td>Please enter your pin on the keypad</td>
+    <td>Disarm system, or police will arrive shortly</td>
     <td>TTS, Speaker</td>
    <td>Nyckelharpa</td>
   </tr>
