@@ -221,13 +221,13 @@ Table with Reason Issued and Message Issued.
    <td>Nyckelharpa Modefix</td>
   </tr>
   <tr>
-    <td>Valid Pin Entered</td>
+    <td>Valid Pin Entered<br>Centralitex driver only</td>
     <td>%keypad.displayname set HSM state to %armState with pin for %userName</td>
    <td>User Defined in global Settings</td>
    <td>Nyckelharpa</td>
   </tr> 
   <tr>
-    <td>Bad Pin Entered</td>
+    <td>Bad Pin Entered<br>Centralitex driver only</td>
     <td>%keypad.displayname Invalid pin entered: %pinCode</td>
     <td>User Defined in global Settings</td>
     <td>Nyckelharpa</td>
@@ -239,7 +239,7 @@ Table with Reason Issued and Message Issued.
     <td>Nyckelharpa</td>    
   </tr> 
   <tr>
-    <td>Arming Forced Open Contact</td>
+    <td>Arming Forced Open Contact<br>Centralitex driver only</td>
     <td>Arming Forced %contact name(s) is open.</td>
     <td>User Defined in global Settings</td>
    </td><td>Nyckelharpa</td>
