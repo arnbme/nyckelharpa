@@ -35,7 +35,7 @@ Why is this needed? HSM does not arm the system when a contact is open. Examples
 * Adjusts Hubitat's mode when HSM's arm state changes. (HSM adjusts HSM's arm state when the mode changes)
 * Provides an easy to use security related message control center with output to TTS, Speakers, and Notification devices such as: Hubitat PhoneApp and Pushover
 
-* Keypads: Centralite V2 and V3, Iris V2 and V3, and UEI devices may use a ported version of Mitch Pond's Keypad DH, Centralitex Keypad making he keypad function as it did in SmartThings with the SHM Delay App, with an easy to use Pin maintenance module with available Panic pins, burnable pins aka maximum use count, restricted date and time, and restricted keypad devices.
+* Keypads: Centralite/Xfinity 3400, Centalite 3400-G, Iris V2 and V3, and UEI devices may use a ported version of Mitch Pond's Keypad DH, Centralitex Keypad making he keypad function as it did in SmartThings with the SHM Delay App, with an easy to use Pin maintenance module with available Panic pins, burnable pins aka maximum use count, restricted date and time, and restricted keypad devices.
 * Keypad Panic Alerts: When the keypad's Panic key is pressed, or a Panic Pin is entered, using the Centralitex Keypad driver, a properly configured active HSM Custom Panic rule, and the Nyckelharpa app when Panic Pins are used:<br /> 
 *The system immediately executes the custom HSM rule's alert functions*
 
@@ -81,7 +81,7 @@ There are four modules and an optional Keypad Device Handler (DH) associated wit
   </tr>
   <tr>
     <td>Centralite Keypad</td>
-    <td>Keypad device handler for models: Centralite V2 and V3, Iris V2, and UEI(beta). Created and converted to HE by Mitch Pond</td>
+    <td>Keypad device handler for models: Centralite/Xfinity 3400, Centralite 3400-G, Iris V2, Iris V3, and UEI. Created and converted to HE by Mitch Pond</td>
     <td>Optional</td>
   </tr>
 </table> 
@@ -256,15 +256,20 @@ Table with Reason Issued and Message Issued.
 
 The app's Keypad Device Handler was created by Mitch Pond on SmartThings where it is still used by a few Smartapps including SHM Delay. With Mitch's assistance and Zigbee skills it was ported to HE, then I added the Alarm capability that sounds a fast high pitch tone until set off on the Iris V2, and beeps for 255 seconds on the Centralite. 
 
-_This DH may be used with the Centralite V2, Centralite V3, Iris V2, and UEI(beta) keypads_
+_This DH may be used with the Centralite/Xfinity 3400, Centralite 3400-G, Iris V2, Iris V3 and UEI keypads_
 
 1. After installing the keypad DH, edit keypad devices changing Type to Centralitex Keypad, Save Device
 
-2. Remove keypad from HSM, Add keypad to Nyckelharpa Global Settings
+2. Remove keypad from HSM. In HSM section Configure Arming/Disarming/Cancel Options --> Use keypad(s) to arm/disarm: 
+remove keypads using the Centralitex driver.
 
-3. Create User pin profiles
+3. Add keypad to Nyckelharpa Global Settings
 
-4. Create HSM Custom Panic Rule
+4. Create User pin profiles. When using an Iris V3 User pin code 0000 is required and used for instant arming, but will not disarm. This keypad does not send a pin, even if entered, when arming.
+
+5. Create HSM Custom Panic Rule
+
+6. When using an Iris keypad set if Partial key creates Home (default) or Night arming mode
 
 [:arrow_up_small: Back to top](#top)
 <a name="userpin"></a>
@@ -302,7 +307,7 @@ Set Alerts for Text, Audio, Siren and Lights<br />
 Click the "Arm This Rule" button<br />
 Click Done
 
-5. Do a Panic test: Press the Iris keypad's Panic button, on Centralite V3 simultaneously press both "Police Icon" buttons,  or enter a Panic pin number on Centralite / UEI, or on Iris: enter Panic Pin then Off (Partial and On work but not recommended)
+5. Do a Panic test: Press the Iris keypad's Panic button, on Centralite 3400-G simultaneously press both "Police Icon" buttons,  or enter a Panic pin number on Centralite 3400 / UEI.
 
 6. The Panic Alert may be stopped by entering a valid user pin on Centralite / UEI, or a valid pin and OFF on an Iris; or the "Cancel Alerts" button from HE App HSM options
 
@@ -335,6 +340,10 @@ A user reported the Snapshot app somehow interfered with Nyclelharpa's forced ar
 <a name="issues"></a>
 ## 16. Known Issues
 * Messages need individual custom destination settings
+
+* SMS was disabled by Hubitat, but is still defined as a destination. Do not use SMS
+
+* Iris V3 Keypad: Lights don't shut off when device sitting on table or flat surface. Issue: Devices motion or proximity sensor is activated. Move to edge of table, or lay flat on table, or mount on wall. 
 
 [:arrow_up_small: Back to top](#top)
 
