@@ -22,7 +22,9 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
- *  Mar 25, 2020 v1.0.0	Add support for Lock Manager Pin Codes and LM pin verificaion
+ *  Apr 02, 2020 v1.0.1	When any keypad uses the HE driver and panic is enabled, create nykl-panic device and subscribe to HSM panic
+ *  Mar 31, 2020 v1.0.1	Add support for using native HE keypad drivers
+ *  Mar 25, 2020 v1.0.0	Add support for Lock Manager Pin Codes and LM pin verificaion with Centralitex keypad driver
  *  Feb 03, 2020 v0.2.3	Correct error reported by @theroonie
  *										~ line 923 change	if(!checkOpenContacts(globalHomeCotacts, globalHomeNotify, keypad))
  *										to 							if(!checkOpenContacts(globalHomeContacts, globalHomeNotify, keypad))
@@ -93,6 +95,7 @@
  *
  */
 import groovy.json.JsonSlurper
+/* on Apr 02, 2020 this started to throw an error, not used so deprecated
 if (location.hubs[0].id.toString().length() > 5)
  	{
  	state.hubType = 'SmartThings'
@@ -100,7 +103,7 @@ if (location.hubs[0].id.toString().length() > 5)
 	}
 else
  	state.hubType = 'Hubitat'
-
+*/
 
 definition(
     name: "Nyckelharpa",
@@ -122,7 +125,7 @@ preferences {
 
 def version()
 	{
-	return "1.0.0";
+	return "1.0.1";
 	}
 def main()
 	{
@@ -323,14 +326,14 @@ def globalsPage(error_msg)
 def globalsVerify() 				//edit globals data
 	{
 	def error_msg=""
-	if (globalKeypadDevices)
-		{
-		globalKeypadDevices.each
-			{
-			if (it.typeName != 'Centralitex Keypad')
-				error_msg+="Keypad ${it.label} must be changed to use Centralitex Device handler\n\n"
-			}
-		}
+//	if (globalKeypadDevices)		//deprecated in V1.0.0
+//		{
+//		globalKeypadDevices.each
+//			{
+//			if (it.typeName != 'Centralitex Keypad')
+//				error_msg+="Keypad ${it.label} must be changed to use Centralitex Device handler\n\n"
+//			}
+//		}
 
 	if (globalAlarmDevices && globalKeypadDevices)
 		{
@@ -504,7 +507,8 @@ def initialize()
 	{
 	if (!globalDisable)
 		{
-		subscribe(globalKeypadDevices, 'codeEntered',  keypadCodeHandler)
+		subscribe(globalKeypadDevices, 'codeEntered',  keypadCodeHandler)		//issued by Centralitex Keypad driver
+		subscribe(globalKeypadDevices, 'securityKeypad', keypadHeCodeHandler)	//issued by HE keypad drivers
 //		if (globalPanic)
 //			{
 //		    subscribe (globalKeypadDevices, "contact.open", qssehe_alert_panic)
@@ -516,6 +520,8 @@ def initialize()
 			}
 		subscribe(location, "hsmAlert", alertHandler)
 		}
+	subscribe(globalKeypadDevices, 'codeEntered',  keypadCodeHandler)
+	subscribe(location, "hsmStatus", HeDoorsReset)		//Added for using Hubitat Keypad Drivers
 //	subscribe(location, "hsmStatus", verify_version)	//kill for now
 //	verify_version("dummy_evt")
 
@@ -561,8 +567,16 @@ def initialize()
 			}
 		}
 //	deprecated panic device May 18, 2019 V0.1.8
-//	def dvc = [name: "Panic Contact", id: "Panic Id", label: "Panic Contact"]
-//	addNewChildDevice(dvc, 'Virtual Contact Sensor')
+//	restored Apr 02, 2020 v1.0.1 when any keypad uses HE driver
+	globalKeypadDevices.find
+		{
+		if (it.typeName == 'Centralitex Keypad')
+			return false
+		def dvc = [name: "Panic Contact", id: "Panic Id", label: "Panic Contact"]
+		addNewChildDevice(dvc, 'Virtual Contact Sensor')
+		subscribe (globalKeypadDevices, 'alarm', HePanicHandler)
+		return true
+		}
 	}
 
 def uninstalled()
@@ -606,6 +620,34 @@ Stay					Stay		stay			Stay		Stay
 Night					Night		stay			GoodNight	Night
 Away					Away		away			GoodBye!	Away
 */
+
+def keypadHeCodeHandler(evt)
+	{
+//	Note Invalid he pins are not sent here
+//	User entered a VALID pin code on a keypad using an HE keypad driver. data unfortunately does not include arming mode
+//	get arming mode from the keypad
+	if (globalDisable)
+		{return false}			//just in case
+	def keypad = evt.getDevice();
+	atomicState.HeKeypadStatus = keypad.currentValue('securityKeypad')		//this should be the requested arming mode
+	if (atomicState.HeKeypadStatus == 'disarmed')
+		globalKeypadDevices.off()
+	logdebug "keypadHeCodeHandler entered ${keypad.displayName} ${atomicState.HeKeypadStatus}"
+	}
+
+def HePanicHandler(evt)
+	{
+//	Process panic alert from HE keypad driver allowing a full response when system is disarmed
+	if (globalDisable)
+		{return false}			//just in case
+	logdebug "HePanicContact routine entered ${evt.value}"
+	if (evt.value=='siren')
+		{
+		closePanicContact()
+		openPanicContact()
+		runIn(4,closePanicContact)
+		}
+	}
 
 def keypadCodeHandler(evt)
 	{
@@ -1176,7 +1218,8 @@ def keypadLightHandler(evt)						//set the Keypad lights
 		}
 */	globalKeypadDevices.each
 		{ keypad ->
-			keypadLighton(evt,theMode,keypad)
+			if (keypad.typeName == 'Centralitex Keypad')
+				keypadLighton(evt,theMode,keypad)
 		}
 	}
 
@@ -1892,20 +1935,19 @@ def MonitorDoorHandler(evt)		//monitored only no child device
 		}
 	}
 
-//def closePanicContact()
-//	{
-//	getChildDevice("${globalChildPrefix}Panic Id").close()
-//	}
-//	close and open panic deprecated May 18, 2019
-//def openPanicContact()
-//	{
-//	getChildDevice("${globalChildPrefix}Panic Id").open()
-//	}
+def closePanicContact()
+	{
+	getChildDevice("${globalChildPrefix}Panic Id").close()
+	}
+def openPanicContact()
+	{
+	getChildDevice("${globalChildPrefix}Panic Id").open()
+	}
 
 
 def alertHandler(evt)
 	{
-	log.debug("alertHandler entered, event: ${evt.value} ${evt.jsonData}")
+	logdebug("alertHandler entered, event: ${evt.value} ${evt.jsonData} ${evt.data}")
 	if (['intrusion-delay','intrusion-home-delay','intrusion-night-delay'].contains(evt.value))
 		{
 		if (globalKeypadDevices)
@@ -1933,10 +1975,12 @@ def alertHandler(evt)
 			}
 		}
 	else
-	if (evt.value == 'arming' && globalKeypadDevices)		//failed to alert due to open contact
-		{
+	if (evt.value == 'arming' && globalKeypadDevices)			//failed to arm due to open contact(S) he only speaks one device
+		{														//does not occur using centalitex driver with keypads not coded in HSM
+		HeDoorsClose()
 		runInMillis(500, delaysetDisarmed)
-		runInMillis(1200, delayBeep)
+//		runInMillis(1200, delayBeep)
+		runIn(15,HeDoorsReset)
 		}
 	if (evt.value != 'rule')									//if rule use rule name minus red alert text
 		qssehe_alert(evt.value)									//update remote sse data
@@ -1949,6 +1993,96 @@ def alertHandler(evt)
 		}
 	}
 
+/*
+ *  V1.0.0 Modified version for HE drivers. HSM speaks only first open device on alert
+ */
+def HeDoorsClose()
+	{
+	def modeRequest = atomicState?.HeKeypadStatus
+	logdebug "HeDoorsClose entered status: ${modeRequest}"
+	def contactList
+	def notifyOptions
+	if (modeRequest == 'disarmed')
+		return
+	if (modeRequest == 'armed away' && globalAwayContacts)
+		{
+		contactList=globalAwayContacts
+		notifyOptions=globalAwayNotify
+		}
+	else
+	if (modeRequest == 'armed home' && globalHomeContacts)
+		{
+		contactList=globalHomeContacts
+		notifyOptions=globalHomeNotify
+		}
+	else
+	if (modeRequest == 'armed night' && globalNightContacts)
+		{
+		contactList=globalNightContacts
+		notifyOptions=globalNightNotify
+		}
+	else
+		return
+	def basemsg='Arming Canceled'
+	def contactmsg=basemsg
+	log.debug "HeDoorsClose entered $contactList $notifyOptions"
+	contactList.each
+		{
+//		log.debug "${it} ${it.currentContact}"
+		if (it.currentContact=="open")
+			{
+			contactmsg += ', '+it.displayName
+			getChildDevice("$globalChildPrefix${it.id}").close()		//close the child device
+			}
+		}
+	if (contactmsg != basemsg)
+		{
+		contactmsg += ' is open. Rearming within 15 seconds will force arming'
+		notifyOptions.each
+			{
+			if (it=='Notification log')
+				{
+				sendNotificationEvent(contactmsg)
+				}
+			else
+			if (it=='Push')
+				{
+				if (sendPushMessage)
+					sendPushMessage.deviceNotification(contactmsg)
+				}
+			else
+			if (it=='SMS' && globalPinPhone)
+				{
+				it.deviceNotification(contactmsg)
+				}
+			else
+			if (it=='Talk')
+				{
+				def loceventcan = [name:"Nyckelharpatalk", value: "ArmCancel", isStateChange: true,
+					displayed: true, descriptionText: "Issue exit delay talk event", linkText: "Issue exit delay talk event",
+					data: contactmsg]
+				sendLocationEvent(loceventcan)
+				}
+			}
+		}
+	}
+
+def HeDoorsReset(evt=null)
+	{
+	logdebug "entering HeDoorsReset ${location.hsmStatus}"
+	if (location.hsmStatus == 'disarmed')
+		{
+		globalAwayContacts.each
+			{
+//			logdebug "${it.displayName} ${it.currentValue('contact')}"
+			if (it.currentValue('contact') == 'closed')
+				getChildDevice("$globalChildPrefix${it.deviceId}").close()
+			else
+				getChildDevice("$globalChildPrefix${it.deviceId}").open()
+			}
+		}
+	}
+
 def delayBeep()
 	{
 	globalKeypadDevices.beep(2)
@@ -1956,7 +2090,19 @@ def delayBeep()
 
 def delaysetDisarmed()
 	{
-	globalKeypadDevices.setDisarmed()
+//	globalKeypadDevices.off()
+	globalKeypadDevices.each
+		{
+		if (it.typeName != 'Centralitex Keypad')
+			{
+			it.off()
+			it.disarm()
+			}
+		else
+			{
+			it.off()
+			}
+		}
 	}
 
 

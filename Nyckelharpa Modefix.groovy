@@ -1,11 +1,11 @@
 /**
  *  Update Url:   https://raw.githubusercontent.com/arnbme/nyckelharpa/master/Nyckelharpa%20Modefix.groovy
- * 
- *  Nyckelharpa ModeFix 
+ *
+ *  Nyckelharpa ModeFix
  *  Functions: Fix the mode when it is invalid, generally caused when using Dashboard to switch modes
- * 
+ *
  *  Copyright 2017 Arn Burkhoff
- * 
+ *
  *  Changes to Apache License
  *	4. Redistribution. Add paragraph 4e.
  *	4e. This software is free for Private Use. All derivatives and copies of this software must be free of any charges,
@@ -20,6 +20,7 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *	Jun 09, 2019 	v0.0.8	add call to qssehe.php to update sse status and delay
  *	May 16, 2019 	v0.0.7	add UEI model to keypads with 3 armed lighting modes
  *	May 10, 2019 	v0.0.6	Do what 0.0.5 said it would do but did not
  *	May 02, 2019 	v0.0.5	Make all mode settings optional
@@ -45,11 +46,11 @@
  *	Jan 06, 2019 	V0.1.6  Added: Support for 3400_G Centralite V3
  *
  * 	Oct 17, 2018	v0.1.5	Allow user to set if entry and exit delays occur for a state/mode combination
- *								
- * 	Apr 24, 2018	v0.1.4	For Xfinity and Centralite model 3400 keypad on armed (Home) modes 
+ *
+ * 	Apr 24, 2018	v0.1.4	For Xfinity and Centralite model 3400 keypad on armed (Home) modes
  *								add device icon button to light Stay (Entry Delay) or Night (Instant Intrusion)
- *								
- * 	Mar 11, 2018    v0.1.3  add logging to notifications when mode is changed. 
+ *
+ * 	Mar 11, 2018    v0.1.3  add logging to notifications when mode is changed.
  *								App issued changes are not showing in PhoneApp notifications
  *								Assumed system would log this but it does not
  * 	Sep 23, 2017    v0.1.2  Ignore alarm changes caused by True Entry Delay in SHM Delay Child
@@ -57,7 +58,7 @@
  * 	Sep 02, 2017    v0.1.0  add code to fix bad alarmstate set by unmodified Keypad module
  * 	Sep 02, 2017    v0.1.0  Repackage logic that was in parent into this module for better reliability
  *					and control
- * 	Aug 26/27, 2017 v0.0.0  Create 
+ * 	Aug 26/27, 2017 v0.0.0  Create
  *
  */
 
@@ -82,7 +83,7 @@ preferences {
 
 def version()
 	{
-	return "0.0.7";
+	return "0.0.8";
 	}
 
 def pageOne(error_msg)
@@ -109,39 +110,39 @@ def pageOne(error_msg)
 			}
 		section ("Alarm State: Disarmed / Off")
 			{
-			input "offModes", "mode", required: false, multiple: true, 
+			input "offModes", "mode", required: false, multiple: true,
 				title: "Valid Modes for: Disarmed"
-			input "offDefault", "mode", required: false, 
+			input "offDefault", "mode", required: false,
 				title: "Default Mode for: Disarmed"
-			}	
+			}
 		section ("Alarm State: Armed (Away)")
 			{
 			input "awayModes", "mode", required: false, multiple: true,
 				title: "Valid modes for: Armed Away"
 			input "awayDefault", "mode", required: false,
 				title: "Default Mode for Armed Away"
-			}	
+			}
 		section ("Alarm State: Armed (Night)")
 			{
-			input "nightModes", "mode", required: false, multiple: true, 
+			input "nightModes", "mode", required: false, multiple: true,
 				title: "Valid Modes for Armed Night"
-			input "nightDefault", "mode", required: false, 
+			input "nightDefault", "mode", required: false,
 				title: "Default Mode for Armed Night"
-			}	
+			}
 		section ("Alarm State: Armed (Home) aka Stay")
 			{
-			input "homeModes", "mode", required: false, multiple: true, 
+			input "homeModes", "mode", required: false, multiple: true,
 				title: "Valid Modes for Armed Home"
 			input "homeDefault", "mode", required: false,
 				title: "Default Mode for Armed Home"
-			}	
+			}
 		section
 			{
 			paragraph "Nyckelharpa Modefix ${version()}"
 			}
 
-		}	
-	}	
+		}
+	}
 
 def pageOneVerify() 				//edit page One
 	{
@@ -150,7 +151,7 @@ def pageOneVerify() 				//edit page One
 	def home_error=null
 	def night_error=null
 	def away_error=null
-	
+
 //	Verify disarm/off data
 	if (offModes || offDefault)
 		{
@@ -158,14 +159,14 @@ def pageOneVerify() 				//edit page One
 		def children = offModes
 		children.each
 			{ child ->
-			log.debug "$offDefault $child" 
+			log.debug "$offDefault $child"
 			if (offDefault == child)
 				{
 				off_error=null
 				}
 			}
 		}
-	
+
 //	Verify Away data
 	if (awayModes || awayDefault)
 		{
@@ -193,7 +194,7 @@ def pageOneVerify() 				//edit page One
 				}
 			}
 		}
-		
+
 //	Verify Night data
 	if (nightModes || nightDefault)
 		{
@@ -212,7 +213,7 @@ def pageOneVerify() 				//edit page One
 		{
 		pageTwo()
 		}
-	else	
+	else
 		{
 		log.debug "in error logic"
 		def error_msg=""
@@ -226,7 +227,7 @@ def pageOneVerify() 				//edit page One
 			{
 			error_msg+=newline + away_error
 			newline="\n"
-			}	
+			}
 		if (home_error >"")
 			{
 			error_msg+=newline + home_error
@@ -250,66 +251,66 @@ def pageTwo()
 			if (logDebugs)
 				paragraph "Log Debug messages are generated"
 			else
-				paragraph "No Debugging messages" 
+				paragraph "No Debugging messages"
 			}
 		section ("<b>Alarm State: Disarmed / Off</b>")
 			{
 			if (offModes)
 				paragraph "Valid Modes for Disarmed: $offModes"
-			else	
+			else
 				paragraph "Valid Modes for Disarmed: Not Set"
 			if (offDefault)
 				paragraph "Default Mode for Disarmed: $offDefault"
-			else	
+			else
 				paragraph "Default Mode for Disarmed: Not Set"
-			}	
+			}
 		section ("<b>Alarm State: Armed (Away)</b>")
 			{
 			if (awayModes)
 				paragraph "Valid Modes for Away: $awayModes"
-			else	
+			else
 				paragraph "Valid Modes for Away: Not Set"
 			if (awayDefault)
 				paragraph "Default Mode for Away: $awayDefault"
-			else	
+			else
 				paragraph "Default Mode for Away: Not Set"
-			}	
+			}
 		section ("<b>Alarm State: Armed (Night)</b>")
 			{
 			if (nightModes)
 				paragraph "Valid Modes for Night: $nightModes"
-			else	
+			else
 				paragraph "Valid Modes for Night: Not Set"
 			if (awayDefault)
 				paragraph "Default Mode for Night: $nightDefault"
-			else	
+			else
 				paragraph "Default Mode for Night: Not Set"
 			}
 		section ("<b>Alarm State: Armed (Home) aka Stay</b>")
 			{
 			if (homeModes)
 				paragraph "Valid Modes for Home: $homeModes"
-			else	
+			else
 				paragraph "Valid Modes for Home: Not Set"
 			if (homeDefault)
 				paragraph "Default Mode for Home: $homeDefault"
-			else	
+			else
 				paragraph "Default Mode for Home: Not Set"
-			}	
+			}
 
 		section
 			{
 			paragraph "Nyckelharpa Modefix ${version()}"
 			}
 		}
-	}	
+	}
 
-	
+
 def aboutPage()
 	{
 	dynamicPage(name: "aboutPage", title: "Introduction")
 		{
-		section 
+		section
 			{
 			paragraph "Have you ever wondered why Mode restriced Rule Machine rules sometimes fail to execute, or execute when they should not?\n\n"+
 			"Perhaps you conflated HSM AlarmState and Mode, however they are separate and independent settings, "+
@@ -333,7 +334,7 @@ def updated() {
     initialize()
 }
 
-def initialize() 
+def initialize()
 	{
 	subscribe(location, 'hsmStatus', alarmStatusHandler)
 	}
@@ -348,11 +349,18 @@ def alarmStatusHandler(evt)
 	def theMode = location.currentMode as String	//warning without string parameter it wont match
 	lastDoorsDtim=parent.getAtomicdoorsdtim()			//set in Nyckelharpa checkOpenContacts
 	logdebug "ModeFix alarmStatusHandler entered, HSM state: ${theAlarm}, lastAlarm: ${lastAlarm} Mode: ${theMode} lastDoorsDtim $lastDoorsDtim"
-//	Fix the mode to match the Alarm State. 
+//	Fix the mode to match the Alarm State.
+//	qssehe_status(theAlarm)							//set db for sse
 	if (theAlarm=="disarmed" || theAlarm=="allDisarmed")
 		{
 		if (parent.globalKeypadDevices)
-			parent.globalKeypadDevices.setDisarmed()
+			{
+			parent.globalKeypadDevices.each
+				{
+				if (it.typeName == 'Centralitex Keypad')
+					it.setDisarmed()
+				}
+			}
 		ttsDisarmed()
 		if (offModes && !offModes.contains(theMode))
 			{
@@ -365,10 +373,16 @@ def alarmStatusHandler(evt)
 		if (theAlarm=="armedAway")
 			{
 			if (parent.globalKeypadDevices)
-				parent.globalKeypadDevices.setArmedAway()
+				{
+				parent.globalKeypadDevices.each
+					{
+					if (it.typeName == 'Centralitex Keypad')
+						it.setArmedAway()
+					}
+				}
 			ttsArmed(theAlarm)
 			}
-		else 
+		else
 		if (theAlarm != lastAlarm)
 			{
 			if (parent.globalAwayContacts)
@@ -378,15 +392,21 @@ def alarmStatusHandler(evt)
 					sendLocationEvent(name: 'hsmSetArm', value: 'disarm')
 					return
 					}
-				parent.killAtomicdoorsdtim()		
+				parent.killAtomicdoorsdtim()
 				}
 			if (evt.jsonData.seconds)
 				{
 				if (parent.globalKeypadDevices)
-					parent.globalKeypadDevices.setExitAway(evt.jsonData.seconds)
+					{
+					parent.globalKeypadDevices.each
+						{
+						if (it.typeName == 'Centralitex Keypad')
+							it.setExitAway(evt.jsonData.seconds)
+						}
+					}
 				ttsExit(evt.jsonData.seconds)
 				}
-			}	
+			}
 		if (awayModes && awayDefault)
 			{
 			if (!awayModes.contains(theMode))
@@ -404,9 +424,12 @@ def alarmStatusHandler(evt)
 				{
 				parent.globalKeypadDevices.each
 					{
+					if (it.typeName != 'Centralitex Keypad')
+						{}
+					else
 					if (['3400','3400-G','URC4450BC0-X-R'].contains(it.data.model))
 						it.setArmedNight()
-					else	
+					else
 						it.setArmedStay()			//non Centralite keypads have 3 mode lights, light partial
 					}
 				}
@@ -422,7 +445,7 @@ def alarmStatusHandler(evt)
 					sendLocationEvent(name: 'hsmSetArm', value: 'disarm')
 					return
 					}
-				parent.killAtomicdoorsdtim()		
+				parent.killAtomicdoorsdtim()
 				}
 			if (evt.jsonData.seconds)
 				{
@@ -430,15 +453,18 @@ def alarmStatusHandler(evt)
 					{
 					parent.globalKeypadDevices.each
 						{
+						if (it.typeName != 'Centralitex Keypad')
+							{}
+						else
 						if (['3400','3400-G','URC4450BC0-X-R'].contains(it.data.model))
 							it.setExitNight(evt.jsonData.seconds)
-						else	
+						else
 							it.setExitStay(evt.jsonData.seconds) //non Centralite/UEI keypads have 3 mode lights, light partial
 						}
 					}
 				ttsExit(evt.jsonData.seconds)
 				}
-			}	
+			}
 		if (nightModes && nightDefault)
 			{
 			if (!nightModes.contains(theMode))
@@ -446,18 +472,24 @@ def alarmStatusHandler(evt)
 				setLocationMode(nightDefault)
 				}
 			}
-		}	
+		}
 	else
-//	This is equivalent to ST Stay mode		
+//	This is equivalent to ST Stay mode
 	if (theAlarm=="armedHome" || theAlarm=="armingHome")
 		{
 		if (theAlarm=="armedHome")
 			{
 			if (parent.globalKeypadDevices)
-				parent.globalKeypadDevices.setArmedStay()
+				{
+				parent.globalKeypadDevices.each
+					{
+					if (it.typeName == 'Centralitex Keypad')
+						it.setArmedStay()
+					}
+				}
 			ttsArmed(theAlarm)
 			}
-		else 
+		else
 		if (theAlarm != lastAlarm)
 			{
 			if (parent.globalHomeContacts)
@@ -467,12 +499,18 @@ def alarmStatusHandler(evt)
 					sendLocationEvent(name: 'hsmSetArm', value: 'disarm')
 					return
 					}
-				parent.killAtomicdoorsdtim()		
+				parent.killAtomicdoorsdtim()
 				}
 			if (evt.jsonData.seconds)
 				{
 				if (parent.globalKeypadDevices)
-					parent.globalKeypadDevices.setExitStay(evt.jsonData.seconds)
+					{
+					parent.globalKeypadDevices.each
+						{
+						if (it.typeName == 'Centralitex Keypad')
+							it.setExitStay(evt.jsonData.seconds)
+						}
+					}
 				ttsExit(evt.jsonData.seconds)
 				}
 			}
@@ -483,14 +521,50 @@ def alarmStatusHandler(evt)
 				setLocationMode(homeDefault)
 				}
 			}
-		}	
+		}
 	else
 		{
 		log.error "ModeFix alarmStatusHandler Unknown alarm mode: ${theAlarm}"
 		return false
 		}
 	}
-	
+
+def qssehe_status(status)
+//	store the HE status and delay time into Arnb.org db table shmdelay_oauthhe for all keypads with a sseKey
+	{
+	log.debug "qssehe_status entered ${status}"
+	def sseKey
+	def uri
+	if (parent.globalKeypadDevices)
+		{
+		parent.globalKeypadDevices.each
+			{
+			sseKey = it?.getDataValue('sseKey')
+			log.debug "sseKey value $sseKey"
+			if (sseKey >" ")
+				{
+				uri='http://192.168.0.101/cz/shmdelay/qssehe.php'
+				uri+='?i='+ sseKey
+				uri+='&s='+ status
+				log.debug "qssehe uri "+uri
+				try {
+					asynchttpGet('qssehe_AsyncHandler', [uri: uri])
+					}
+				catch (e)
+					{
+					logdebug "qssehe.php Execution failed ${e}"
+					}
+				}
+			}
+		}
+	}
+
+def qssehe_AsyncHandler(response, data)
+	{
+    if(response.getStatus() != 200)
+    	log.error ("Nyckelharpa Modefix qssehe.php HTTP Error = ${response.getStatus()}")
+	}
+
 def ttsExit(delay)
 	{
 	logdebug "ttsExit delay: $delay"
@@ -498,17 +572,17 @@ def ttsExit(delay)
 		{
 		def locevent = [name:"Nyckelharpatalk", value: "exitDelay", isStateChange: true,
 			displayed: true, descriptionText: "Issue exit delay talk event", linkText: "Issue exit delay talk event",
-			data: delay]	
+			data: delay]
 		sendLocationEvent(locevent)
 		}
-	}	
+	}
 
 def ttsDisarmed()
 	{
 	logdebug "ttsDisarmed"
 	def locevent = [name:"Nyckelharpatalk", value: "disarm", isStateChange: true,
 		displayed: true, descriptionText: "Issue disarm talk event", linkText: "Issue disarm delay talk event",
-		data: 'none']	
+		data: 'none']
 	sendLocationEvent(locevent)
 	}
 
@@ -517,12 +591,12 @@ def ttsArmed(theAlarm)
 	logdebug "ttsArmed"
 	def locevent = [name:"Nyckelharpatalk", value: "armed", isStateChange: true,
 		displayed: true, descriptionText: "Issue armed talk event", linkText: "Issue armed delay talk event",
-		data: theAlarm]	
+		data: theAlarm]
 	sendLocationEvent(locevent)
 	}
-	
+
 def logdebug(txt)
 	{
    	if (logDebugs)
    		log.debug ("${txt}")
-    }	
+    }

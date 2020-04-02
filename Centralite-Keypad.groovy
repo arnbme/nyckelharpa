@@ -14,6 +14,7 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ * 	Apr 02, 2020 v1.0.1 Error missing SetExitDelay routine. Add setExitDelay routine for compatability with HE HSM not used by this module.
  * 	Mar 25, 2020 v1.0.0 Add support for HE pins and pin processing
  * 	Mar 24, 2020 v0.2.9 Symptom Iris V3 device goes into hardware motion loop during panic or siren sounding
  *							Fixed in sendPanelResponse(): sends a response that does not stop siren, kill keys. or create hardware motion messages
@@ -187,8 +188,8 @@ def ssekey(ssekey)
 
 def version()
 	{
-	updateDataValue("driverVersion", "1.0.0")	//Stores in device Data
-	return "1.0.0";
+	updateDataValue("driverVersion", "1.0.1")	//Stores in device Data
+	return "1.0.1";
 	}
 
 def installed() {
@@ -796,7 +797,7 @@ def entry(delay=0)
 //	logdebug "entry entered delay: ${delay}"
 //	setEntryDelay(delay)	//disabled until I understand why this is issued when setting away from actiontiles
 //	v.0.2.5 not used by Nyckelharpa, but device should be removed from HSM, issue warning message
-	log.warn "Centralitex DH says: Remove $device.displayName from HSM Configure Arming/Disarming/Cancel Options --> Use keypad(s) to arm/disarm"
+//	log.warn "Centralitex DH says: Remove $device.displayName from HSM Configure Arming/Disarming/Cancel Options --> Use keypad(s) to arm/disarm"
 	}
 
 def setEntryDelay(delay=0) {
@@ -1062,6 +1063,15 @@ private sendPanelResponse()
 /*
 		The following code is used for compatabilitty with HE pins and pin processing
 */
+void setExitDelay(Map delays){
+//    state.exitDelay = (delays?.awayDelay ?: 0).toInteger()
+//    state.armNightDelay = (delays?.nightDelay ?: 0).toInteger()
+//    state.armHomeDelay = (delays?.homeDelay ?: 0).toInteger()
+}
+
+void setExitDelay(delay){
+//    state.exitDelay = delay != null ? delay.toInteger() : 0
+}
 
 private changeIsValid(codeMap,codeNumber,code,name){
     def result = true
