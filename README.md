@@ -48,7 +48,7 @@ Why is this needed? HSM does not arm the system when arming alerts are implement
 2. Using Hubitat Keypad drivers: When the keypad's Panic key is pressed, and there a properly configured active HSM Custom Panic rule<br /> 
 *The system immediately executes the custom HSM rule's alert functions in all arming states, including when HSM is disarmed*
 
-* Door Chime Function: Use with Keypads and other devices supporting the "beep" command. Optionally issues beep command when system is Disarmed and selected contact sensor opens. Also can optionally issue beep commands when system is armed and Entry Delay begins. Note: the created sound varies by device type, and when when using Iris V2/V3 by firmware version.
+* Door Chime Function: Use with Keypads and other devices supporting the "beep" command. Optionally issues beep command when system is Disarmed and selected contact sensor opens. Also can optionally issue beep commands when system is armed and Entry Delay begins. Note: the created sound varies by device type, and when using Iris V2/V3 by firmware version.
 
 [:arrow_up_small: Back to top](#top)
 <a name="support"></a>
