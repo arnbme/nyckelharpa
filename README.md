@@ -269,8 +269,7 @@ _This DH may be used with the Centralite/Xfinity 3400, Centralite 3400-G, Iris V
 
 1. After installing the keypad DH, edit keypad devices changing Type to Centralitex Keypad, Save Device
 
-2. Remove keypad from HSM. In HSM section Configure Arming/Disarming/Cancel Options --> Use keypad(s) to arm/disarm: 
-remove keypads using the Centralitex driver.
+2. Optionally remove keypads using Centralitex driver from HSM. In HSM section Configure Arming/Disarming/Cancel Options --> Use keypad(s) to arm/disarm: optionally remove keypads using the Centralitex driver.
 
 3. Add keypad to Nyckelharpa Global Settings
 
