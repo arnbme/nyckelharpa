@@ -42,10 +42,11 @@ Why is this needed? HSM does not arm the system when arming alerts are implement
 
 * Keypad Panic Alerts:
 
-1. Using Centralitex Keypad driver: When the keypad's Panic key is pressed, or a Panic Pin is entered, there a properly configured active HSM Custom Panic rule, and the Nyckelharpa app when Panic Pins are used:<br /> 
-*The system immediately executes the custom HSM rule's alert functions in all arming states, including when HSM is disarmed
+1. Using Centralitex Keypad driver: When the keypad's Panic key is pressed, or a Panic Pin is entered, and there a properly configured active HSM Custom Panic rule<br /> 
+*The system immediately executes the custom HSM rule's alert functions in all arming states, including when HSM is disarmed*
 
-2. Using Hubitat Keypad drivers: Standard HSM Panic actions apply. When system is disarmed, panic sounds the keypad's siren if any, but HSM does not react. When system is armed, full HSM panic respone.
+2. Using Hubitat Keypad drivers: When the keypad's Panic key is pressed, and there a properly configured active HSM Custom Panic rule<br /> 
+*The system immediately executes the custom HSM rule's alert functions in all arming states, including when HSM is disarmed*
 
 * Door Chime Function: Use with Keypads and other devices supporting the "beep" command. Optionally issues beep command when system is Disarmed and selected contact sensor opens. Also can optionally issue beep commands when system is armed and Entry Delay begins. Note: when using a keypad the beep command creates a chime sound.
 
