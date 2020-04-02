@@ -35,9 +35,17 @@ Why is this needed? HSM does not arm the system when arming alerts are implement
 * Adjusts Hubitat's mode when HSM's arm state changes. (HSM adjusts HSM's arm state when the mode changes)
 * Provides an easy to use security related message control center with output to TTS, Speakers, and Notification devices such as: Hubitat PhoneApp and Pushover
 
-* Keypads: Centralite/Xfinity 3400, Centalite 3400-G, Iris V2 and V3, and UEI devices may use a ported version of Mitch Pond's Keypad DH, Centralitex Keypad making he keypad function as it did in SmartThings with the SHM Delay App, with an easy to use Pin maintenance module with available Panic pins, burnable pins aka maximum use count, restricted date and time, and restricted keypad devices.
-* Keypad Panic Alerts: When the keypad's Panic key is pressed, or a Panic Pin is entered, using the Centralitex Keypad driver, a properly configured active HSM Custom Panic rule, and the Nyckelharpa app when Panic Pins are used:<br /> 
-*The system immediately executes the custom HSM rule's alert functions*
+* Keypads:
+1. Using user Centralitex Keypad driver: Supports Centralite/Xfinity 3400, Centalite 3400-G, Iris V2 and V3, and UEI devices using a ported version of Mitch Pond's SmartThings Keypad DH, making he keypad function as it did in SmartThings with the SHM Delay App, with an optional easy to use Pin maintenance module with available Panic pins, burnable pins aka maximum use count, restricted date and time, and restricted keypad devices. When using this driver Lock Manager Pins are fully supported.
+
+2. Using Hubitat Keypad drivers: Supports Centralite/Xfinity 3400, Centalite 3400-G, Iris V2 and V3 devices. Only Lock Manager pins are supported when using this driver.
+
+* Keypad Panic Alerts:
+
+1. Using Centralitex Keypad driver: When the keypad's Panic key is pressed, or a Panic Pin is entered, there a properly configured active HSM Custom Panic rule, and the Nyckelharpa app when Panic Pins are used:<br /> 
+*The system immediately executes the custom HSM rule's alert functions in all arming states, including when HSM is disarmed
+
+2. Using Hubitat Keypad drivers: Standard HSM Panic actions apply. When system is disarmed, panic sounds the keypad's siren if any, but HSM does not react. When system is armed, full HSM panic respone.
 
 * Door Chime Function: Use with Keypads and other devices supporting the "beep" command. Optionally issues beep command when system is Disarmed and selected contact sensor opens. Also can optionally issue beep commands when system is armed and Entry Delay begins. Note: when using a keypad the beep command creates a chime sound.
 
