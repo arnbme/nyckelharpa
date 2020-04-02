@@ -310,7 +310,7 @@ When using the app's keypad Device Handler
 
 4. Rule settings
 What kind of device do you want to use: select Contact Sensor<br />
-Select Contact Sensors: *check the Keypad Devices using user provided Centralitex Keypad Driver*, click Update<br />
+Select Contact Sensors: *check the Keypad Devices using Centralitex Keypad Driver, and %prfx%-Panic Id device when using HE drivers*, click Update<br />
 What do you want to monitor?: Set Sensor Opens on/true<br />
 Set Alerts for Text, Audio, Siren and Lights<br />
 Click the "Arm This Rule" button<br />
