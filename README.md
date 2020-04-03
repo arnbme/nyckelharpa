@@ -37,8 +37,10 @@ Why is this needed? HSM does not arm the system when arming alerts are implement
 
 * Keypads:
 1. Using Centralitex Keypad driver: Supports Centralite/Xfinity 3400, Centalite 3400-G, Iris V2 and V3, and UEI devices using a ported version of Mitch Pond's SmartThings Keypad DH, making he keypad function as it did in SmartThings with the SHM Delay App, with an optional easy to use Pin maintenance module with available Panic pins, burnable pins aka maximum use count, restricted date and time, and restricted keypad devices. Lock Manager Pins are also fully supported.
+*Keys make sounds when tapped* 
 
-2. Using Hubitat Keypad drivers: Supports Centralite/Xfinity 3400, Centalite 3400-G, Iris V2 and V3 devices. Only Lock Manager pins are supported when using this driver.
+2. Using Hubitat Keypad drivers: Supports Centralite/Xfinity 3400, Centalite 3400-G, Iris V2 and V3 devices. Only Lock Manager pins are supported when using this driver. 
+*Generally no sound when keys are tapped* 
 
 * Keypad Panic Alerts:
 
