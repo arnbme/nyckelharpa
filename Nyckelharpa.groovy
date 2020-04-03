@@ -224,7 +224,7 @@ def globalsPage(error_msg)
 //			input "globalKeypadControl", "bool", required: true, defaultValue: true, submitOnChange: true,
 //				title: "A real or simulated Keypad is used to arm and disarm Home Security Monitor (HSM). Default: On/True"
 			input "globalKeypadDevices", "capability.securityKeypad", required: false, multiple: true, submitOnChange: true,
-				title: "Iris V2/V3, and Centralite V2/V3, UEI, real and simulated devices using Nyckelharpa Centralite Keypad Device Handler to arm and disarm HSM"
+				title: "Iris V2/V3, and Centralite V2/V3, UEI, real and simulated devices used to arm and disarm HSM"
 			if (globalKeypadDevices)
 				{
 //				input "globalPanic", "bool", required: true, defaultValue: true,
