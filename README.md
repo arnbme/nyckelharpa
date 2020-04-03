@@ -36,10 +36,10 @@ Why is this needed? HSM does not arm the system when arming alerts are implement
 * Provides an easy to use security related message control center with output to TTS, Speakers, and Notification devices such as: Hubitat PhoneApp and Pushover
 
 * Keypads:
-1. Using Centralitex Keypad driver: Supports Centralite/Xfinity 3400, Centalite 3400-G, Iris V2 and V3, and UEI devices using a ported version of Mitch Pond's SmartThings Keypad DH, making he keypad function as it did in SmartThings with the SHM Delay App, with an optional easy to use Pin maintenance module with available Panic pins, burnable pins aka maximum use count, restricted date and time, and restricted keypad devices. Lock Manager Pins are also fully supported.
+1. Using Centralitex Keypad driver: Supports Centralite/Xfinity 3400, Centalite 3400-G, Iris V2 and V3, and UEI devices using a ported version of Mitch Pond's SmartThings Keypad DH, making he keypad function as it did in SmartThings with the SHM Delay App, with an optional easy to use Pin maintenance module with available Panic pins, burnable pins aka maximum use count, restricted date and time, and restricted keypad devices. Lock Manager Pins are also fully supported.<br />
 *Keys make sounds when tapped* 
 
-2. Using Hubitat Keypad drivers: Supports Centralite/Xfinity 3400, Centalite 3400-G, Iris V2 and V3 devices. Only Lock Manager pins are supported when using this driver. 
+2. Using Hubitat Keypad drivers: Supports Centralite/Xfinity 3400, Centalite 3400-G, Iris V2 and V3 devices. Only Lock Manager pins are supported when using this driver.<br /> 
 *Generally no sound when keys are tapped* 
 
 * Keypad Panic Alerts:
@@ -48,7 +48,7 @@ Why is this needed? HSM does not arm the system when arming alerts are implement
 *The system immediately executes the custom HSM rule's alert functions in all arming states, including when HSM is disarmed*
 
 2. Using Hubitat Keypad drivers: When the keypad's Panic key is pressed, and there a properly configured active HSM Custom Panic rule<br /> 
-*The system immediately executes the custom HSM rule's alert functions in all arming states, including when HSM is disarmed*
+*The system immediately executes the custom HSM rule's alert functions in all arming states, including when HSM is disarmed. Without Nyckelharpa and it's custom panic rule, HSM does not respond to panic when it is disarmed.*
 
 * Door Chime Function: Use with Keypads and other devices supporting the "beep" command. Optionally issues beep command when system is Disarmed and selected contact sensor opens. Also can optionally issue beep commands when system is armed and Entry Delay begins. Note: the created sound varies by device type, and when using Iris V2/V3 by firmware version.
 
@@ -63,7 +63,7 @@ This app is free. However, if you like it, derived benefit from it, and want to 
 <a name="install"></a>
 ## 4. Installation
 
-There are four modules and an optional Keypad Device Handler (DH) associated with this app  
+There are four modules and an optional Keypad Device Handler (DH) associated with this app. Hubitat's Lock Manager app may be required.   
  <table style="width:100%">
   <tr>
     <th>Module Name</th>
@@ -95,7 +95,11 @@ There are four modules and an optional Keypad Device Handler (DH) associated wit
     <td>Keypad device handler for models: Centralite/Xfinity 3400, Centralite 3400-G, Iris V2, Iris V3, and UEI. Created and converted to HE by Mitch Pond</td>
     <td>Optional</td>
   </tr>
-</table> 
+ <tr>
+    <td>Hubitat's Lock Manager app</td>
+    <td>Required when using Hubitat keypad drivers, or using Centralitex keypad driver with Lock Manager pins</td>
+    <td>Optional</td>
+  </tr></table> 
 
 * https://docs.hubitat.com/index.php?title=How_to_Install_Custom_Apps <br />
 * let's begin by installing the Nyckelharpa parent module into Hubitat (HE) from this Github repository.<br />
@@ -128,7 +132,7 @@ Detailed instuctions for each step follow the Quick Setup Guide. Begin by clicki
 ## 6. Global Settings. Includes preparation information needed for Forced HSM Arming.
 
 Global Settings is reached by: clicking Apps in the menu, then click the Nyckelharpa app, scroll down to Global Settings, then click  "click to show" 
-1. Select any keypad devices using the Nyckelharpa provided Centralite Keypad device driver
+1. Select all the keypads used for arming HSM
 * When devices are selected, default options for valid and invalid pin message routing are shown
 
 2. <b>Prepare for Forced Arming:</b> <i>For each armState</i> select real contact sensor devices that will allow HSM arming when the device is Open.
@@ -160,7 +164,7 @@ Forced Arming is a two step process: An standard initial HSM arming that fails n
 3. How to Force Arm, a two step process: Arming that fails normally, then Arming again within 15 seconds
 * Arm system as you would normally. When there is an open contact sensor monitored by Nyckelharpa, the system will not arm as is normal for HSM
 * At the initial arm fail: any defined keypads beep twice, Talker issues an alert message including the open sensor(s) and the 15 second forced rearm time 
-* Arming the system again, after a minimum of 3 seconds, to a maximum of 15 seconds from the initial arming failure, forces the HSM system to Arm
+* Arming the system again, after a minimum of 3 seconds, to a maximum of 15 seconds from the initial arming failure, forces the HSM system to Arm. When using the Centralitex Keypad driver an "Arming Forced" message is issued.
   
 [:arrow_up_small: Back to top](#top)
 <a name="modefix"></a>
@@ -275,15 +279,17 @@ _This DH may be used with the Centralite/Xfinity 3400, Centralite 3400-G, Iris V
 
 3. Add keypad to Nyckelharpa Global Settings
 
-4. Create User pin profiles. When using an Iris V3 User pin code 0000 is required and used for instant arming, but will not disarm. This keypad does not send a pin, even if entered, when arming.
+4. When using Nyckelharpa pins: Create User pin profiles. When using an Iris V3 User pin code 0000 is required and used for instant arming, but will not disarm. This keypad does not send a pin, even if entered, when arming.
+
+5. When using Lock Manager Pins: in this device's setting set "Use Lock Manager Pins" on, save settings
 
 5. Create HSM Custom Panic Rule
 
-6. When using an Iris keypad set if Partial key creates Home (default) or Night arming mode
+6. When using an Iris V2/V3 keypad set if Partial key creates Home (default) or Night arming mode
 
 [:arrow_up_small: Back to top](#top)
 <a name="userpin"></a>
-## 11. User pin Profiles
+## 11. Nyckelharpa User pin profiles with Centralitex Keypad driver 
 
 When using the app's keypad Device Handler
 * For each valid user pin, create a User pin profile
