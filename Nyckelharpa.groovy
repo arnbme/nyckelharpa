@@ -22,6 +22,7 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *  Apr 03, 2020 v1.0.2	Use HE driver event armingIn vs securityKeypad for requested mode
  *  Apr 02, 2020 v1.0.1	When any keypad uses the HE driver and panic is enabled, create nykl-panic device and subscribe to HSM panic
  *  Mar 31, 2020 v1.0.1	Add support for using native HE keypad drivers
  *  Mar 25, 2020 v1.0.0	Add support for Lock Manager Pin Codes and LM pin verificaion with Centralitex keypad driver
@@ -125,7 +126,7 @@ preferences {
 
 def version()
 	{
-	return "1.0.1";
+	return "1.0.2";
 	}
 def main()
 	{
@@ -508,7 +509,7 @@ def initialize()
 	if (!globalDisable)
 		{
 		subscribe(globalKeypadDevices, 'codeEntered',  keypadCodeHandler)		//issued by Centralitex Keypad driver
-		subscribe(globalKeypadDevices, 'securityKeypad', keypadHeCodeHandler)	//issued by HE keypad drivers
+		subscribe(globalKeypadDevices, 'armingIn',  armingInHeCodeHandler)		//issued by HE Keypad drivers on pin entry
 //		if (globalPanic)
 //			{
 //		    subscribe (globalKeypadDevices, "contact.open", qssehe_alert_panic)
@@ -520,7 +521,6 @@ def initialize()
 			}
 		subscribe(location, "hsmAlert", alertHandler)
 		}
-	subscribe(globalKeypadDevices, 'codeEntered',  keypadCodeHandler)
 	subscribe(location, "hsmStatus", HeDoorsReset)		//Added for using Hubitat Keypad Drivers
 //	subscribe(location, "hsmStatus", verify_version)	//kill for now
 //	verify_version("dummy_evt")
@@ -621,18 +621,22 @@ Night					Night		stay			GoodNight	Night
 Away					Away		away			GoodBye!	Away
 */
 
-def keypadHeCodeHandler(evt)
+def armingInHeCodeHandler(evt)
 	{
 //	Note Invalid he pins are not sent here
 //	User entered a VALID pin code on a keypad using an HE keypad driver. data unfortunately does not include arming mode
 //	get arming mode from the keypad
+//	HSM seems to propogate the keypad entry to each keypad defined in HSM as arming/disarm device, hense the test for same arm state
+//  attempting to use type physical or digital failed to work since HSM seems to get this wrong
 	if (globalDisable)
 		{return false}			//just in case
 	def keypad = evt.getDevice();
-	atomicState.HeKeypadStatus = keypad.currentValue('securityKeypad')		//this should be the requested arming mode
+	def lclMap=new JsonSlurper().parseText(evt.data)
+//	logdebug "armingInCodeHandler entered Keypad: $lclmap]${keypad.displayName} Value: ${evt.value} Data: ${evt.data}"
+	atomicState.HeKeypadStatus = lclMap.armMode		//save state for alert routine
 	if (atomicState.HeKeypadStatus == 'disarmed')
 		globalKeypadDevices.off()
-	logdebug "keypadHeCodeHandler entered ${keypad.displayName} ${atomicState.HeKeypadStatus}"
+	logdebug "armingInHeCodeHandler entered Keypad: ${keypad.displayName} Requested-state:${atomicState.HeKeypadStatus}"
 	}
 
 def HePanicHandler(evt)
@@ -652,7 +656,7 @@ def HePanicHandler(evt)
 def keypadCodeHandler(evt)
 	{
 //	User entered a code on a keypad
-//	log.debug "keypadCodeHandler entered ${evt.value} ${evt.data}"
+	logdebug "keypadCodeHandler entered ${evt.value} ${evt.data}"
 	if (globalDisable)
 		{return false}			//just in case
 	def keypad = evt.getDevice();
