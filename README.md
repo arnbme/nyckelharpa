@@ -361,7 +361,9 @@ A user reported the Snapshot app somehow interfered with Nyclelharpa's forced ar
 
 * SMS was disabled by Hubitat, but is still defined as a destination. Do not use SMS
 
-* Iris V3 Keypad: Lights don't shut off when device sitting on table or flat surface. Issue: Devices motion or proximity sensor is activated. Move to edge of table, or lay flat on table, or mount on wall. 
+* Iris V3 Keypad Issue: Lights remain on when device sitting on table or flat surface.<br /> 
+Cause: Keypad's motion or proximity sensor is activated.<br /> 
+Solution: Move keypad to edge of table, lay flat on table, or mount on wall. 
 
 [:arrow_up_small: Back to top](#top)
 
