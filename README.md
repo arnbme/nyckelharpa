@@ -36,17 +36,17 @@ Why is this needed? HSM does not arm the system when arming alerts are implement
 * Provides an easy to use security related message control center with output to TTS, Speakers, and Notification devices such as: Hubitat PhoneApp and Pushover
 
 * Keypads: App works with Hubitat keypad drivers, or the user provided Centalitex keypad driver
-1. Using Centralitex Keypad driver: 
-*Supports Centralite/Xfinity 3400, Centalite 3400-G, Iris V2 and V3, and UEI devices* using a ported version of Mitch Pond's SmartThings Keypad DH, making he keypad function as it did in SmartThings with the SHM Delay App*<br />
-*Pins: App provided Pin maintenance module with available Panic pins, burnable pins aka maximum use count, restricted date and time, and restricted keypad devices; or Hubitat's Lock Manager App Pins<br />
-*Keys make sounds when tapped*
-* Arming forced message supported*
+1. Using Centralitex Keypad driver:<br /><br />
+*Supports Centralite/Xfinity 3400, Centalite 3400-G, Iris V2 and V3, and UEI devices* using a ported version of Mitch Pond's SmartThings Keypad DH, making he keypad function as it did in SmartThings with the SHM Delay App*<br /><br />
+*Pins: App provided Pin maintenance module with available Panic pins, burnable pins aka maximum use count, restricted date and time, and restricted keypad devices; or Hubitat's Lock Manager App Pins*<br /><br />
+*Keys make sounds when tapped*<br /><br />
+*Arming forced message supported*
 
-2. Using Hubitat Keypad drivers: 
-*Supports Centralite/Xfinity 3400, Centalite 3400-G, Iris V2 and V3 devices*.<br /> 
-* Pins: Only Lock Manager pins are supported when using this driver*.<br /> 
-* Generally no sound when keys are tapped*<br /> 
-* Arming forced message not supported*
+2. Using Hubitat Keypad drivers:<br /><br /> 
+*Supports Centralite/Xfinity 3400, Centalite 3400-G, Iris V2 and V3 devices*.<br /><br /> 
+*Pins: Only Lock Manager pins are supported when using this driver*.<br /><br /> 
+*Generally no sound when keys are tapped*<br /><br /> 
+*Arming forced message not supported*
 
 * Keypad Panic Alerts:
 
