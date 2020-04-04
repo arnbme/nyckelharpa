@@ -240,7 +240,7 @@ Table with Reason Issued and Message Issued.
     <td>Nyckelharpa</td>
   </tr>
    <tr>
-    <td>Arming Canceled Open Contact</td>
+    <td>Arming Canceled Open Contact (1)</td>
     <td>Arming Canceled %contact name(s) is open. Rearming within 15 seconds will force arming </td>
     <td>User Defined in global Settings</td>
     <td>Nyckelharpa</td>    
@@ -264,6 +264,8 @@ Table with Reason Issued and Message Issued.
    </td><td>HSM</td>
   </tr>
   </table>
+  
+1. In order to get the Nyckelharpa contacts open message and forced arming when using the HE Keypad drivers: you must create some sort of alert in HSM's Configure Arming/Disarming/Cancel --> Configure Alerts for Arming Failures (contacts open) section, or HSM arms directly, ignoring all open contacts. Should you be using TTS messages, simply place the word "Warning" into Arming Alerts-->Audio Alerts setting on the same speech output devices used with Nyckelharpa. It will speak prior to Nyckelharpa's Arming Canceled Open Contact message.
 
 [:arrow_up_small: Back to top](#top)
 <a name="keypadDH"></a>
