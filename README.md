@@ -18,7 +18,8 @@
 [13. Debugging](#testing)<br />
 [14. Uninstalling](#uninstall)<br />
 [15. Get Help, report an issue, or contact information](#help)<br />
-[16. Known Issues](#issues)
+[16. Known Issues](#issues)<br />
+[17. Arming From Dashboard](#dboard)
 
 <a name="purpose"></a>
 ## 1. Purpose
@@ -283,7 +284,7 @@ _This DH may be used with the Centralite/Xfinity 3400, Centralite 3400-G, Iris V
 
 1. After installing the keypad DH, edit keypad devices changing Type to Centralitex Keypad, Save Device
 
-2. Optionally remove keypads using Centralitex driver from HSM. In HSM section Configure Arming/Disarming/Cancel Options --> Use keypad(s) to arm/disarm: optionally remove keypads using the Centralitex driver.
+2. Remove keypads using Centralitex driver from HSM. In HSM section Configure Arming/Disarming/Cancel Options --> Use keypad(s) to arm/disarm: optionally remove keypads using the Centralitex driver.
 
 3. Add keypad to Nyckelharpa Global Settings
 
@@ -370,6 +371,14 @@ A user reported the Snapshot app somehow interfered with Nyclelharpa's forced ar
 * Iris V3 Keypad Issue: Lights remain on when device is sitting upright on a table or flat surface.<br /> 
 Cause: Keypad's motion or proximity sensor is activated.<br /> 
 Solution: Move keypad to edge of table, lay it flat on table or surface, or mount it on a wall. 
+
+[:arrow_up_small: Back to top](#top)
+
+<a name="dboard"></a>
+## 17. Arming From Dashboard
+* Always arm and disarm using HSM Status. 
+
+* Mode will generally work, however when there is an alert, the mode remains in the entered mode, but the HSM Status does not change.
 
 [:arrow_up_small: Back to top](#top)
 
