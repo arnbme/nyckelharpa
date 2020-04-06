@@ -380,4 +380,6 @@ A user reported the Snapshot app somehow interfered with Nyclelharpa's forced ar
 Cause: Keypad's motion or proximity sensor is activated.<br /> 
 Solution: Move keypad to edge of table, lay it flat on table or surface, or mount it on a wall. 
 
+* Do not intermix Centralitex keypad drivers with system keypad drivers. Use one or the other
+
 [:arrow_up_small: Back to top](#top)
