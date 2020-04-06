@@ -22,6 +22,16 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *  Apr 05, 2020 v1.0.3	When arming from a dashboard this app's alert message was not created
+ *							Solution: in HeDoorsClose check doors when HSM is disarmed
+ *  Apr 05, 2020 v1.0.3	Using He keypad driver when arming away with open door,	attempt to force arm sets arming off/disarmed
+ *							Caused by Modefix executing checkOpenContacts
+ *							Solution: in armingInHeCodeHandler set atomicState.doorsdtim=0.
+ *  Apr 05, 2020 v1.0.3	Using HE keypad driver with forced arming, system was force armed, contact remains open,
+ *								set alarm disarmed, intrusion alert occurs
+ *							Caused by unknown timing issue in HSM that trips alarm when we reset the NYKL-contact
+ *								to match the real contact, and the real contact is open even when system is disarmed
+ *							Solution: Change subscribe from HeDoorsReset to HeDoorsResetDelay that runs HeDoorsReset in 1 second
  *  Apr 03, 2020 v1.0.2	Use HE driver event armingIn vs securityKeypad for requested mode
  *  Apr 02, 2020 v1.0.1	When any keypad uses the HE driver and panic is enabled, create nykl-panic device and subscribe to HSM panic
  *  Mar 31, 2020 v1.0.1	Add support for using native HE keypad drivers
@@ -126,7 +136,7 @@ preferences {
 
 def version()
 	{
-	return "1.0.2";
+	return "1.0.3";
 	}
 def main()
 	{
@@ -521,7 +531,7 @@ def initialize()
 			}
 		subscribe(location, "hsmAlert", alertHandler)
 		}
-	subscribe(location, "hsmStatus", HeDoorsReset)		//Added for using Hubitat Keypad Drivers
+	subscribe(location, "hsmStatus", HeDoorsResetDelay)	//Added for using Hubitat Keypad Drivers
 //	subscribe(location, "hsmStatus", verify_version)	//kill for now
 //	verify_version("dummy_evt")
 
@@ -636,6 +646,7 @@ def armingInHeCodeHandler(evt)
 	atomicState.HeKeypadStatus = lclMap.armMode		//save state for alert routine
 	if (atomicState.HeKeypadStatus == 'disarmed')
 		globalKeypadDevices.off()
+	atomicState.doorsdtim=0		//When using HE driver stops Modefix from executing checkOpenContacts
 	logdebug "armingInHeCodeHandler entered Keypad: ${keypad.displayName} Requested-state:${atomicState.HeKeypadStatus}"
 	}
 
@@ -1250,7 +1261,7 @@ def	keypadLighton(evt,theMode,keypad)
 	if (theMode == 'Away')					//lights ON light on Iris
 		{keypad.setArmedAway()}
 	}
-/* this routine is deprecated as of May 18, 2019 */
+/* this routine is deprecated as of May 18, 2019
 def keypadPanicHandler(evt)
 	{
 	logdebug "keypadPanicHandler entered, ${evt}"
@@ -1278,13 +1289,13 @@ def keypadPanicHandler(evt)
 		keypadPanicExecute(panic_map.data)		//Panic routine only uses the device name, should be ok
 		}
 	}
-
+*/
 /* this routine is deprecated May 18, 2019 */
-def keypadPanicExecute(panic_map)						//Panic mode requested
-/*	When system is armed: Open simulated sensor
+/*def keypadPanicExecute(panic_map)						//Panic mode requested
+	When system is armed: Open simulated sensor
 **	When system is not armed: Wait for it to arm, open simulated sensor
 **	Limit time to 5 cycles around 9 seconds of waiting maximum
-*/
+
 	{
 	def alarmstatus = location.hsmStatus	//get HE alarm status
 	if (alarmstatus.substring(0,5) != 'armed')
@@ -1309,7 +1320,7 @@ def keypadPanicExecute(panic_map)						//Panic mode requested
 	runIn(4,closePanicContact)
 	qsse_status_mode(false,"**Panic**")
 	}
-
+*/
 
 //	Process response from async execution of WebCore Piston
 def getResponseHandler(response, data)
@@ -1701,7 +1712,7 @@ def checkOpenContacts (contactList, notifyOptions, keypad)
 	def contactmsg=''
 	def duration = now() -lastDoorsDtim
 	def evt
-	logdebug "checkOpenContacts entered $contactList $notifyOptions $keypad lastDoorsDtim: $lastDoorsDtim"
+	logdebug "checkOpenContacts $contactList $notifyOptions $keypad lastDoorsDtim: $lastDoorsDtim"
 	contactList.each
 		{
 //		logdebug "${it} ${it.currentContact}"
@@ -1972,17 +1983,17 @@ def alertHandler(evt)
 /*				else
 					{
 					it.off([delay: 2500])		//double off the siren to hopefully shut it, same issue here in HE
-					it.siren([delay: 2000])
+					it.siren([delay: 2000])		// Apr 5, 2020 figured it out but siren does not shut off
 					it.off([delay: 2250])
 					}
 */				}
 			}
 		}
 	else
-	if (evt.value == 'arming' && globalKeypadDevices)			//failed to arm due to open contact(S) he only speaks one device
+	if (evt.value == 'arming')								//failed to arm due to open contact(S) hsm only speaks one device
 		{														//does not occur using centalitex driver with keypads not coded in HSM
-		HeDoorsClose()
-		runInMillis(500, delaysetDisarmed)
+		HeDoorsClose()											//triggers from any HSM arming other than Centralitex that
+		runInMillis(500, delaysetDisarmed)						//checks prior to arming
 //		runInMillis(1200, delayBeep)
 		runIn(15,HeDoorsReset)
 		}
@@ -2006,8 +2017,27 @@ def HeDoorsClose()
 	logdebug "HeDoorsClose entered status: ${modeRequest}"
 	def contactList
 	def notifyOptions
-	if (modeRequest == 'disarmed')
-		return
+//	When alert and disarmed it usually means request was issued from non-keypad source suchas as a dashboard
+//	This is a true leap of faith, but it seems correct
+	if (modeRequest == 'disarmed' && globalAwayContacts)
+		{
+		contactList=globalAwayContacts			//use away as it is likely most restrictive
+		notifyOptions=globalAwayNotify
+/*		not needed but tried this. HSM will not change HSMstatus when there is an alert
+		but when changing mode it remains in changed mode but status is unchanged
+		sendEvent(name: "hsmStatus", value: 'disarmed')
+		getChildApps().find
+			{
+			if (it.getLabel()=='Nyckelharpa ModeFix')
+				{
+				setLocationMode(it.offDefault)
+				return true
+				}
+			else
+				return false
+			}
+*/		}
+	else
 	if (modeRequest == 'armed away' && globalAwayContacts)
 		{
 		contactList=globalAwayContacts
@@ -2029,7 +2059,7 @@ def HeDoorsClose()
 		return
 	def basemsg='Arming Canceled'
 	def contactmsg=basemsg
-	log.debug "HeDoorsClose entered $contactList $notifyOptions"
+	logdebug "HeDoorsClose entered $contactList $notifyOptions"
 	contactList.each
 		{
 //		log.debug "${it} ${it.currentContact}"
@@ -2069,6 +2099,16 @@ def HeDoorsClose()
 				}
 			}
 		}
+	}
+
+//V1.0.3
+//Using HE drivers need to delay the doors open reset for unknown reasons or alarm triggers. No idea why since system is disarmed
+//Not an issue when using Centralitex driver
+def HeDoorsResetDelay(evt)
+	{
+	logdebug "entering HeDoorsReset ${location.hsmStatus}"
+	if (location.hsmStatus == 'disarmed')
+		runIn(1,HeDoorsReset)
 	}
 
 def HeDoorsReset(evt=null)

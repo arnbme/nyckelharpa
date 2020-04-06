@@ -20,6 +20,7 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *	Mar 31, 2020 	v1.0.0	Allow use of HE system keypad drivers
  *	Jun 09, 2019 	v0.0.8	add call to qssehe.php to update sse status and delay
  *	May 16, 2019 	v0.0.7	add UEI model to keypads with 3 armed lighting modes
  *	May 10, 2019 	v0.0.6	Do what 0.0.5 said it would do but did not
@@ -83,7 +84,7 @@ preferences {
 
 def version()
 	{
-	return "0.0.8";
+	return "1.0.0";
 	}
 
 def pageOne(error_msg)
