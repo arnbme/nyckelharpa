@@ -376,7 +376,7 @@ Solution: Move keypad to edge of table, lay it flat on table or surface, or moun
 
 <a name="dboard"></a>
 ## 17. Arming From Dashboard
-* Always arm and disarm using HSM Status. 
+* Always arm and disarm using HSM Status. Forced arming is supported and alert messages are created. 
 
 * Mode will generally work, however when there is an alert, the mode remains in the entered mode, but the HSM Status does not change.
 
