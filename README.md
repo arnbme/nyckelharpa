@@ -1,5 +1,5 @@
 <a name="top"></a>
-# Nyckelharpa Beta Apr 02, 2020 
+# Nyckelharpa Beta Apr 06, 2020 
 ![image nyckelharpa](images/nyckelharpa.jpg)<br /> 
 **The buttons and levers controlling Hubitat Elevation's Home Security Monitor's strings.** 
 ## Table of Contents 
@@ -35,7 +35,7 @@ Why is this needed? HSM does not arm the system when arming alerts are implement
 * Adjusts Hubitat's mode when HSM's arm state changes. (HSM adjusts HSM's arm state when the mode changes)
 * Provides an easy to use security related message control center with output to TTS, Speakers, and Notification devices such as: Hubitat PhoneApp and Pushover
 
-* Keypads: App works with Hubitat keypad drivers, or the user provided Centalitex keypad driver
+* Keypads: App works with Hubitat keypad drivers, or the user provided Centalitex keypad driver. <b>*However do not mix user and system keypad drivers*</b>
 1. Using Centralitex Keypad driver:<br /><br />
 *Supports Centralite/Xfinity 3400, Centalite 3400-G, Iris V2 and V3, and UEI devices* using a ported version of Mitch Pond's SmartThings Keypad DH, making he keypad function as it did in SmartThings with the SHM Delay App*<br /><br />
 *Pins: App provided Pin maintenance module with available Panic pins, burnable pins aka maximum use count, restricted date and time, and restricted keypad devices; or Hubitat's Lock Manager App Pins*<br /><br />
