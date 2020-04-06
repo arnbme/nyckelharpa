@@ -16,10 +16,10 @@
 [11. User/Pin Profiles](#userpin)<br />
 [12. Create Custom HSM Panic Rule](#panicrules)<br />
 [13. Debugging](#testing)<br />
-[14. Uninstalling](#uninstall)<br />
-[15. Get Help, report an issue, or contact information](#help)<br />
-[16. Known Issues](#issues)<br />
-[17. Arming From Dashboard](#dboard)
+[14. Arming From Dashboard](#dboard)<br />
+[15. Uninstalling](#uninstall)<br />
+[16. Get Help, report an issue, or contact information](#help)<br />
+[17. Known Issues](#issues)
 
 <a name="purpose"></a>
 ## 1. Purpose
@@ -349,21 +349,29 @@ Create and save a Modefix profile
 A user reported the Snapshot app somehow interfered with Nyclelharpa's forced arming, and removing or disabling Snapshot fixed the issue. This does not make sense to me, merely reporting what I was told by the user.
 
 [:arrow_up_small: Back to top](#top)
+<a name="dboard"></a>
+## 14. Arming From Dashboard
+* Always arm and disarm using HSM Status. Forced arming is supported and alert messages are created. 
+
+* Mode will generally work, however when there is an alert, the mode remains in the entered mode, but the HSM Status does not change.
+
+[:arrow_up_small: Back to top](#top)
+
 <a name="uninstall"></a>
-## 14. Uninstalling
+## 15. Uninstalling
 1. If using forced arming, change HSM settings NCKL-child devices to real devices<br />
 2. If using Panic Key or Panic pins, remove custom Panic rule from HSM<br />
 3. it is now safe to remove Nyckelharpa, child devices are deleted during removal process
 
 [:arrow_up_small: Back to top](#top)
 <a name="help"></a>
-## 15. Get Help, report an issue, and contact information
+## 16. Get Help, report an issue, and contact information
 * [Use the HE Community's Nyckelharpa forum](https://community.hubitat.com/t/release-nyckelharpa/15062) to request assistance, or to report an issue. Direct private messages to user @arnb
 
 [:arrow_up_small: Back to top](#top)
 
 <a name="issues"></a>
-## 16. Known Issues
+## 17. Known Issues
 * Messages need individual custom destination settings
 
 * SMS was disabled by Hubitat, but is still defined as a destination. Do not use SMS
@@ -373,12 +381,3 @@ Cause: Keypad's motion or proximity sensor is activated.<br />
 Solution: Move keypad to edge of table, lay it flat on table or surface, or mount it on a wall. 
 
 [:arrow_up_small: Back to top](#top)
-
-<a name="dboard"></a>
-## 17. Arming From Dashboard
-* Always arm and disarm using HSM Status. Forced arming is supported and alert messages are created. 
-
-* Mode will generally work, however when there is an alert, the mode remains in the entered mode, but the HSM Status does not change.
-
-[:arrow_up_small: Back to top](#top)
-
