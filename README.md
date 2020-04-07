@@ -39,13 +39,13 @@ Why is this needed? HSM does not arm the system when arming alerts are implement
 * Keypads: App works with Hubitat keypad drivers, or the user provided Centalitex keypad driver. <b>*However do not mix user and system keypad drivers*</b>
 1. Using Centralitex Keypad driver:<br /><br />
 *Supports Centralite/Xfinity 3400, Centalite 3400-G, Iris V2 and V3, and UEI devices* using a ported version of Mitch Pond's SmartThings Keypad DH, making he keypad function as it did in SmartThings with the SHM Delay App*<br /><br />
-*Pins: App provided Pin maintenance module with available Panic pins, burnable pins aka maximum use count, restricted date and time, and restricted keypad devices; or Hubitat's Lock Manager App Pins*<br /><br />
+*Pins: App provided Pin maintenance module with available Panic pins, burnable pins aka maximum use count, restricted date and time, and restricted keypad devices; or Hubitat's Lock Code Manager App Pins*<br /><br />
 *Keys make sounds when tapped*<br /><br />
 *Arming forced message supported*
 
 2. Using Hubitat Keypad drivers:<br /><br /> 
 *Supports Centralite/Xfinity 3400, Centalite 3400-G, Iris V2 and V3 devices*.<br /><br /> 
-*Pins: Only Lock Manager pins are supported when using this driver*.<br /><br /> 
+*Pins: Only Lock Code Manager pins are supported when using this driver*.<br /><br /> 
 *Generally no sound when keys are tapped*<br /><br /> 
 *Arming forced message not supported*
 
@@ -70,7 +70,7 @@ This app is free. However, if you like it, derived benefit from it, and want to 
 <a name="install"></a>
 ## 4. Installation
 
-There are four modules and an optional Keypad Device Handler (DH) associated with this app. Hubitat's Lock Manager app may be required.   
+There are four modules and an optional Keypad Device Handler (DH) associated with this app. Hubitat's Lock Code Manager app may be required.   
  <table style="width:100%">
   <tr>
     <th>Module Name</th>
@@ -103,8 +103,8 @@ There are four modules and an optional Keypad Device Handler (DH) associated wit
     <td>Optional</td>
   </tr>
  <tr>
-    <td>Hubitat's Lock Manager app</td>
-    <td>Required when using Hubitat keypad drivers, or using Centralitex keypad driver with Lock Manager pins</td>
+    <td>Hubitat's Lock Code Manager app</td>
+    <td>Required when using Hubitat keypad drivers, or using Centralitex keypad driver with Lock Code Manager pins</td>
     <td>Optional</td>
   </tr></table> 
 
@@ -290,7 +290,7 @@ _This DH may be used with the Centralite/Xfinity 3400, Centralite 3400-G, Iris V
 
 4. When using Nyckelharpa pins: Create User pin profiles. When using an Iris V3 User pin code 0000 is required and used for instant arming, but will not disarm. This keypad does not send a pin, even if entered, when arming.
 
-5. When using Lock Manager Pins: in this device's setting set "Use Lock Manager Pins" on, save settings
+5. When using Lock Code Manager Pins: in this device's setting set "Use Lock Code Manager Pins" on, save settings
 
 5. Create HSM Custom Panic Rule
 
