@@ -66,7 +66,7 @@ definition(
 
 def version()
 	{
-	return "0.1.0";
+	return "1.0.0";
 	}
 
 preferences {
