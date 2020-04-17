@@ -22,6 +22,9 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *  Apr 17, 2020 v1.0.4	Issue: System does not arm or incorrectly arms using Centralitex driver
+ *  						Cause: System is disarmed, user sets child contact device to open while real device closed or vice versa
+ *							Solution: When system is disarmed and a pin is entered, set child device status to real device status
  *  Apr 05, 2020 v1.0.3	When arming from a dashboard this app's alert message was not created
  *							Solution: in HeDoorsClose check doors when HSM is disarmed
  *  Apr 05, 2020 v1.0.3	Using He keypad driver when arming away with open door,	attempt to force arm sets arming off/disarmed
@@ -136,7 +139,7 @@ preferences {
 
 def version()
 	{
-	return "1.0.3";
+	return "1.0.4";
 	}
 def main()
 	{
@@ -1718,6 +1721,8 @@ def checkOpenContacts (contactList, notifyOptions, keypad)
 //		logdebug "${it} ${it.currentContact}"
 		if (it.currentContact=="open")
 			{
+			if (location.hsmStatus=='disarmed' || location.hsmStatus == 'allDisarmed')
+				getChildDevice("$globalChildPrefix${it.id}").open()		//sync child device to real V1.0.4
 			if (contactmsg == '')
 				{
 				if (duration > 15000 || duration < 3000)
@@ -1751,6 +1756,9 @@ def checkOpenContacts (contactList, notifyOptions, keypad)
 					}
 				}
 			}
+		else
+		if (location.hsmStatus=='disarmed' || location.hsmStatus == 'allDisarmed')
+			getChildDevice("$globalChildPrefix${it.id}").close()		//sync child device to real v1.0.4
 		}
 	if (contactmsg>'')
 		{
