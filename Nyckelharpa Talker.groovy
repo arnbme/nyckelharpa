@@ -26,6 +26,7 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *	Dec 03, 2019 v1.0.1 Check chime command for Open and close messages or error during execution with no chime command
  *	Dec 03, 2019 v1.0.0 Change default entry message to Disarm system or Police will arrive shortly
  *	Dec 03, 2019 v0.1.0 Compensate for Hubitat Sonos driver missing command sendTextAndResume
  *	Dec 02, 2019 v0.0.9 Correct logic and coding error with Do not talk times.
@@ -66,7 +67,7 @@ definition(
 
 def version()
 	{
-	return "1.0.0";
+	return "1.0.1";
 	}
 
 preferences {
@@ -165,6 +166,24 @@ def pageOneVerify() 				//edit page one info, go to pageTwo when valid
 				error_data="All TTS devices do not have Chime command, set 'Sound TTS Chimes' Off"
 			}
 		}
+	else
+	if (theOpenMsgChimes && theTTS)
+		{
+		theTTS.each
+			{
+			if (!it.hasCommand("chime"))
+				error_data="All TTS devices do not have Chime command, set 'Sound TTS Chimes with Open' Off"
+			}
+		}
+	else
+	if (theClosedMsgChimes && theTTS)
+		{
+		theTTS.each
+			{
+			if (!it.hasCommand("chime"))
+				error_data="All TTS devices do not have Chime command, set 'Sound TTS Chimes with Close' Off"
+			}
+		}
 	if (error_data != "")
 		{}
 	else
@@ -182,7 +201,7 @@ def pageOneVerify() 				//edit page one info, go to pageTwo when valid
 
 	if (error_data!="")
 		{
-		state.error_data='<b>'+error_data.trim()+'</b>'
+		state.error_data='<b>ERROR: '+error_data.trim()+'</b>'
 		pageOne()
 		}
 	else
