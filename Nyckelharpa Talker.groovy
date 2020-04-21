@@ -26,6 +26,8 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *	Apr 21, 2020 v1.0.2 Document in input settings: erasing message stops it from talking.
+ *	Apr 21, 2020 v1.0.2 Issue: Erased msg returns on next time app page loads. Fix: When app is COMPLETE, do not set a default
  *	Apr 20, 2020 v1.0.1 Check chime command for Open and close messages or error occurs during execution with no DH chime command
  *	Apr 07, 2020 v1.0.0 Change default entry message to Disarm system or Police will arrive shortly
  *	Dec 03, 2019 v0.1.0 Compensate for Hubitat Sonos driver missing command sendTextAndResume
@@ -67,7 +69,7 @@ definition(
 
 def version()
 	{
-	return "1.0.1";
+	return "1.0.2";
 	}
 
 preferences {
@@ -106,7 +108,7 @@ def pageOne()
 	{
 	dynamicPage(name: "pageOne", title: "Talker Messages and Devices", install: false, uninstall: true, nextPage: "pageOneVerify")
 		{
-		section("The Nyckelharpa Message Settings")
+		section("The Nyckelharpa Message Settings<br>Erasing a message stops it from talking")
 			{
 			if (state.error_data)
 				{
@@ -115,23 +117,56 @@ def pageOne()
 				}
 			input "logDebugs", "bool", required:true, defaultValue:false,
 				title: "Log debugging messages? Normally off/false"
-			input "theContactOpenMsg", "string", required: false, title: "Contact Open message, issued when system is disarmed: %device replaced with device name",
-				defaultValue: "%device is now open"
+			if (app.getInstallationState()=='COMPLETE')
+				{
+				input "theContactOpenMsg", "string", required: false, title: "Contact Open message, issued when system is disarmed: %device replaced with device name"
+				}
+			else
+				{
+				input "theContactOpenMsg", "string", required: false, title: "Contact Open message, issued when system is disarmed: %device replaced with device name",
+					defaultValue: "%device is now open"
+				}
 			input "theOpenMsgChimes", "bool", defaultValue: true, required: false,
 				title: "Sound TTS Chimes with Open message Default: On/True"
-			input "theContactClosedMsg", "string", required: false, title: "Contact Closed message, issued when system is disarmed: %device replaced with device name",
-				defaultValue: "%device is now closed"
+			if (app.getInstallationState()=='COMPLETE')
+				{
+				input "theContactClosedMsg", "string", required: false, title: "Contact Closed message, issued when system is disarmed: %device replaced with device name"
+				}
+			else
+				{
+				input "theContactClosedMsg", "string", required: false, title: "Contact Closed message, issued when system is disarmed: %device replaced with device name",
+					defaultValue: "%device is now closed"
+				}
 			input "theClosedMsgChimes", "bool", defaultValue: false, required: false,
 				title: "Sound TTS Chimes with Close message Default: Off/False"
-			input "theExitMsgKypd", "string", required: false, title: "Exit message: %nn replaced with delay seconds",
-				defaultValue: "Alarm system is arming in %nn seconds. Please exit the facility"
-			input "theEntryMsg", "string", required: false, title: "Entry message: %nn replaced with delay seconds",
-				defaultValue: "Disarm system, or police will arrive shortly"
-//Apr 02, 2020	defaultValue: "Please enter your pin on the keypad"
-			input "theArmMsg", "string", required: false, title: "Armed message: %hsmStatus replaced with HSM Arm State",
-					defaultValue: "Alarm System is now armed in %hsmStatus Mode"
-			input "theDisarmMsg", "string", required: false, title: "Disarm message",
-					defaultValue: "System Disarmed"
+			if (app.getInstallationState()=='COMPLETE')
+				{
+				input "theExitMsgKypd", "string", required: false, title: "Exit message: %nn replaced with delay seconds"
+				}
+			else
+				{
+				input "theExitMsgKypd", "string", required: false, title: "Exit message: %nn replaced with delay seconds",
+					defaultValue: "Alarm system is arming in %nn seconds. Please exit the facility"
+				}
+			if (app.getInstallationState()=='COMPLETE')
+				{
+				input "theEntryMsg", "string", required: false, title: "Entry message: %nn replaced with delay seconds"
+				}
+			else
+				{
+				input "theEntryMsg", "string", required: false, title: "Entry message: %nn replaced with delay seconds",
+					defaultValue: "Disarm system, or police will arrive shortly"
+				}
+			if (app.getInstallationState()=='COMPLETE')
+				input "theArmMsg", "string", required: false, title: "Armed message: %hsmStatus replaced with HSM Arm State"
+			else
+				input "theArmMsg", "string", required: false, title: "Armed message: %hsmStatus replaced with HSM Arm State",
+						defaultValue: "Alarm System is now armed in %hsmStatus Mode"
+			if (app.getInstallationState()=='COMPLETE')
+				input "theDisarmMsg", "string", required: false, title: "Disarm message"
+			else
+				input "theDisarmMsg", "string", required: false, title: "Disarm message",
+						defaultValue: "System Disarmed"
 			input "theQuiet", defaultValue: false, "bool", required: false,  submitOnChange: true,
 				title: "Do not talk during quiet time?  Default: Off - Talks all the time"
 			if (theQuiet)
