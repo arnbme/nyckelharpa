@@ -22,6 +22,9 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *  Apr 22, 2020 v1.0.5	Future: Prepare for a Panic pin when using Lock Code Manager pins with Centralitex driver, found following error
+ *  Apr 22, 2020 v1.0.5	Error: LCM pins searching user pin data. Cause: typo Fix test setting lmPin, not lmpin
+ *  Apr 22, 2020 v1.0.5	Eliminate all references to RBoyDTH from ST
  *  Apr 17, 2020 v1.0.4	Issue: System does not arm or incorrectly arms using Centralitex driver
  *  						Cause: System is disarmed, user sets child contact device to open while real device closed or vice versa
  *							Solution: When system is disarmed and a pin is entered, set child device status to real device status
@@ -139,7 +142,7 @@ preferences {
 
 def version()
 	{
-	return "1.0.4";
+	return "1.0.5";
 	}
 def main()
 	{
@@ -674,7 +677,7 @@ def keypadCodeHandler(evt)
 	if (globalDisable)
 		{return false}			//just in case
 	def keypad = evt.getDevice();
-	logdebug "keypadCodeHandler called: $evt by device : ${keypad.displayName}"
+//	log.debug "keypadCodeHandler called: $evt by device : ${keypad.displayName}"
 	def codeEntered = evt.value as String				//the entered pin
 	def modeEntered
 	def lclMap = [:]
@@ -700,26 +703,33 @@ def keypadCodeHandler(evt)
 	if (modeEntered < 0 || modeEntered> 3)				//catch an unthinkable bad mode, this is catastrophic
 		{
 		log.error "${app.label}: Unexpected arm mode ${modeEntered} sent by keypad!"
-		if (!globalRboyDth)		//Nov 3, 2018 rBoy DTH already issues the acknowledgement
-			keypad.sendInvalidKeycodeResponse()
+		keypad.sendInvalidKeycodeResponse()
 		return false
 		}
 //	def currentarmMode = keypad.currentValue('armMode',true)
 //	logdebug("Delayv2 codeentryhandler searching user apps for keypad ${keypad.displayName} ${evt.data} ${evt.value}")
 	def userName=false;
 	def badPin=true;
-	def badPin_message = keypad.displayName + "Invalid pin entered: " + codeEntered
+	def badPin_message = keypad.displayName + " Invalid pin entered: " + codeEntered
 	def error_message=""
 	def info_message=""
 	def pinKeypadsOK=false;
 	def damap=[dummy: "dummy"]				//dummy return map for Routine and Piston processing
 	def itthepinusage
-	if (lmpin)
+	if (lmPin)
 		{
-		if (lmPinValid)
+/*		if (codeEntered == "9997")		//future do panic for lcm pins. Need to get to device settings orr change Centralitex driver
+			{
+			error_message = keypad.displayName + " Panic Pin ${codeEntered} entered"
+			itthepinusage='Panic'
+			pinStatus='Panic'
+			}
+		else
+*/		if (lmPinValid)
 			{
 			pinStatus='Accepted'
 			badPin=false
+			userName=lmPinName
 			}
 		else
 			error_message = badPin_message
@@ -863,8 +873,7 @@ def keypadCodeHandler(evt)
 						case 'Routine':
 	//						forced to do acknowledgeArmRequest here due to a hardware timeout on keypad
 							pinStatus='Exec Routine'
-							if (!globalRboyDth)		//Nov 3, 2018 rBoy DTH already issues the acknowledgement
-								keypad.acknowledgeArmRequest(4)
+							keypad.acknowledgeArmRequest(4)
 							acknowledgeArmRequest(4,keypad);
 							fireBadPin=false
 							damap=process_routine(it, modeEntered, keypad)
@@ -893,8 +902,7 @@ def keypadCodeHandler(evt)
 						case 'Piston':
 	//						forced to do acknowledgeArmRequest here due to a possible hardware timeout on keypad
 							pinStatus='Piston'
-							if (!globalRboyDth)		//Nov 3, 2018 rBoy DTH already issues the acknowledgement
-								keypad.acknowledgeArmRequest(4)
+							keypad.acknowledgeArmRequest(4)
 							acknowledgeArmRequest(4,keypad);
 							fireBadPin=false
 							damap=process_piston(it, modeEntered, keypad)
@@ -943,8 +951,7 @@ def keypadCodeHandler(evt)
 		{
 		if (fireBadPin)
 			{
-			if (!globalRboyDth)		//Nov 3, 2018 rBoy DTH already issues the acknowledgement
-				keypad.acknowledgeArmRequest(4)				//always issue badpin very long beep
+			keypad.acknowledgeArmRequest(4)				//always issue badpin very long beep
 			acknowledgeArmRequest(4,keypad);
 //			log.debug "about to set panic contact open ${itthepinusage}"
 			if (itthepinusage=='Panic')
@@ -958,8 +965,7 @@ def keypadCodeHandler(evt)
 **		Deprecated this logic on Mar 18, 2018 for better overall operation
 		if (globalBadPins==1)
 			{
-			if (!globalRboyDth)		//Nov 3, 2018 rBoy DTH already issues the acknowledgement
-				keypad.acknowledgeArmRequest(4)			//sounds a very long beep
+			keypad.acknowledgeArmRequest(4)			//sounds a very long beep
 			acknowledgeArmRequest(4,keypad);
 			}
 		else
@@ -969,15 +975,13 @@ def keypadCodeHandler(evt)
 	    	atomicState.badpins = atomicState.badpins + 1
 	    	if (atomicState.badpins >= globalBadpins)
 	    		{
-				if (!globalRboyDth)		//Nov 3, 2018 rBoy DTH already issues the acknowledgement
-					keypad.acknowledgeArmRequest(4)		//sounds a very long beep
+				keypad.acknowledgeArmRequest(4)		//sounds a very long beep
 				acknowledgeArmRequest(4,keypad);
 				atomicState.badpins = 0
     			}
 			else
 				{
-				if (!globalRboyDth)		//Nov 3, 2018 rBoy DTH already issues the acknowledgement
-					keypad.sendInvalidKeycodeResponse()	//sounds a medium duration beep
+				keypad.sendInvalidKeycodeResponse()	//sounds a medium duration beep
 				acknowledgeArmRequest(4,keypad);
 				}
     		}
@@ -990,8 +994,7 @@ def keypadCodeHandler(evt)
 //	was this pin associated with a person
 	if (!userName)									//if not a user pin, no further processing
 		{
-		if (!globalRboyDth)		//Nov 3, 2018 rBoy DTH already issues the acknowledgement
-			keypad.sendInvalidKeycodeResponse()			//sounds a medium duration beep
+		keypad.sendInvalidKeycodeResponse()			//sounds a medium duration beep
 		return
 		}
 
@@ -1026,8 +1029,7 @@ def keypadCodeHandler(evt)
 			return
 			}
 		}
-//	if (!globalRboyDth)		//Nov 3, 2018 rBoy DTH already issues the acknowledgement
-		keypad.acknowledgeArmRequest(modeEntered) 		//keypad demands a followup light setting or all lights blink
+	keypad.acknowledgeArmRequest(modeEntered) 		//keypad demands a followup light setting or all lights blink
 //	acknowledgeArmRequest(modeEntered,keypad);			//Used with Internet keypad only
 //	atomicState.badpins=0		//reset badpin count
 	def HSMarmModes=['disarm','armHome','armNight','armAway']
