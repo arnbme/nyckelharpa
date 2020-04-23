@@ -12,7 +12,7 @@
 [&ensp;7. Forced Arming, Adjust HSM Settings](#adjustHSM)<br />
 [&ensp;8. Modefix Setup and Usage](#modefix)<br />
 [&ensp;9. Talker messages](#talker)<br />
-[10. Keypad Device Handler](#keypadDH)<br />
+[10. Centralitex Keypad Device Handler](#keypadDH)<br />
 [11. User/Pin Profiles](#userpin)<br />
 [12. Create Custom HSM Panic Rule](#panicrules)<br />
 [13. Debugging](#testing)<br />
@@ -283,9 +283,9 @@ Table with Reason Issued and Message Issued.
 
 [:arrow_up_small: Back to top](#top)
 <a name="keypadDH"></a>
-## 10. Keypad Device Handler
+## 10. Centralitex Keypad Device Handler
 
-The app's Keypad Device Handler was created by Mitch Pond on SmartThings where it is still used by a few Smartapps including SHM Delay. With Mitch's assistance and Zigbee skills it was ported to HE, then I added the Alarm capability that sounds a fast high pitch tone until set off on the Iris V2, and beeps for 255 seconds on the Centralite. 
+The Centalitex Keypad Device Handler was created by Mitch Pond on SmartThings, where it is still used by a few Smartapps including SHM Delay. With Mitch's assistance and Zigbee skills it was ported to HE, then I added the Alarm capability that sounds a fast high pitch tone until set off on the Iris V2, and beeps for 255 seconds on the Centralite, and the compatabilitty with the Hubitat keypad device drivers, HSM and Lock Code Manager. 
 
 _This DH may be used with the Centralite/Xfinity 3400, Centralite 3400-G, Iris V2, Iris V3 and UEI keypads_
 
