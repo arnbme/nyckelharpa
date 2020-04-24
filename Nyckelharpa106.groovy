@@ -22,6 +22,8 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *  Apr 23, 2020 v1.0.6	UEI keypad never stops beeping when beeped to indicate arming failed for forced arming notification
+ *							see routine solokeypad_delayOff. Applies only when using Centalitex driver
  *  Apr 23, 2020 v1.0.6	Adjust sound issued when pin is rejected due to open contact forced arming.
  *							see routine solokeypad_delayBeep. Applies only when using Centalitex driver
  *  Apr 23, 2020 v1.0.6	When using Centralitex driver and LCM pins:
@@ -2159,6 +2161,25 @@ def solokeypad_delayBeep(Map data)
 		if (it.getId() == data['keypad'])
 			{
 			it.beep(data['beeps'])
+			if (it.data.model.substring(0,3)=='URC')		//UEI keypad never stops beeping
+				runIn(2,'solokeypad_delayOff', [data:['keypad':data['keypad']]])
+			return true
+			}
+		else
+			return false
+		}
+	}
+
+def solokeypad_delayOff(Map data)
+	{
+//	Used with UEI keypad that never stops beeping on any beep command
+//	so pass keypad id, find it then beep the device. Convoluted but it works
+	logdebug "entering solokeypad_delayOff keypadid: "+ data['keypad']
+	globalKeypadDevices.find
+		{
+		if (it.getId() == data['keypad'])
+			{
+			it.off()
 			return true
 			}
 		else
