@@ -191,8 +191,8 @@ def ssekey(ssekey)
 
 def version()
 	{
-	updateDataValue("driverVersion", "1.0.1")	//Stores in device Data
-	return "1.0.1";
+	updateDataValue("driverVersion", "1.0.2")	//Stores in device Data
+	return "1.0.2";
 	}
 
 def installed() {
