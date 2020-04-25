@@ -14,9 +14,9 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
- * 	Apr 23, 2020 v1.0.2 Some fixes for UEI keypad
+ *	Apr 25, 2020 v1.0.2	add missing routine getArmCmd used only with logtrace and bad LCM pin
+ * 	Apr 25, 2020 v1.0.2 fix for UEI keypad
  *							Use hardware command vs beep(0) for Off() command
- *							Unlike other keypads acknowledgeArmRequest(4) invalid pin, does not issue a sound, change to acknowledgeArmRequest(0)
  * 	Apr 02, 2020 v1.0.1 Error missing SetExitDelay routine. Add setExitDelay routine for compatability with HE HSM not used by this module.
  * 	Mar 25, 2020 v1.0.0 Add support for HE pins and pin processing
  * 	Mar 24, 2020 v0.2.9 Symptom Iris V3 device goes into hardware motion loop during panic or siren sounding
@@ -886,11 +886,8 @@ private setKeypadArmMode(armMode){
 
 def acknowledgeArmRequest(armMode='0'){
 	logtrace "entered acknowledgeArmRequest armMode: ${armMode}"
-	def armModex=armMode
-	if (device.data.model.substring(0,3)=='URC')	//V1.0.2
-		armModex=0
 	List cmds = [
-				 "raw 0x501 {09 01 00 0${armModex}}",
+				 "raw 0x501 {09 01 00 0${armMode}}",
 				 "send 0x${device.deviceNetworkId} 1 1", "delay 100"
 				]
 //	def results = cmds?.collect{ new hubitat.device.HubAction(it, hubitat.device.Protocol.ZIGBEE) }
