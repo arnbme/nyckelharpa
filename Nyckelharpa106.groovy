@@ -22,6 +22,8 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *  Apr 25, 2020 v1.0.6	UEI when Forced arming failue is silent when sending acknowledgeArmRequest(4)
+ *							use 0 when forced arming failure only. See routine checkOpenContacts.
  *  Apr 23, 2020 v1.0.6	UEI keypad never stops beeping when beeped to indicate arming failed for forced arming notification
  *							see routine solokeypad_delayOff. Applies only when using Centalitex driver
  *  Apr 23, 2020 v1.0.6	Adjust sound issued when pin is rejected due to open contact forced arming.
@@ -1741,12 +1743,16 @@ def checkOpenContacts (contactList, notifyOptions, keypad)
 					{
 					if (keypad)										//keypad is false when non keypad arming
 						{
-						keypad.acknowledgeArmRequest(4)				//always issue badpin very long beep
+						if (keypad.data.model.substring(0,3)=='URC')	//V1.0.6 Apr 25, 2020
+							keypad.acknowledgeArmRequest(0)				//UEI silent on code 4
+						else
+							keypad.acknowledgeArmRequest(4)				//always issue badpin very long beep, silence on UEI
 						runIn(2,'solokeypad_delayBeep', [data:['keypad':keypad.getId(), 'beeps':2]])
 //                      timing delay optimized for Iris V2
-//						Iris V2 reject ttone, pause, 2 beeps with old beep|3 or 4 chirps new beep
+//						Iris V2 reject tone, pause, 2 beeps with old beep|3 or 4 chirps new beep
 //						Iris V3 Beeps 3 times then gives reject tone (old beep) unable to test new beep
 //						Centralite/xfinity reject tone, long pause, 2 beeps
+//						UEI silence for 2 seconds, beep for 2 seconds
 						}
 					contactmsg = 'Arming Canceled. '+it.displayName
 					atomicState.doorsdtim=now()
