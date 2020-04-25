@@ -13,13 +13,14 @@
 [&ensp;8. Modefix Setup and Usage](#modefix)<br />
 [&ensp;9. Talker messages](#talker)<br />
 [10. Centralitex Keypad Device Handler](#keypadDH)<br />
-[11. User/Pin Profiles](#userpin)<br />
-[12. Create Custom HSM Panic Rule](#panicrules)<br />
-[13. Debugging](#testing)<br />
-[14. Arming From Dashboard](#dboard)<br />
-[15. Uninstalling](#uninstall)<br />
-[16. Get Help, report an issue, or contact information](#help)<br />
-[17. Known Issues](#issues)
+[11. User/Pin Profiles with Centralitex driver](#userpin)<br />
+[12. Lock Code Manager Pins with Centralitex driver](#lcmpin)<br />
+[13. Create Custom HSM Panic Rule](#panicrules)<br />
+[14. Debugging](#testing)<br />
+[15. Arming From Dashboard](#dboard)<br />
+[16. Uninstalling](#uninstall)<br />
+[17. Get Help, report an issue, or contact information](#help)<br />
+[18. Known Issues](#issues)
 
 <a name="purpose"></a>
 ## 1. Purpose
@@ -307,7 +308,7 @@ _This DH may be used with the Centralite/Xfinity 3400, Centralite 3400-G, Iris V
 <a name="userpin"></a>
 ## 11. Nyckelharpa User pin profiles with Centralitex Keypad driver 
 
-When using the app's keypad Device Handler
+When using the app's keypad Device Handler and User Pin Module
 * For each valid user pin, create a User pin profile
 
 * Pin codes may be restricted by date/time, use count (burnable pins), and keypad device
@@ -319,9 +320,20 @@ When using the app's keypad Device Handler
 * You may define "Panic Pins" designed for use on keypads without a Panic key, but may be used on any keypad
 
 [:arrow_up_small: Back to top](#top)
+<a name="lcmpin"></a>
+## 12. Lock Code Manager pins with Centralitex Keypad driver 
+
+When using the app's keypad Device Handler
+* In the keypad Preferences set "Use Lock Manager Pins" to On/True. If you want to be be able to see the pins for the device set "Enable Lock Manager Code encryption" to Off; tap/click button "Save Preferences"
+
+* Pins may be maintained using the Lock Code Manager app, or device's pin manangement buttons
+
+* A Panic pin is created by by placing case independent text "panic" as part or all of the pin's "Name"
+
+[:arrow_up_small: Back to top](#top)
 
 <a name="panicrules"></a>
-## 12. Create Custom HSM Panic Rule
+## 13. Create Custom HSM Panic Rule
 
 *A custom HSM Rule is required* to force an HSM response to a Panic key press, or Panic pin entry, enabling an instant Panic response even when the system is disarmed
 
@@ -345,7 +357,7 @@ Click Done
 
 [:arrow_up_small: Back to top](#top)
 <a name="testing"></a>
-## 13. Debugging
+## 14. Debugging
 1. No entry delay tones on keypad<br />
 Keypad may be selected as an Optional Alarm device. Remove it as an Alarm device
 
@@ -357,7 +369,7 @@ A user reported the Snapshot app somehow interfered with Nyclelharpa's forced ar
 
 [:arrow_up_small: Back to top](#top)
 <a name="dboard"></a>
-## 14. Arming From Dashboard
+## 15. Arming From Dashboard
 * Always arm and disarm using HSM Status. Forced arming is supported and alert messages are created. 
 
 * Mode will generally work, however when there is an alert, the mode remains in the entered mode, but the HSM Status does not change.
@@ -365,20 +377,20 @@ A user reported the Snapshot app somehow interfered with Nyclelharpa's forced ar
 [:arrow_up_small: Back to top](#top)
 
 <a name="uninstall"></a>
-## 15. Uninstalling
+## 16. Uninstalling
 1. If using forced arming, change HSM settings NCKL-child devices to real devices<br />
 2. If using Panic Key or Panic pins, remove custom Panic rule from HSM<br />
 3. it is now safe to remove Nyckelharpa, child devices are deleted during removal process
 
 [:arrow_up_small: Back to top](#top)
 <a name="help"></a>
-## 16. Get Help, report an issue, and contact information
+## 17. Get Help, report an issue, and contact information
 * [Use the HE Community's Nyckelharpa forum](https://community.hubitat.com/t/release-nyckelharpa/15062) to request assistance, or to report an issue. Direct private messages to user @arnb
 
 [:arrow_up_small: Back to top](#top)
 
 <a name="issues"></a>
-## 17. Known Issues
+## 18. Known Issues
 * Messages need individual custom destination settings
 
 * SMS was disabled by Hubitat, but is still defined as a destination. Do not use SMS
