@@ -351,9 +351,11 @@ Set Alerts for Text, Audio, Siren and Lights<br />
 Click the "Arm This Rule" button<br />
 Click Done
 
-5. Do a Panic test: Press the Iris keypad's Panic button, on Centralite 3400-G simultaneously press both "Police Icon" buttons,  or enter a Panic pin number on Centralite 3400 / UEI.
+5. *Important: verify the Panic rule is "Armed" or it will not work*
 
-6. The Panic Alert may be stopped by entering a valid user pin on Centralite / UEI, or a valid pin and OFF on an Iris; or the "Cancel Alerts" button from HE App HSM options
+6. Do a Panic test: Press the Iris keypad's Panic button, on Centralite 3400-G simultaneously press both "Police Icon" buttons,  or enter a Panic pin number on Centralite 3400 / UEI.
+
+7. The Panic Alert may be stopped by entering a valid user pin on Centralite / UEI, or a valid pin and OFF on an Iris; or the "Cancel Alerts" button from HE App HSM options
 
 [:arrow_up_small: Back to top](#top)
 <a name="testing"></a>
