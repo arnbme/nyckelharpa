@@ -44,13 +44,13 @@ Why is this needed? HSM does not arm the system when arming alerts are implement
 Using Nyckelharpa User pin module: Panic pins, burnable pins aka maximum use count, restricted date and time, and restricted keypad devices<br /> 
 Using Hubitat's Lock Code Manager App Pins: Panic pin by entering case independent text 'panic' any place in field 'Name of this user'*<br /><br />
 *Keys make sounds when tapped*<br /><br />
-*Arming forced message supported*
+*forced arming supported, "Arming forced" message supported*
 
 2. Using Hubitat Keypad drivers:<br /><br /> 
 *Supports Centralite/Xfinity 3400, Centalite 3400-G, Iris V2 and V3 devices*.<br /><br /> 
 *Pins: Only Lock Code Manager pins are supported when using this driver*.<br /><br /> 
 *Generally no sound when keys are tapped*<br /><br /> 
-*Arming forced message not supported*
+*Forced Arming supported, cannot create "Arming Forced" notification message*
 
 * Keypad Panic Alerts:
 
