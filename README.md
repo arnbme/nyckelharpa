@@ -328,7 +328,7 @@ When using the app's keypad Device Handler
 
 * Pins may be maintained using the Lock Code Manager app, or device's pin manangement buttons
 
-* A Panic pin is created by by placing case independent text "panic" as part or all of the pin's "Name"
+* A Panic pin is created by by placing case independent text "panic" as part or all of the pin's "Name", allowing a panic response when using a keypad without a Panic key.
 
 [:arrow_up_small: Back to top](#top)
 
