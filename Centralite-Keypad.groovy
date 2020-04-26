@@ -14,6 +14,9 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *	Apr 25, 2020 v1.0.2	add missing routine getArmCmd used only with logtrace and bad LCM pin
+ * 	Apr 25, 2020 v1.0.2 fix for UEI keypad
+ *							Use hardware command vs beep(0) for Off() command
  * 	Apr 02, 2020 v1.0.1 Error missing SetExitDelay routine. Add setExitDelay routine for compatability with HE HSM not used by this module.
  * 	Mar 25, 2020 v1.0.0 Add support for HE pins and pin processing
  * 	Mar 24, 2020 v0.2.9 Symptom Iris V3 device goes into hardware motion loop during panic or siren sounding
@@ -188,8 +191,8 @@ def ssekey(ssekey)
 
 def version()
 	{
-	updateDataValue("driverVersion", "1.0.1")	//Stores in device Data
-	return "1.0.1";
+	updateDataValue("driverVersion", "1.0.2")	//Stores in device Data
+	return "1.0.2";
 	}
 
 def installed() {
@@ -832,7 +835,7 @@ def both()
 def off()
 	{
 	state.alert=false
-	if (device.data.model.contains ('3400') || device.data.model.substring(0,3)=='URC')
+	if (device.data.model.contains ('3400'))
 		beep(0)
 	else
 		{
@@ -1307,6 +1310,14 @@ private isValidPin(code, armRequest)
     return data
   	}
 
+def getArmCmd(armMode){
+    switch (armMode){
+        case "00": return "disarm"
+        case "01": return "armHome"
+        case "02": return "armNight" //arm sleep on Xfinity keypad
+        case "03": return "armAway"
+    }
+}
 def createLmCodeEntryEvent(keycode, armMode, lmPinMap) {
 //	Map data is sent, but it returns in Nyckelharpa as a JSON string that must be reformatted with Jsonslurper into a Map
 	def lmPinMapx=lmPinMap

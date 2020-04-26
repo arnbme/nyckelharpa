@@ -22,6 +22,15 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *  Apr 25, 2020 v1.0.6	UEI when Forced arming failue is silent when sending acknowledgeArmRequest(4)
+ *							use 0 when forced arming failure only. See routine checkOpenContacts.
+ *  Apr 23, 2020 v1.0.6	UEI keypad never stops beeping when beeped to indicate arming failed for forced arming notification
+ *							see routine solokeypad_delayOff. Applies only when using Centalitex driver
+ *  Apr 23, 2020 v1.0.6	Adjust sound issued when pin is rejected due to open contact forced arming.
+ *							see routine solokeypad_delayBeep. Applies only when using Centalitex driver
+ *  Apr 23, 2020 v1.0.6	When using Centralitex driver and LCM pins:
+ * 							Implement Panic Pin by testing for word Panic in LCM Pin name
+ *  Apr 23, 2020 v1.0.6	Update text used with generating virtual contacts. Thanks to Peir Posthumous
  *  Apr 22, 2020 v1.0.5	Future: Prepare for a Panic pin when using Lock Code Manager pins with Centralitex driver, found following error
  *  Apr 22, 2020 v1.0.5	Error: LCM pins searching user pin data. Cause: typo Fix test setting lmPin, not lmpin
  *  Apr 22, 2020 v1.0.5	Eliminate all references to RBoyDTH from ST
@@ -142,7 +151,7 @@ preferences {
 
 def version()
 	{
-	return "1.0.5";
+	return "1.0.6";
 	}
 def main()
 	{
@@ -271,23 +280,24 @@ def globalsPage(error_msg)
 						title: "Send Bad Pin text message notification to these devices"
 					}
 				}
-			paragraph "<b>Allow the following contacts to remain open when Arming HSM. Each contact generates a Virtual Contact Sensor that must be set in HSM following directions in section 7 of the Github Readme.md file. These contacts also generate Open and Close messages</b>"
+//			paragraph "<b>Allow the following contacts to remain open when Arming HSM. Each contact generates a Virtual Contact Sensor that must be set in HSM following directions in section 7 of the Github Readme.md file. These contacts also generate Open and Close messages</b>"
+			paragraph "<b>(Optional!) Generate virtual contact sensors for the following devices: allows the device to remain open when arming HSM, then participate with this app's Forced Arming feature. Also requires changing HSM's defined devices. Refer to this app's <a href='https://github.com/arnbme/nyckelharpa/blob/beta/README.md#adjustHSM' target='_blank' >Github Readme, Section 7</a> for more information</b>"
 			input "globalAwayContacts", "capability.contactSensor", required: false, submitOnChange: true, multiple: true,
-				title: "(Optional!) Contact Sensors that should be closed prior to arming Away"
+				title: "(Optional!) When arming Away: Contact sensors that may be open, then participate in forced arming"
 			if (globalAwayContacts)
 				{
 				input (name: "globalAwayNotify", type:"enum", required: false, options: ["Push", "SMS","Talk"],multiple:true,
 					title: "How to notify contact is open when arming Away")
 				}
 			input "globalHomeContacts", "capability.contactSensor", required: false, submitOnChange: true, multiple:true,
-				title: "(Optional!) Contact sensors that should be closed prior to arming Home (Stay)!"
+				title: "(Optional!) When arming Home: Contact sensors that may be open, then participate in forced arming"
 			if (globalHomeContacts)
 				{
 				input (name: "globalHomeNotify", type:"enum", required: false, options: ["Push", "SMS","Talk"],multiple:true,
-					title: "How to notify contact is open arming Home (Stay)")
+					title: "How to notify contact is open arming Home")
 				}
 			input "globalNightContacts", "capability.contactSensor", required: false, submitOnChange: true, multiple:true,
-				title: "(Optional!) Contact sensors that should be closed prior to arming Night"
+				title: "(Optional!) When arming Night: Contact sensors that may be open, then participate it forced arming"
 			if (globalNightContacts)
 				{
 				input (name: "globalNightNotify", type:"enum", required: false, options: ["Push", "SMS","Talk"],multiple:true,
@@ -677,7 +687,7 @@ def keypadCodeHandler(evt)
 	if (globalDisable)
 		{return false}			//just in case
 	def keypad = evt.getDevice();
-//	log.debug "keypadCodeHandler called: $evt by device : ${keypad.displayName}"
+//	log.debug "keypadCodeHandler called: $evt by device : ${keypad.displayName} ${keypad.getId('motionTime')}"
 	def codeEntered = evt.value as String				//the entered pin
 	def modeEntered
 	def lclMap = [:]
@@ -718,18 +728,20 @@ def keypadCodeHandler(evt)
 	def itthepinusage
 	if (lmPin)
 		{
-/*		if (codeEntered == "9997")		//future do panic for lcm pins. Need to get to device settings orr change Centralitex driver
+		if (lmPinValid)
 			{
-			error_message = keypad.displayName + " Panic Pin ${codeEntered} entered"
-			itthepinusage='Panic'
-			pinStatus='Panic'
-			}
-		else
-*/		if (lmPinValid)
-			{
-			pinStatus='Accepted'
-			badPin=false
-			userName=lmPinName
+			if (lmPinName.matches("(.*)(?i)panic(.*)"))		//LCM Panic added V1.0.6
+				{
+				error_message = keypad.displayName + " Panic Pin ${codeEntered} received"
+				itthepinusage='Panic'
+				pinStatus='Panic'
+				}
+			else
+				{
+				pinStatus='Accepted'
+				badPin=false
+				userName=lmPinName
+				}
 			}
 		else
 			error_message = badPin_message
@@ -1731,8 +1743,16 @@ def checkOpenContacts (contactList, notifyOptions, keypad)
 					{
 					if (keypad)										//keypad is false when non keypad arming
 						{
-						keypad.beep(2)								//fail for open doors
-						keypad.acknowledgeArmRequest(4)				//always issue badpin very long beep
+						if (keypad.data.model.substring(0,3)=='URC')	//V1.0.6 Apr 25, 2020
+							keypad.acknowledgeArmRequest(0)				//UEI silent on code 4
+						else
+							keypad.acknowledgeArmRequest(4)				//always issue badpin very long beep, silence on UEI
+						runIn(2,'solokeypad_delayBeep', [data:['keypad':keypad.getId(), 'beeps':2]])
+//                      timing delay optimized for Iris V2
+//						Iris V2 reject tone, pause, 2 beeps with old beep|3 or 4 chirps new beep
+//						Iris V3 Beeps 3 times then gives reject tone (old beep) unable to test new beep
+//						Centralite/xfinity reject tone, long pause, 2 beeps
+//						UEI silence for 2 seconds, beep for 2 seconds
 						}
 					contactmsg = 'Arming Canceled. '+it.displayName
 					atomicState.doorsdtim=now()
@@ -2134,6 +2154,42 @@ def HeDoorsReset(evt=null)
 			else
 				getChildDevice("$globalChildPrefix${it.deviceId}").open()
 			}
+		}
+	}
+
+def solokeypad_delayBeep(Map data)
+	{
+//	cant pass the keypad object for beep and no device command delay for hubitat
+//	so pass keypad id, find it then beep the device. Convoluted but it works
+	logdebug "entering solokeypad_delayBeep keypadid: "+ data['keypad'] + " beeps: "+data['beeps']
+	globalKeypadDevices.find
+		{
+		if (it.getId() == data['keypad'])
+			{
+			it.beep(data['beeps'])
+			if (it.data.model.substring(0,3)=='URC')		//UEI keypad never stops beeping
+				runIn(2,'solokeypad_delayOff', [data:['keypad':data['keypad']]])
+			return true
+			}
+		else
+			return false
+		}
+	}
+
+def solokeypad_delayOff(Map data)
+	{
+//	Used with UEI keypad that never stops beeping on any beep command
+//	so pass keypad id, find it then beep the device. Convoluted but it works
+	logdebug "entering solokeypad_delayOff keypadid: "+ data['keypad']
+	globalKeypadDevices.find
+		{
+		if (it.getId() == data['keypad'])
+			{
+			it.off()
+			return true
+			}
+		else
+			return false
 		}
 	}
 
