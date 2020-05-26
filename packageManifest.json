@@ -1,7 +1,6 @@
 {
 	"packageName": "Nyckelharpa HSM Extension",
 	"author": "Arn Burkhoff",
-	"version": "1.0.0",
 	"dateReleased": "2020-05-18",
 	"documentationLink": "https://github.com/arnbme/nyckelharpa/blob/master/README.md",
 	"communityLink": "https://community.hubitat.com/t/release-nyckelharpa-an-hsm-extension/15062",
