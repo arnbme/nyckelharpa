@@ -1,5 +1,6 @@
 {
 	"packageName": "Nyckelharpa HSM Extension",
+	"minimumHEVersion": "2.1.9",
 	"author": "Arn Burkhoff",
 	"dateReleased": "2020-05-18",
 	"documentationLink": "https://github.com/arnbme/nyckelharpa/blob/master/README.md",
