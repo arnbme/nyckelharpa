@@ -14,6 +14,7 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *	Jun 08, 2020 v1.0.3	allow temperature decimal digits 0, 1, 2 and adjust Celcius and Farenheit accordingly
  *	Apr 25, 2020 v1.0.2	add missing routine getArmCmd used only with logtrace and bad LCM pin
  * 	Apr 25, 2020 v1.0.2 fix for UEI keypad
  *							Use hardware command vs beep(0) for Off() command
@@ -152,8 +153,10 @@ metadata {
         if (device?.data?.model == '1112-S' || device?.data?.model== 'URC4450BC0-X-R')
         	input ("BatteryType", "enum", title: "Battery Type", required: true, options:["Alkaline", "Lithium", "Rechargeable"])
         input ("panicEnabled", "bool", title: "Enable Panic Key (when available) and Panic Pins. Default (True)", defaultValue: true)
-		input ("tempOffset", "number", title: "Enter an offset to adjust the reported temperature",
+		input ("tempOffset", "decimal", title: "Enter an offset (decimals accepted) to adjust the reported temperature",
 				defaultValue: 0, displayDuringSetup: false)
+ 		input "tempDecimals", "number", required: false, range: "0..2", defaultValue: 1,
+ 						title: "Temperature: number of decimals from 0 to 2. Default: 0"
 		if (device?.data?.model == '1112-S' || device?.data?.model== '3405-L')
 			{
 	        input ("altBeepEnable", "bool", title: "Enable old style beep sound Default (False). If no beep sound set on", defaultValue: false)
@@ -191,8 +194,8 @@ def ssekey(ssekey)
 
 def version()
 	{
-	updateDataValue("driverVersion", "1.0.2")	//Stores in device Data
-	return "1.0.2";
+	updateDataValue("driverVersion", "1.0.3")	//Stores in device Data
+	return "1.0.3";
 	}
 
 def installed() {
@@ -470,6 +473,7 @@ private parseReportAttributeMessage(String description) {
 }
 
 private parseTempAttributeMsg(message) {
+
 	byte[] temp = message.data[-2..-1].reverse()
 	createEvent(getTemperatureResult(getTemperature(temp.encodeHex() as String)))
 }
@@ -622,27 +626,36 @@ private getBatteryResult(rawValue) {
 
 private getTemperature(value) {
 	def celcius = Integer.parseInt(value, 16).shortValue() / 100
-//	log.debug "Celcius: $celcius Farenheit: ${celsiusToFahrenheit(celcius) as Integer}"
+//	logdebug "Celcius: $celcius Farenheit: ${celsiusToFahrenheit(celcius)} RawHex: $value"
 	if(getTemperatureScale() == "C"){
 		return celcius
 	} else {
-		return celsiusToFahrenheit(celcius) as Integer
+		return celsiusToFahrenheit(celcius)
 	}
 }
 
 private Map getTemperatureResult(value) {
-	logdebug 'TEMP'
+//	log.debug "getTemperatureResult $value"
+	def deg=value
+	def dec=1	//default number of decimals
 	def linkText = getLinkText(device)
-	if (tempOffset) {
-		def offset = tempOffset as int
-		def v = value as int
-		value = v + offset
-	}
-	def descriptionText = "${linkText} was ${value}°${temperatureScale}"
+	if (tempOffset)
+		deg+=tempOffset
+	if (tempDecimals)
+		dec=tempDecimals
+	if (dec == 1)
+		deg = Math.round(deg * 10 ) /10
+	else
+	if (dec == 2)
+		deg = Math.round(deg * 100 ) /100
+	else
+		deg = Math.round(deg)
+	def descriptionText = "${linkText} was ${deg}°${temperatureScale}"
 	return [
 		name: 'temperature',
-		value: value,
-		descriptionText: descriptionText
+		value: deg,
+		descriptionText: descriptionText,
+		unit: "°${temperatureScale}"
 	]
 }
 
