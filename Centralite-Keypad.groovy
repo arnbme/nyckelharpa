@@ -156,7 +156,7 @@ metadata {
 		input ("tempOffset", "decimal", title: "Enter an offset (decimals accepted) to adjust the reported temperature",
 				defaultValue: 0, displayDuringSetup: false)
  		input "tempDecimals", "number", required: false, range: "0..2", defaultValue: 1,
- 						title: "Temperature: number of decimals from 0 to 2. Default: 0"
+ 						title: "Temperature: number of decimals from 0 to 2. Default: 1"
 		if (device?.data?.model == '1112-S' || device?.data?.model== '3405-L')
 			{
 	        input ("altBeepEnable", "bool", title: "Enable old style beep sound Default (False). If no beep sound set on", defaultValue: false)
