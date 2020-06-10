@@ -51,7 +51,7 @@
 			"namespace": "mitchpond",
 			"location": "https://raw.githubusercontent.com/arnbme/nyckelharpa/master/Centralite-Keypad.groovy",
 			"required": false,
-			"version": "1.0.2"
+			"version": "1.0.3"
 		}
 	]
 }
