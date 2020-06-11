@@ -38,7 +38,7 @@
 			"id" : "265caaf4-9f04-4a94-9943-f23a334a8caa",
 			"name": "Nyckelharpa User",
 			"namespace": "arnbme",
-			"location": "https://raw.githubusercontent.com/arnbme/nyckelharpa/master/Nyckelharpa.groovy",
+			"location": "https://raw.githubusercontent.com/arnbme/nyckelharpa/master/Nyckelharpa%20User.groovy",
 			"required": false,
 			"oauth": false,
 			"version": "0.0.2"
