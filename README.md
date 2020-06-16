@@ -167,11 +167,13 @@ Forced Arming is a two step process: An standard initial HSM arming that fails n
 1. Required Basic Setup: 
 * Follow instrucions in Section 6 above, generating the NCKL-child-contact-sensors 
 
-2. Setup HSM's devices for Forced Arming: 
+2. When arming via Dashboard HSM Status, or using HE Keypad drivers: you must create some sort of alert in HSM's Configure Arming/Disarming/Cancel --> Configure Alerts for Arming Failures (contacts open) section, or HSM arms directly, ignoring all open contacts. Should you be using TTS messages, simply place the word "Warning" into Arming Alerts-->Audio Alerts setting on the same speech output devices used with Nyckelharpa. It will speak prior to Nyckelharpa's Arming Canceled Open Contact message. 
+
+3. Setup HSM's devices for Forced Arming: 
 * In Intrusion-Away, Intrusion-Home, and Intrusion-Night, "Contact Sensors": replace the real contact-sensor-name(s) with the virtual NCKL-contact-sensor-name(s)
 * In "Configure/Arming/Disarming/Cancel Options", "Delay only for selected doors": replace the real contact-sensor-name(s) with the virtual NCKL-contact-sensor-name(s)
 
-3. How to Force Arm, a two step process: Arming that fails normally, then Arming again within 15 seconds
+4. How to Force Arm, a two step process: Arming that fails normally, then Arming again within 15 seconds
 * Arm system as you would normally. When there is an open contact sensor monitored by Nyckelharpa, the system will not arm as is normal for HSM
 * At the initial arm fail:<br /> 
 Talker issues an alert message including the open sensor(s) and the 15 second forced rearm time<br />
@@ -180,6 +182,8 @@ Centralite/Xfinity-reject tone, delay, two beeps<br />
 Iris V2-reject tone, delay, two beeps with old beep or three or four chirps new beep<br />
 Iris V3-3 beeps old beep then the reject tone, unable to test new beep my device has old firmware
 * Arming the system again, after a minimum of 3 seconds, to a maximum of 15 seconds from the initial arming failure, forces the HSM system to Arm. When using the Centralitex Keypad driver an "Arming Forced" message is issued.
+
+5. Notice: Force Arming fails when attempting to arm using the Dashboard Mode. 
   
 [:arrow_up_small: Back to top](#top)
 <a name="modefix"></a>
