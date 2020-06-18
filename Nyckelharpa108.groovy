@@ -682,8 +682,8 @@ def armingNonKeypadHandler(evt)
 	if (newMode != atomicState?.HeKeypadStatus)				//system issues duplicates
 		{
 		atomicState.HeKeypadStatus = hemode[evt.value]		//save state for alert routine
-		if (evt.value == 'disarmed' && globalKeypadDevices)
-			globalKeypadDevices.off()
+//		if (evt.value == 'disarmed' && globalKeypadDevices)	//should not be needed from non-keypad source
+//			globalKeypadDevices.off()
 		atomicState.doorsdtim=0					//NonKeypad Arming issue stop Modefix from executing checkOpenContacts
 		}
 	}
