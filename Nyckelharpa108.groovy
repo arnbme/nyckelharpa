@@ -22,7 +22,9 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
- *  Jun 10, 2020 v1.0.8	Fix issues witth 1.0.7
+ *  Jun 18, 2020 v1.0.8	Fix major issues with 1.0.7
+ *							add subscribe to hsmSetArm to make arming from non-keypad sources function correctly
+ *							eliminate and reduce updates to atmomicStates when possible
  *  Jun 10, 2020 v1.0.7	Forced arming fails from Dashboard HSM Status
  *							fixed by setting atomicState.doorsdtim=0 in two places
  *  Apr 25, 2020 v1.0.6	UEI when Forced arming failue is silent when sending acknowledgeArmRequest(4)
@@ -676,10 +678,14 @@ def armingNonKeypadHandler(evt)
 		{return false}			//just in case
 	logdebug "armingNonKeypadHandler entered Value: ${evt.value}"
 	Map hemode = [disarm: 'disarmed', armAway: 'armed away', armHome: 'armed home', armNight: 'armed night']
-	atomicState.HeKeypadStatus = hemode[evt.value]		//save state for alert routine
-	if (evt.value == 'disarmed' && globalKeypadDevices)
-		globalKeypadDevices.off()
-	atomicState.doorsdtim=0					//NonKeypad Arming issue stop Modefix from executing checkOpenContacts
+	def newMode= hemode[evt.value]
+	if (newMode != atomicState?.HeKeypadStatus)				//system issues duplicates
+		{
+		atomicState.HeKeypadStatus = hemode[evt.value]		//save state for alert routine
+		if (evt.value == 'disarmed' && globalKeypadDevices)
+			globalKeypadDevices.off()
+		atomicState.doorsdtim=0					//NonKeypad Arming issue stop Modefix from executing checkOpenContacts
+		}
 	}
 
 def HePanicHandler(evt)
@@ -1069,7 +1075,7 @@ def keypadCodeHandler(evt)
 //	globalSimContact.close()
 //	closePanicContact()
 	execRoutine(aMap.data)
-	sendLocationEvent(name: "hsmSetArm", value: HSMarmModes[modeEntered])
+	sendLocationEvent(name: "hsmSetArm", value: HSMarmModes[modeEntered], descriptionText: "Nyckelharpa ${keypad.displayName}")
 	doPinNotifications(message,itext)
 
 //	Process remainder of UserRoutinePiston settings
@@ -1775,7 +1781,7 @@ def checkOpenContacts (contactList, notifyOptions, keypad)
 					}
 				else
 					{
-					atomicState.doorsdtim=0		//V1.0.7 allows arming away from non keypad source such as dashboard
+//					atomicState.doorsdtim=0		//V1.0.7 allows arming away from non keypad source such as dashboard
 //					unschedule(HeDoorsReset)	//V1.0.7 tried but not needed, leavie it just in case
 					contactmsg = 'Arming Forced. '+it.displayName
 					checkOpenReturn = true
@@ -2129,7 +2135,7 @@ def HeDoorsClose()
 		}
 	if (contactmsg != basemsg)
 		{
-		atomicState.doorsdtim=0		//When using HE driver or non stops Modefix from executing checkOpenContacts
+//		atomicState.doorsdtim=0		//1.0.7 When using HE driver or non stops Modefix from executing checkOpenContacts
 		contactmsg += ' is open. Rearming within 15 seconds will force arming'
 		notifyOptions.each
 			{
