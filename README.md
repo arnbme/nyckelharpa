@@ -167,7 +167,7 @@ Forced Arming is a two step process: An standard initial HSM arming that fails n
 1. Required Basic Setup: 
 * Follow instructions in Section 6 above, generating the NCKL-child-contact-sensors 
 
-2. <b>Important!</b> When arming from the Dashboard HSM Status, a keypad using the HE System Keypad drivers, or anything other than a keypad using the Centralite keypad driver: an alert must be created in HSM's Configure Arming/Disarming/Cancel --> Configure Alerts for Arming Failures (contacts open) section, or HSM ignores all open contacts, then immediately arms. 
+2. <b>Important!</b> When arming from the Dashboard HSM Status, a keypad using the HE System Keypad drivers, or anything other than a keypad using the Centralite keypad driver: an alert must be created in HSM's Configure Arming/Disarming/Cancel --> Configure Alerts for Arming Failures (contacts open) section, or HSM immediately arms ignoring all open contacts. 
 * Suggested solution:<br /> 
 Create a dummy Virtual Switch<br />
 Edit dummy Virtual device's settings, disable debug and text logging<br />
