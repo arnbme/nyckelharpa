@@ -73,7 +73,7 @@ This app is free. However, if you like it, derived benefit from it, and want to 
 <a name="install"></a>
 ## 4. Installation
 
-There are four modules and an optional Keypad Device Handler (DH) associated with this app. Hubitat's Lock Code Manager app may be required.   
+There are four modules and an optional Keypad Device Handler (DH) associated with this app. Hubitat's Lock Code Manager app may be required. You may also install using the [Hubitat Package Manager](https://community.hubitat.com/t/beta-hubitat-package-manager/38016)  
  <table style="width:100%">
   <tr>
     <th>Module Name</th>
