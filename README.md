@@ -1,5 +1,5 @@
 <a name="top"></a>
-# Nyckelharpa V1 May 18, 2020 
+# Nyckelharpa V1 Jun 20, 2020 
 ![image nyckelharpa](images/nyckelharpa.jpg)<br /> 
 **The buttons and levers controlling Hubitat Elevation's Home Security Monitor's strings.** 
 ## Table of Contents 
@@ -165,9 +165,13 @@ Global Settings is reached by: clicking Apps in the menu, then click the Nyckelh
 Forced Arming is a two step process: An standard initial HSM arming that fails normally, followed by a second arming within 15 seconds that forces HSM to arm. It works from any arming source, including: keypads, locks, dashboards, and the HSM app
 
 1. Required Basic Setup: 
-* Follow instrucions in Section 6 above, generating the NCKL-child-contact-sensors 
+* Follow instructions in Section 6 above, generating the NCKL-child-contact-sensors 
 
-2. When arming via Dashboard HSM Status, or using HE Keypad drivers: you must create some sort of alert in HSM's Configure Arming/Disarming/Cancel --> Configure Alerts for Arming Failures (contacts open) section, or HSM arms directly, ignoring all open contacts. Should you be using TTS messages, simply place the word "Warning" into Arming Alerts-->Audio Alerts setting on the same speech output devices used with Nyckelharpa. It will speak prior to Nyckelharpa's Arming Canceled Open Contact message. 
+2. <b>Important!</b> When arming from the Dashboard HSM Status, HE Keypad drivers, or anything other than the Centralite keypad driver: an alert must be created in HSM's Configure Arming/Disarming/Cancel --> Configure Alerts for Arming Failures (contacts open) section, or HSM ignores all open contacts, then immediately arms. 
+* Suggested solution:<br /> 
+Create a dummy Virtual Switch<br />
+Edit dummy Virtual device's settings, disable debug and text logging<br />
+In HSM's Configure Arming/Disarming/Cancel --> Configure Alerts --> Light Alerts: turn on the "dummy Virtual Switch".
 
 3. Setup HSM's devices for Forced Arming: 
 * In Intrusion-Away, Intrusion-Home, and Intrusion-Night, "Contact Sensors": replace the real contact-sensor-name(s) with the virtual NCKL-contact-sensor-name(s)
@@ -284,7 +288,7 @@ Table with Reason Issued and Message Issued.
   </tr>
   </table>
   
-1. In order to get the Nyckelharpa contacts open message and forced arming when using the HE Keypad drivers: you must create some sort of alert in HSM's Configure Arming/Disarming/Cancel --> Configure Alerts for Arming Failures (contacts open) section, or HSM arms directly, ignoring all open contacts. Should you be using TTS messages, simply place the word "Warning" into Arming Alerts-->Audio Alerts setting on the same speech output devices used with Nyckelharpa. It will speak prior to Nyckelharpa's Arming Canceled Open Contact message.
+1. In order to get the Nyckelharpa contacts open message and forced arming when using anything other the the Centralite Keypad driver: you must create an alert in HSM's Configure Arming/Disarming/Cancel --> Configure Alerts for Arming Failures. Please read Section 7, paragraph 2. 
 
 [:arrow_up_small: Back to top](#top)
 <a name="keypadDH"></a>
