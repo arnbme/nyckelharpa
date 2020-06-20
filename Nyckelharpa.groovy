@@ -22,6 +22,12 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *  Jun 20, 2020 v1.0.9	Eliminte logdebugs routine to reduce overhead. Test flag and issue log.debug instead
+ *  Jun 18, 2020 v1.0.8	Fix major issues with 1.0.7
+ *							add subscribe to hsmSetArm to make arming from non-keypad sources function correctly
+ *							eliminate and reduce updates to atmomicStates when possible
+ *  Jun 10, 2020 v1.0.7	Forced arming fails from Dashboard HSM Status
+ *							fixed by setting atomicState.doorsdtim=0 in two places
  *  Apr 25, 2020 v1.0.6	UEI when Forced arming failue is silent when sending acknowledgeArmRequest(4)
  *							use 0 when forced arming failure only. See routine checkOpenContacts.
  *  Apr 23, 2020 v1.0.6	UEI keypad never stops beeping when beeped to indicate arming failed for forced arming notification
@@ -151,7 +157,7 @@ preferences {
 
 def version()
 	{
-	return "1.0.6";
+	return "1.0.9";
 	}
 def main()
 	{
@@ -176,7 +182,7 @@ def main()
 			section
 				{
 				input "logDebugs", "bool", required: false, defaultValue:false,
-					title: "Log debugging messages? Nyckelharpa module only. Normally off/false"
+					title: "Log debugging messages? Nyckelharpa module only. Automatic shutoff after 60 minutes. Default: Off/False"
 				if (verMsg>"")
 					paragraph verMsg.substring(1,)
 				}
@@ -238,7 +244,7 @@ def globalsPage(error_msg)
 	{
 	dynamicPage(name: "globalsPage", title: "Global Settings")
 		{
-//		logdebug "dynamicPage: globalsPage"
+//		if (settings.logDebugs) log.debug  "dynamicPage: globalsPage"
 		section
 			{
 			if (error_msg instanceof String )
@@ -532,10 +538,15 @@ def updated() {
 
 def initialize()
 	{
+	if(settings.logDebugs)
+		runIn(3600,logsOff)			// turns off debug logging after 60 min
+	else
+		unschedule(logsOff)
 	if (!globalDisable)
 		{
 		subscribe(globalKeypadDevices, 'codeEntered',  keypadCodeHandler)		//issued by Centralitex Keypad driver
 		subscribe(globalKeypadDevices, 'armingIn',  armingInHeCodeHandler)		//issued by HE Keypad drivers on pin entry
+		subscribe(location, "hsmSetArm", armingNonKeypadHandler)		//Added for using Non Keypad arming suchas dashbaord HSM status
 //		if (globalPanic)
 //			{
 //		    subscribe (globalKeypadDevices, "contact.open", qssehe_alert_panic)
@@ -605,6 +616,12 @@ def initialize()
 		}
 	}
 
+void logsOff(){
+//	stops debug logging
+	log.info "Nyckelharpa: debug logging disabled"
+	app.updateSetting("logDebugs",[value:"false",type:"bool"])
+}
+
 def uninstalled()
 	{
 	getChildDevices().each
@@ -658,12 +675,28 @@ def armingInHeCodeHandler(evt)
 		{return false}			//just in case
 	def keypad = evt.getDevice();
 	def lclMap=new JsonSlurper().parseText(evt.data)
-//	logdebug "armingInCodeHandler entered Keypad: $lclmap]${keypad.displayName} Value: ${evt.value} Data: ${evt.data}"
+//	if (settings.logDebugs) log.debug  "armingInCodeHandler entered Keypad: $lclmap]${keypad.displayName} Value: ${evt.value} Data: ${evt.data}"
 	atomicState.HeKeypadStatus = lclMap.armMode		//save state for alert routine
 	if (atomicState.HeKeypadStatus == 'disarmed')
 		globalKeypadDevices.off()
 	atomicState.doorsdtim=0		//When using HE driver stops Modefix from executing checkOpenContacts
-	logdebug "armingInHeCodeHandler entered Keypad: ${keypad.displayName} Requested-state:${atomicState.HeKeypadStatus}"
+	if (settings.logDebugs) log.debug  "armingInHeCodeHandler entered Keypad: ${keypad.displayName} Requested-state:${atomicState.HeKeypadStatus}"
+	}
+
+def armingNonKeypadHandler(evt)
+	{
+	if (globalDisable)
+		{return false}			//just in case
+	if (settings.logDebugs) log.debug  "armingNonKeypadHandler entered Value: ${evt.value}"
+	Map hemode = [disarm: 'disarmed', armAway: 'armed away', armHome: 'armed home', armNight: 'armed night']
+	def newMode= hemode[evt.value]
+	if (newMode != atomicState?.HeKeypadStatus)				//system issues duplicates
+		{
+		atomicState.HeKeypadStatus = hemode[evt.value]		//save state for alert routine
+//		if (evt.value == 'disarmed' && globalKeypadDevices)	//should not be needed from non-keypad source
+//			globalKeypadDevices.off()
+		atomicState.doorsdtim=0					//NonKeypad Arming issue stop Modefix from executing checkOpenContacts
+		}
 	}
 
 def HePanicHandler(evt)
@@ -671,7 +704,7 @@ def HePanicHandler(evt)
 //	Process panic alert from HE keypad driver allowing a full response when system is disarmed
 	if (globalDisable)
 		{return false}			//just in case
-	logdebug "HePanicContact routine entered ${evt.value}"
+	if (settings.logDebugs) log.debug  "HePanicContact routine entered ${evt.value}"
 	if (evt.value=='siren')
 		{
 		closePanicContact()
@@ -683,7 +716,7 @@ def HePanicHandler(evt)
 def keypadCodeHandler(evt)
 	{
 //	User entered a code on a keypad
-	logdebug "keypadCodeHandler entered ${evt.value} ${evt.data}"
+	if (settings.logDebugs) log.debug  "keypadCodeHandler entered ${evt.value} ${evt.data}"
 	if (globalDisable)
 		{return false}			//just in case
 	def keypad = evt.getDevice();
@@ -717,7 +750,7 @@ def keypadCodeHandler(evt)
 		return false
 		}
 //	def currentarmMode = keypad.currentValue('armMode',true)
-//	logdebug("Delayv2 codeentryhandler searching user apps for keypad ${keypad.displayName} ${evt.data} ${evt.value}")
+//	if (settings.logDebugs) log.debug ("Delayv2 codeentryhandler searching user apps for keypad ${keypad.displayName} ${evt.data} ${evt.value}")
 	def userName=false;
 	def badPin=true;
 	def badPin_message = keypad.displayName + " Invalid pin entered: " + codeEntered
@@ -756,7 +789,7 @@ def keypadCodeHandler(evt)
 			if (it.getName()=="Nyckelharpa User" && it.theuserpin == codeEntered)
 	//		if (it.getInstallationState()=='COMPLETE' && it.theuserpin == codeEntered)	fails in HE
 				{
-				logdebug ("found the pin ${it.getName()} ${it.theuserpin} ${it.theusername} ")
+				if (settings.logDebugs) log.debug  ("found the pin ${it.getName()} ${it.theuserpin} ${it.theusername} ")
 	//			verify burn cycles
 				itext=it										//save for use outside of find loop
 				if (it.themaxcycles > 0)						//check if pin is burned
@@ -768,7 +801,7 @@ def keypadCodeHandler(evt)
 						{atomicState."${atomicUseId}" = atomicState."${atomicUseId}" + 1}
 					if (atomicState."${atomicUseId}" > it.themaxcycles)
 						{
-						logdebug "pin $codeEntered burned"
+						if (settings.logDebugs) log.debug  "pin $codeEntered burned"
 						error_message = keypad.displayName + " Burned pin entered for " + it.theusername
 						}
 					}
@@ -783,7 +816,7 @@ def keypadCodeHandler(evt)
 					badPin=false
 					badPin_message=""
 					}
-	//			logdebug "matched pin ${it.theuserpin} $it.pinScheduled"
+	//			if (settings.logDebugs) log.debug  "matched pin ${it.theuserpin} $it.pinScheduled"
 	//			When pin is scheduled verify Dates, Weekday and Time Range
 				if (error_message=="" && it.pinScheduled)
 					{
@@ -801,7 +834,7 @@ def keypadCodeHandler(evt)
 						num_dtstart=it.dtEdit(it.pinStartDt)
 					if (it.pinEndDt > "")
 						num_dtend=it.dtEdit(it.pinEndDt)
-	//				logdebug "pin found with schedule $nowymd $num_dtstart $num_dtend"
+	//				if (settings.logDebugs) log.debug  "pin found with schedule $nowymd $num_dtstart $num_dtend"
 	//				verify the dates
 					if (it.pinStartDt>"" && it.pinEndDt>"")
 						{
@@ -866,7 +899,7 @@ def keypadCodeHandler(evt)
 	//			Verify pin usage
 				if (error_message=="")
 					{
-	//				logdebug "processing the pin for ${it.thepinusage}"
+	//				if (settings.logDebugs) log.debug  "processing the pin for ${it.thepinusage}"
 					switch (it.thepinusage)
 						{
 						case 'User':
@@ -889,7 +922,7 @@ def keypadCodeHandler(evt)
 							acknowledgeArmRequest(4,keypad);
 							fireBadPin=false
 							damap=process_routine(it, modeEntered, keypad)
-							logdebug "Routine created ${damap}"
+							if (settings.logDebugs) log.debug  "Routine created ${damap}"
 							if (damap?.err)
 								error_message=damap.err
 							else
@@ -944,7 +977,7 @@ def keypadCodeHandler(evt)
 	if (error_message!="")									// put out any messages to notification log
 		{
 		badPin=true
-//		logdebug "${error_message} info ${info_message}"
+//		if (settings.logDebugs) log.debug  "${error_message} info ${info_message}"
 		doPinNotifications(error_message, itext)
 		}
 	else
@@ -1053,7 +1086,7 @@ def keypadCodeHandler(evt)
 //	globalSimContact.close()
 //	closePanicContact()
 	execRoutine(aMap.data)
-	sendLocationEvent(name: "hsmSetArm", value: HSMarmModes[modeEntered])
+	sendLocationEvent(name: "hsmSetArm", value: HSMarmModes[modeEntered], descriptionText: "Nyckelharpa ${keypad.displayName}")
 	doPinNotifications(message,itext)
 
 //	Process remainder of UserRoutinePiston settings
@@ -1088,10 +1121,10 @@ def keypadCodeHandler(evt)
 def acknowledgeArmRequest(armMode,keypad)
 //	Post the status of the pin to the shmdelay_oauth db table
 	{
-//	logdebug "acknowledgeArmRequest entererd ${keypad?.getTypeName()} ${keypad.name}"
+//	if (settings.logDebugs) log.debug  "acknowledgeArmRequest entererd ${keypad?.getTypeName()} ${keypad.name}"
 	if (keypad?.getTypeName()!="Internet Keypad")
 		{return false}
-//	keypad.properties.each { k,v ->	logdebug "${k}: ${v}"}
+//	keypad.properties.each { k,v ->	if (settings.logDebugs) log.debug  "${k}: ${v}"}
 	def pinstatus
 	if (armMode <  0 || armMode > 3)
 		pinstatus="Rejected"
@@ -1107,13 +1140,13 @@ def acknowledgeArmRequest(armMode,keypad)
 			{
 			uri+='?i='+it.getAtomic('accessToken').substring(0,8)
 			uri+='&p='+ pinstatus
-//			logdebug "firing php ${uri} ${it.simkeypad.name} ${it.getAtomic('accessToken')}"
+//			if (settings.logDebugs) log.debug  "firing php ${uri} ${it.simkeypad.name} ${it.getAtomic('accessToken')}"
 			try {
 				asynchttp_v1.get('ackResponseHandler', [uri: uri])
 				}
 			catch (e)
 				{
-				logdebug "qsse.php Execution failed ${e}"
+				if (settings.logDebugs) log.debug  "qsse.php Execution failed ${e}"
 				}
 			}
 		}
@@ -1142,13 +1175,13 @@ def qsse_status_mode(status,mode)
 			uri+='?i='+it.getAtomic('accessToken').substring(0,8)
 			uri+='&s='+ st_status
 			uri+='&m='+ st_mode
-//			logdebug "firing php ${uri} ${it.simkeypad.name} ${it.getAtomic('accessToken')}"
+//			if (settings.logDebugs) log.debug  "firing php ${uri} ${it.simkeypad.name} ${it.getAtomic('accessToken')}"
 			try {
 				asynchttp_v1.get('ackResponseHandler', [uri: uri])
 				}
 			catch (e)
 				{
-				logdebug "qsse.php Execution failed ${e}"
+				if (settings.logDebugs) log.debug  "qsse.php Execution failed ${e}"
 				}
 			}
 		}
@@ -1168,7 +1201,7 @@ def qssehe_alert(alert)
 //	store the HE hsmAlert value into Arnb.org db table shmdelay_oauthhe for all keypads with a sseKey
 	{
 	return
-	logdebug "qssehe_alert entered ${alert}"
+	if (settings.logDebugs) log.debug  "qssehe_alert entered ${alert}"
 	def sseKey
 	def uri
 	if (globalKeypadDevices)
@@ -1187,7 +1220,7 @@ def qssehe_alert(alert)
 					}
 				catch (e)
 					{
-					logdebug "qssehe.php Execution failed ${e}"
+					if (settings.logDebugs) log.debug  "qssehe.php Execution failed ${e}"
 					}
 				}
 			}
@@ -1206,7 +1239,7 @@ def execRoutine(aMap)
 //											  not ideal prefer alarmtime but its before new alarm time is set
 	def kMode=false							//new keypad light setting, waiting for mode to change is a bit slow
 	def kbMap = [value: armMode, source: "keypad"]
-	logdebug "execRoutine aMap: ${aMap} kbMap: ${kbMap} armMode: ${armMode}"
+	if (settings.logDebugs) log.debug  "execRoutine aMap: ${aMap} kbMap: ${kbMap} armMode: ${armMode}"
 	if (armMode == 'Home')
 		{
 		keypadLightHandler(kbMap)
@@ -1233,14 +1266,14 @@ def keypadLightHandler(evt)						//set the Keypad lights
 	{
 	def	theMode=evt.value						//This should be a valid SHM Mode
 	def simkeypad
-	logdebug "keypadLightHandler entered ${evt} ${theMode} source: ${evt.source}"
+	if (settings.logDebugs) log.debug  "keypadLightHandler entered ${evt} ${theMode} source: ${evt.source}"
 /*  Simulated keypad not implemnted in HE
 	def simKeypadDevices=findAllChildAppsByName('Nyckelharpa Simkypd')
 	simKeypadDevices.each
 		{
 		if (it?.getInstallationState()!='COMPLETE')
 			{
-			logdebug "${it.keypad} warning device not complete, please save the profile"
+			if (settings.logDebugs) log.debug  "${it.keypad} warning device not complete, please save the profile"
 			}
 		else
 			{
@@ -1257,7 +1290,7 @@ def keypadLightHandler(evt)						//set the Keypad lights
 
 def	keypadLighton(evt,theMode,keypad)
 	{
-	logdebug "keypadLighton entered $evt $theMode $keypad ${keypad?.getTypeName()}"
+	if (settings.logDebugs) log.debug  "keypadLighton entered $evt $theMode $keypad ${keypad?.getTypeName()}"
 	def currkeypadmode=""
 	if (theMode == 'Home')					//Alarm is off
 		{keypad.setDisarmed()}
@@ -1281,7 +1314,7 @@ def	keypadLighton(evt,theMode,keypad)
 /* this routine is deprecated as of May 18, 2019
 def keypadPanicHandler(evt)
 	{
-	logdebug "keypadPanicHandler entered, ${evt}"
+	if (settings.logDebugs) log.debug  "keypadPanicHandler entered, ${evt}"
 	if (globalDisable || !globalPanic)
 		{return false}			//just in case
 
@@ -1289,7 +1322,7 @@ def keypadPanicHandler(evt)
 	def keypad=evt.getDevice()				//set the keypad name
 	doPanicNotifications(keypad)			//get messages out
 	def panic_map=[data:[cycles:5, keypad: keypad.name]]
-	logdebug "keypadPanicHandler status alarmstatus: ${alarmstatus} panic map: ${panic_map} keypad: ${keypad.name}"
+	if (settings.logDebugs) log.debug  "keypadPanicHandler status alarmstatus: ${alarmstatus} panic map: ${panic_map} keypad: ${keypad.name}"
 	if (alarmstatus.substring(0,5) != 'armed')
 		{
 //		unschedule(execRoutine)				//Kill any delayed arm/disarm requests
@@ -1317,7 +1350,7 @@ def keypadPanicHandler(evt)
 	def alarmstatus = location.hsmStatus	//get HE alarm status
 	if (alarmstatus.substring(0,5) != 'armed')
 		{
-		logdebug "keypadPanicExecute entered $panic_map"
+		if (settings.logDebugs) log.debug  "keypadPanicExecute entered $panic_map"
 		if (panic_map.cycles > 1)
 			{
 			def cycles=panic_map.cycles-1
@@ -1350,8 +1383,8 @@ def getResponseHandler(response, data)
 //	this routine is currently not being executed killed the subscribe
 def verify_version(evt)		//evt needed to stop error whne coming from subscribe to alarm change
 	{
-	logdebug "verify_version entered ${evt.getProperties().toString()}"
-//	logdebug "evt data ${evt.getProperties().toString()}"
+	if (settings.logDebugs) log.debug  "verify_version entered ${evt.getProperties().toString()}"
+//	if (settings.logDebugs) log.debug  "evt data ${evt.getProperties().toString()}"
 	def uri='https://www.arnb.org/shmdelay/'
 //	uri+='?lat='+location.latitude					//Removed May 01, 2018 deemed obtrusive
 //	uri+='&lon='+location.longitude
@@ -1370,7 +1403,7 @@ def verify_version(evt)		//evt needed to stop error whne coming from subscribe t
 	def mf								//modefix module
 	childApps.find 						//change from each to find to speed up the search
 		{
-//		logdebug "child ${it.getName()}"
+//		if (settings.logDebugs) log.debug  "child ${it.getName()}"
 //		if (vchild>'' && vmodefix>'' && vuser>''&& vkpad>''&& vtalk>'')		removed V2.1.9 Oct 16, 2018
 //			return true														not getting minimum nonkeypad delay time
 //		else
@@ -1417,20 +1450,20 @@ def verify_version(evt)		//evt needed to stop error whne coming from subscribe t
     uri+="&u=${vuser}"
     uri+="&k=${vkpad}"
     uri+="&t=${vtalk}"
-    logdebug "${uri}"
+    if (settings.logDebugs) log.debug  "${uri}"
 
 	try {
 		asynchttp_v1.get('versiongetResponseHandler', [uri: uri])
 		}
 	catch (e)
 		{
-		logdebug "Execution failed ${e}"
+		if (settings.logDebugs) log.debug  "Execution failed ${e}"
 		}
 	qsse_status_mode(evt.value,false)
 */
 //	Moved exitdelay non-keypad talk message to here from Nyckelharpa Contact, V2.1.9 Oct 15, 2018
 	def vaway=evt?.value
-//	logdebug "Talker setup1 $vchildmindelay $vtalk $vaway"
+//	if (settings.logDebugs) log.debug  "Talker setup1 $vchildmindelay $vtalk $vaway"
 
 //	Nov 19, 2018 V2.2.2 User exit event not running in Nyckelharpa BuzzerSwitch
 //	if (vtalk=='')			//talker profile not defined, return
@@ -1453,7 +1486,7 @@ def verify_version(evt)		//evt needed to stop error whne coming from subscribe t
 			{
 			def am="${evt?.value}Exit${theMode}"
 			daexitdelay = mf."${am}"
-			logdebug "Modefix Version ${vmodefix} the daeexitdelay is ${daexitdelay} amtext: ${am}"
+			if (settings.logDebugs) log.debug  "Modefix Version ${vmodefix} the daeexitdelay is ${daexitdelay} amtext: ${am}"
 			}
 		else
 		if (evt?.value == "away")
@@ -1467,7 +1500,7 @@ def verify_version(evt)		//evt needed to stop error whne coming from subscribe t
 		displayed: true, descriptionText: "Issue exit delay talk event", linkText: "Issue exit delay talk event",
 		data: vchildmindelay]
 
-//	logdebug "Talker setup2 $vchildmindelay $vtalk"
+//	if (settings.logDebugs) log.debug  "Talker setup2 $vchildmindelay $vtalk"
 //	def alarm = location.currentState("alarmSystemStatus")
 //	def lastupdt = alarm?.date.time
 	def myEvents = getLocationEventsSince("hsmStatus", new Date() - 30, [max:1])
@@ -1486,11 +1519,11 @@ def verify_version(evt)		//evt needed to stop error whne coming from subscribe t
 			{
 			kSecs = Math.round(kMap.dtim / 1000)
 			kduration=alarmSecs - kSecs
-//			logdebug "Talker fields $kSecs $alarmSecs $kduration $vchildmindelay"
+//			if (settings.logDebugs) log.debug  "Talker fields $kSecs $alarmSecs $kduration $vchildmindelay"
 			if (kduration > 8)
 				{
 				sendLocationEvent(locevent)
-//				logdebug "Away Talker from non keypad triggered"
+//				if (settings.logDebugs) log.debug  "Away Talker from non keypad triggered"
 				}
 			}
 		else	// no atomic map issue message
@@ -1511,7 +1544,7 @@ def versiongetResponseHandler(response, data)
     if(response.getStatus() == 200)
     	{
 		def results = response.getJson()
-		logdebug "Nyckelharpa good response ${results.msg}"
+		if (settings.logDebugs) log.debug  "Nyckelharpa good response ${results.msg}"
 		if (results.msg != 'OK')
     		sendNotificationEvent("${results.msg}")
         }
@@ -1619,7 +1652,7 @@ def fire_piston(it, modeEntered, keypad, thepiston, textmode)
 // log, send notification, SMS message for pin entry, base code from Nyckelharpa Contact
 def doPinNotifications(localmsg, it)
 	{
-	logdebug "doPinNotifications entered ${localmsg} ${it}"
+	if (settings.logDebugs) log.debug  "doPinNotifications entered ${localmsg} ${it}"
 	if (it?.pinMsgOverride)
 		{
 		if (it.UserPinLog)
@@ -1657,7 +1690,7 @@ def doPinNotifications(localmsg, it)
 
 def doBadPinNotifications(localmsg, it)
 	{
-	logdebug "doBadPinNotifications entered ${localmsg} ${it}"
+	if (settings.logDebugs) log.debug  "doBadPinNotifications entered ${localmsg} ${it}"
 	if (globalBadPinLog)
 		{
 		sendNotificationEvent(localmsg)
@@ -1675,7 +1708,7 @@ def doBadPinNotifications(localmsg, it)
 
 def doPanicNotifications(keypad)
 	{
-	logdebug "doPanicNotifications entered ${localmsg}"
+	if (settings.logDebugs) log.debug  "doPanicNotifications entered ${localmsg}"
 	def message = "PANIC issued by $keypad "
 	if (global911 > ""  || globalPolice)
 		{
@@ -1729,10 +1762,10 @@ def checkOpenContacts (contactList, notifyOptions, keypad)
 	def contactmsg=''
 	def duration = now() -lastDoorsDtim
 	def evt
-	logdebug "checkOpenContacts $contactList $notifyOptions $keypad lastDoorsDtim: $lastDoorsDtim"
+	if (settings.logDebugs) log.debug  "checkOpenContacts $contactList $notifyOptions $keypad lastDoorsDtim: $lastDoorsDtim Duration: $duration"
 	contactList.each
 		{
-//		logdebug "${it} ${it.currentContact}"
+//		if (settings.logDebugs) log.debug  "${it} ${it.currentContact}"
 		if (it.currentContact=="open")
 			{
 			if (location.hsmStatus=='disarmed' || location.hsmStatus == 'allDisarmed')
@@ -1759,7 +1792,8 @@ def checkOpenContacts (contactList, notifyOptions, keypad)
 					}
 				else
 					{
-					atomicState.doorsdtim=0
+//					atomicState.doorsdtim=0		//V1.0.7 allows arming away from non keypad source such as dashboard
+//					unschedule(HeDoorsReset)	//V1.0.7 tried but not needed, leavie it just in case
 					contactmsg = 'Arming Forced. '+it.displayName
 					checkOpenReturn = true
 					getChildDevice("$globalChildPrefix${it.id}").close()		//close the child device
@@ -1821,7 +1855,7 @@ def checkOpenContacts (contactList, notifyOptions, keypad)
 /*	used by Nyckelharpa Modefix to get atomicState.doorsdtim	*/
 def getAtomicdoorsdtim()
 	{
-//	logdebug "getAtomicdoorsdtim was entered"
+//	if (settings.logDebugs) log.debug  "getAtomicdoorsdtim was entered"
 	def lastDoorsDtim=0
 	if (atomicState?.doorsdtim)
 		lastDoorsDtim=atomicState.doorsdtim	//last time doors failed
@@ -1831,16 +1865,11 @@ def getAtomicdoorsdtim()
 /*	used by Nyckelharpa Modefix to kill forced rearm	*/
 def killAtomicdoorsdtim()
 	{
-//	logdebug "killAtomicdoorsdtim was entered"
+//	if (settings.logDebugs) log.debug  "killAtomicdoorsdtim was entered"
 	atomicState.doorsdtim=now()-600000			//now - 10minutes
 	}
 
 
-def logdebug(txt)
-	{
-   	if (logDebugs)
-   		log.debug ("${txt}")
-    }
 def sendNotificationEvent(txt)				//ST sendNotificationEvent command not supported in HE
 	{
 	log.trace ("${txt}")
@@ -1883,7 +1912,7 @@ def deleteOldChildDevice(deviceData)
 
 def DoorHandler(evt)		//Should be real devices with child device
 	{
-//	logdebug "DoorHandler entered ${evt?.displayName} ${evt?.value} ${evt?.deviceId}"  remove to speed up child open
+//	if (settings.logDebugs) log.debug  log.debug  "DoorHandler entered ${evt?.displayName} ${evt?.value} ${evt?.deviceId}"  remove to speed up child open
 	def resetKeypads=false				//do keypads have to be reset to OFF/Disarmed from running setExitAway
 	if (evt.value=='open')
 		{
@@ -1935,7 +1964,7 @@ def DoorHandler(evt)		//Should be real devices with child device
 
 def MonitorDoorHandler(evt)		//monitored only no child device
 	{
-	logdebug "MonitorDoorHandler entered ${evt?.displayName} ${evt?.value} ${evt?.deviceId}"
+	if (settings.logDebugs) log.debug  "MonitorDoorHandler entered ${evt?.displayName} ${evt?.value} ${evt?.deviceId}"
 	def resetKeypads=false				//do keypads have to be reset to OFF/Disarmed from running setExitAway
 	if (location.hsmStatus=='disarmed' || location.hsmStatus == 'allDisarmed')
 		{
@@ -1992,7 +2021,7 @@ def openPanicContact()
 
 def alertHandler(evt)
 	{
-	logdebug("alertHandler entered, event: ${evt.value} ${evt.jsonData} ${evt.data}")
+	if (settings.logDebugs) log.debug ("alertHandler entered, event: ${evt.value} ${evt.jsonData} ${evt.data}")
 	if (['intrusion-delay','intrusion-home-delay','intrusion-night-delay'].contains(evt.value))
 		{
 		if (globalKeypadDevices)
@@ -2039,19 +2068,19 @@ def alertHandler(evt)
 	}
 
 /*
- *  V1.0.0 Modified version for HE drivers. HSM speaks only first open device on alert
+ *  V1.0.0 Modified version for HE drivers and arming from non Centralitex driver. HSM speaks only first open device on alert
  */
 def HeDoorsClose()
 	{
 	def modeRequest = atomicState?.HeKeypadStatus
-	logdebug "HeDoorsClose entered status: ${modeRequest}"
+	if (settings.logDebugs) log.debug  "HeDoorsClose entered status: ${modeRequest}"
 	def contactList
 	def notifyOptions
 //	When alert and disarmed it usually means request was issued from non-keypad source suchas as a dashboard
 //	This is a true leap of faith, but it seems correct
-	if (modeRequest == 'disarmed' && globalAwayContacts)
+	if (modeRequest == 'disarmed')
 		{
-		contactList=globalAwayContacts			//use away as it is likely most restrictive
+		contactList=getChildDevices()			//use all child contacts
 		notifyOptions=globalAwayNotify
 /*		not needed but tried this. HSM will not change HSMstatus when there is an alert
 		but when changing mode it remains in changed mode but status is unchanged
@@ -2086,21 +2115,33 @@ def HeDoorsClose()
 		notifyOptions=globalNightNotify
 		}
 	else
-		return
+		{
+		contactList=getChildDevices()			//use all child contacts soemthing is broken
+		notifyOptions=globalAwayNotify
+		}
 	def basemsg='Arming Canceled'
 	def contactmsg=basemsg
-	logdebug "HeDoorsClose entered $contactList $notifyOptions"
+	if (settings.logDebugs) log.debug  "HeDoorsClose entered $contactList $notifyOptions"
 	contactList.each
 		{
 //		log.debug "${it} ${it.currentContact}"
 		if (it.currentContact=="open")
 			{
-			contactmsg += ', '+it.displayName
-			getChildDevice("$globalChildPrefix${it.id}").close()		//close the child device
+			if (it.displayName.startsWith(globalChildPrefix))
+				{
+				contactmsg += ', '+it.displayName
+				it.close()													//close the child device
+				}
+			else
+				{
+				contactmsg += ', '+it.displayName
+				getChildDevice("$globalChildPrefix${it.id}").close()		//close the child device
+				}
 			}
 		}
 	if (contactmsg != basemsg)
 		{
+//		atomicState.doorsdtim=0		//1.0.7 When using HE driver or non stops Modefix from executing checkOpenContacts
 		contactmsg += ' is open. Rearming within 15 seconds will force arming'
 		notifyOptions.each
 			{
@@ -2136,19 +2177,19 @@ def HeDoorsClose()
 //Not an issue when using Centralitex driver
 def HeDoorsResetDelay(evt)
 	{
-	logdebug "entering HeDoorsReset ${location.hsmStatus}"
+	if (settings.logDebugs) log.debug  "entering HeDoorsResetDelay ${location.hsmStatus}"
 	if (location.hsmStatus == 'disarmed')
 		runIn(1,HeDoorsReset)
 	}
 
 def HeDoorsReset(evt=null)
 	{
-	logdebug "entering HeDoorsReset ${location.hsmStatus}"
+	if (settings.logDebugs) log.debug  "entering HeDoorsReset ${location.hsmStatus}"
 	if (location.hsmStatus == 'disarmed')
 		{
 		globalAwayContacts.each
 			{
-//			logdebug "${it.displayName} ${it.currentValue('contact')}"
+//			if (settings.logDebugs) log.debug  "${it.displayName} ${it.currentValue('contact')}"
 			if (it.currentValue('contact') == 'closed')
 				getChildDevice("$globalChildPrefix${it.deviceId}").close()
 			else
@@ -2161,7 +2202,7 @@ def solokeypad_delayBeep(Map data)
 	{
 //	cant pass the keypad object for beep and no device command delay for hubitat
 //	so pass keypad id, find it then beep the device. Convoluted but it works
-	logdebug "entering solokeypad_delayBeep keypadid: "+ data['keypad'] + " beeps: "+data['beeps']
+	if (settings.logDebugs) log.debug  "entering solokeypad_delayBeep keypadid: "+ data['keypad'] + " beeps: "+data['beeps']
 	globalKeypadDevices.find
 		{
 		if (it.getId() == data['keypad'])
@@ -2180,7 +2221,7 @@ def solokeypad_delayOff(Map data)
 	{
 //	Used with UEI keypad that never stops beeping on any beep command
 //	so pass keypad id, find it then beep the device. Convoluted but it works
-	logdebug "entering solokeypad_delayOff keypadid: "+ data['keypad']
+	if (settings.logDebugs) log.debug  "entering solokeypad_delayOff keypadid: "+ data['keypad']
 	globalKeypadDevices.find
 		{
 		if (it.getId() == data['keypad'])
@@ -2300,7 +2341,7 @@ def versionCheck(moduleName, jsonData, currentVer)
 		}
 
 //	currentVer = appVersions."${moduleNameJson}"	remnant from prior incarnation of versionCheck
-	logdebug "versionsCheck processing module: $moduleName targetVer: $newVer actualVer: $currentVer"
+	if (settings.logDebugs) log.debug  "versionsCheck processing module: $moduleName targetVer: $newVer actualVer: $currentVer"
 
 	if(currentVer == null)
 		return "\n<b>$moduleName null illogical condition</b>"
