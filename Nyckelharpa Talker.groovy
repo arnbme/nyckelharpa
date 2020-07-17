@@ -26,6 +26,8 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *  Jun 20, 2020 v1.0.3	Eliminte logdebugs routine to reduce overhead. Test flag and issue log.debug instead
+ *							Stop debug logging after 1 hour
  *	Apr 21, 2020 v1.0.2 Document in input settings: erasing message stops it from talking.
  *	Apr 21, 2020 v1.0.2 Issue: Erased msg returns on next time app page loads. Fix: When app is COMPLETE, do not set a default
  *	Apr 20, 2020 v1.0.1 Check chime command for Open and close messages or error occurs during execution with no DH chime command
@@ -69,7 +71,7 @@ definition(
 
 def version()
 	{
-	return "1.0.2";
+	return "1.0.3";
 	}
 
 preferences {
@@ -115,8 +117,8 @@ def pageOne()
 				paragraph "${state.error_data}"
 				state.remove("error_data")
 				}
-			input "logDebugs", "bool", required:true, defaultValue:false,
-				title: "Log debugging messages? Normally off/false"
+			input "logDebugs", "bool", required: false, defaultValue:false,
+				title: "Log Talker debugging messages? Automatic shutoff after 60 minutes. Default: Off/False"
 			if (app.getInstallationState()=='COMPLETE')
 				{
 				input "theContactOpenMsg", "string", required: false, title: "Contact Open message, issued when system is disarmed: %device replaced with device name"
@@ -337,11 +339,21 @@ def updated() {
 
 def initialize() {
 	subscribe(location, "Nyckelharpatalk", TalkerHandler)
+	if(settings.logDebugs)
+		runIn(3600,logsOff)			// turns off debug logging after 60 min
+	else
+		unschedule(logsOff)
 	}
+
+void logsOff(){
+//	stops debug logging
+	log.info "Nyckelharpa Talker: debug logging disabled"
+	app.updateSetting("logDebugs",[value:"false",type:"bool"])
+}
 
 def TalkerHandler(evt)
 	{
-	logdebug("TalkerHandler entered, event: ${evt.value} ${evt?.data}")
+	if (settings.logDebugs) log.debug ("TalkerHandler entered, event: ${evt.value} ${evt?.data}")
 	def delaydata=evt?.data			//get the delay time or whatever was passed for message
 	def msgout
 
@@ -355,7 +367,7 @@ Time: 2019-12-02T00:00:00.000-0500
 		{
 		def String nowis = new Date()
 		def timenow = nowis.substring(11,16)
-		logdebug ("${nowis} ${timenow} ${theStartTime.substring(11,16)} ${theEndTime.substring(11,16)}")
+		if (settings.logDebugs) log.debug  ("${nowis} ${timenow} ${theStartTime.substring(11,16)} ${theEndTime.substring(11,16)}")
 		if (theEndTime.substring(11,16)>theStartTime.substring(11,16))
 			{
 //			end > start
@@ -378,7 +390,7 @@ Time: 2019-12-02T00:00:00.000-0500
 			}
 		}
 //	else
-//		logdebug ('quiet time not active')
+//		if (settings.logDebugs) log.debug  ('quiet time not active')
 
 	if (evt.value=="entryDelay" && theEntryMsg>"")
 		{
@@ -543,9 +555,3 @@ def ttsDelay(map)
 	{
 	theTTS.speak(map.tts)
 	}
-
-def logdebug(txt)
-	{
-   	if (logDebugs)
-   		log.debug ("${txt}")
-    }

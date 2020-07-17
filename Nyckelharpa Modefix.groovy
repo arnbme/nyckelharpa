@@ -20,8 +20,11 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *  Jun 22, 2020 	v1.0.2	Reduce system overhead by reducing or eliminating calls to checkOpencontacts
+ *  Jun 20, 2020 	v1.0.1	Eliminte logdebugs routine to reduce overhead. Test flag and issue log.debug instead
+ *							Stop debug logging after 1 hour
  *	Mar 31, 2020 	v1.0.0	Allow use of HE system keypad drivers
- *	Jun 09, 2019 	v0.0.8	add call to qssehe.php to update sse status and delay
+ *	Jun 09, 2019 	v0.0.8	add call to qssehe.php to update sse status and delay (used for simulated keypad, disabled)
  *	May 16, 2019 	v0.0.7	add UEI model to keypads with 3 armed lighting modes
  *	May 10, 2019 	v0.0.6	Do what 0.0.5 said it would do but did not
  *	May 02, 2019 	v0.0.5	Make all mode settings optional
@@ -84,7 +87,7 @@ preferences {
 
 def version()
 	{
-	return "1.0.0";
+	return "1.0.1";
 	}
 
 def pageOne(error_msg)
@@ -107,7 +110,7 @@ def pageOne(error_msg)
 		section ("Debugging messages")
 			{
 			input "logDebugs", "bool", required: false, defaultValue:false,
-				title: "Log debugging messages? Normally off/false"
+				title: "Log Modefix debugging messages? Automatic shutoff after 60 minutes. Default: Off/False"
 			}
 		section ("Alarm State: Disarmed / Off")
 			{
@@ -338,18 +341,27 @@ def updated() {
 def initialize()
 	{
 	subscribe(location, 'hsmStatus', alarmStatusHandler)
+	if(settings.logDebugs)
+		runIn(3600,logsOff)			// turns off debug logging after 60 min
+	else
+		unschedule(logsOff)
 	}
 
+void logsOff(){
+//	stops debug logging
+	log.info "Nyckelharpa Modefix: debug logging disabled"
+	app.updateSetting("logDebugs",[value:"false",type:"bool"])
+}
 
 def alarmStatusHandler(evt)
 	{
-	logdebug "alarmStatusHandler entered"
+	if (settings.logDebugs) log.debug "alarmStatusHandler entered"
 	def theAlarm = evt.value as String				//curent alarm state
 	def lastAlarm = atomicState?.hsmstate
 	atomicState.hsmstate=theAlarm
 	def theMode = location.currentMode as String	//warning without string parameter it wont match
 	lastDoorsDtim=parent.getAtomicdoorsdtim()			//set in Nyckelharpa checkOpenContacts
-	logdebug "ModeFix alarmStatusHandler entered, HSM state: ${theAlarm}, lastAlarm: ${lastAlarm} Mode: ${theMode} lastDoorsDtim $lastDoorsDtim"
+	if (settings.logDebugs) log.debug "ModeFix alarmStatusHandler entered, HSM state: ${theAlarm}, lastAlarm: ${lastAlarm} Mode: ${theMode} lastDoorsDtim $lastDoorsDtim"
 //	Fix the mode to match the Alarm State.
 //	qssehe_status(theAlarm)							//set db for sse
 	if (theAlarm=="disarmed" || theAlarm=="allDisarmed")
@@ -388,12 +400,16 @@ def alarmStatusHandler(evt)
 			{
 			if (parent.globalAwayContacts)
 				{
-				if (lastDoorsDtim > 0 && !parent.checkOpenContacts(parent.globalAwayContacts, parent.globalAwayNotify, false))
+				if (lastDoorsDtim > 0)
 					{
-					sendLocationEvent(name: 'hsmSetArm', value: 'disarm')
-					return
+					if (!parent.checkOpenContacts(parent.globalAwayContacts, parent.globalAwayNotify, false))
+						{
+						sendLocationEvent(name: 'hsmSetArm', value: 'disarm')
+						parent.killAtomicdoorsdtim()
+						return
+						}
+					parent.killAtomicdoorsdtim()
 					}
-				parent.killAtomicdoorsdtim()
 				}
 			if (evt.jsonData.seconds)
 				{
@@ -441,12 +457,16 @@ def alarmStatusHandler(evt)
 			{
 			if (parent.globalHomeContacts)
 				{
-				if (lastDoorsDtim > 0 && !parent.checkOpenContacts(parent.globalNightContacts, parent.globalNightNotify, false))
+				if (lastDoorsDtim > 0)
 					{
-					sendLocationEvent(name: 'hsmSetArm', value: 'disarm')
-					return
+					if (!parent.checkOpenContacts(parent.globalNightContacts, parent.globalNightNotify, false))
+						{
+						sendLocationEvent(name: 'hsmSetArm', value: 'disarm')
+						parent.killAtomicdoorsdtim()
+						return
+						}
+					parent.killAtomicdoorsdtim()
 					}
-				parent.killAtomicdoorsdtim()
 				}
 			if (evt.jsonData.seconds)
 				{
@@ -495,12 +515,16 @@ def alarmStatusHandler(evt)
 			{
 			if (parent.globalHomeContacts)
 				{
-				if (lastDoorsDtim > 0 && !parent.checkOpenContacts(parent.globalHomeContacts, parent.globalHomeNotify, false))
+				if (lastDoorsDtim > 0)
 					{
-					sendLocationEvent(name: 'hsmSetArm', value: 'disarm')
-					return
+					if (!parent.checkOpenContacts(parent.globalHomeContacts, parent.globalHomeNotify, false))
+						{
+						sendLocationEvent(name: 'hsmSetArm', value: 'disarm')
+						parent.killAtomicdoorsdtim()
+						return
+						}
+					parent.killAtomicdoorsdtim()
 					}
-				parent.killAtomicdoorsdtim()
 				}
 			if (evt.jsonData.seconds)
 				{
@@ -553,7 +577,7 @@ def qssehe_status(status)
 					}
 				catch (e)
 					{
-					logdebug "qssehe.php Execution failed ${e}"
+					if (settings.logDebugs) log.debug "qssehe.php Execution failed ${e}"
 					}
 				}
 			}
@@ -568,7 +592,7 @@ def qssehe_AsyncHandler(response, data)
 
 def ttsExit(delay)
 	{
-	logdebug "ttsExit delay: $delay"
+	if (settings.logDebugs) log.debug "ttsExit delay: $delay"
 	if (delay > 1)		//in order to get arming requests vs armed requests set mode time to 1 vs 0
 		{
 		def locevent = [name:"Nyckelharpatalk", value: "exitDelay", isStateChange: true,
@@ -580,7 +604,7 @@ def ttsExit(delay)
 
 def ttsDisarmed()
 	{
-	logdebug "ttsDisarmed"
+	if (settings.logDebugs) log.debug "ttsDisarmed"
 	def locevent = [name:"Nyckelharpatalk", value: "disarm", isStateChange: true,
 		displayed: true, descriptionText: "Issue disarm talk event", linkText: "Issue disarm delay talk event",
 		data: 'none']
@@ -589,15 +613,9 @@ def ttsDisarmed()
 
 def ttsArmed(theAlarm)
 	{
-	logdebug "ttsArmed"
+	if (settings.logDebugs) log.debug "ttsArmed"
 	def locevent = [name:"Nyckelharpatalk", value: "armed", isStateChange: true,
 		displayed: true, descriptionText: "Issue armed talk event", linkText: "Issue armed delay talk event",
 		data: theAlarm]
 	sendLocationEvent(locevent)
 	}
-
-def logdebug(txt)
-	{
-   	if (logDebugs)
-   		log.debug ("${txt}")
-    }
