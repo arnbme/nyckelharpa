@@ -87,7 +87,7 @@ preferences {
 
 def version()
 	{
-	return "1.0.1";
+	return "1.0.2";
 	}
 
 def pageOne(error_msg)
