@@ -6,6 +6,7 @@
     {
       "name": "Nyckelharpa HSM Extension",
       "category": "Security",
+      "tags": ["Safety & Security"],
       "location": "https://raw.githubusercontent.com/arnbme/nyckelharpa/master/packageManifest.json",
       "description": "Nyckelharpa is a user created Hubitat Home Security Monitor (HSM) extension. \n Under user control allows HSM to arm with an Open Contact sensor.\n Additionally, optionally sets Mode when HSM status changes,\n and simplifies setting up security related TTS and notification messaging"
     }
