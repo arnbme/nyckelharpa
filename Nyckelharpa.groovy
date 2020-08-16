@@ -22,6 +22,7 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *  Aug 16, 2020 v1.2.0	Make force arming timing seconds window an external input field, globalForceSeconds, default 15
  *  Jul 16, 2020 v1.1.2	Revise Version check logic: Use Gitub Hubitat Package Manager file vs arnb.org file
  *  Jul 15, 2020 v1.1.1	Create simulation of Hubitat unsupported SmartThings device.command([delay: millis]), see delayCommand method
  *  					Restore ability to chirp a siren, or other device driver lacking a beep command
@@ -162,7 +163,7 @@ preferences {
 
 def version()
 	{
-	return "1.1.2";
+	return "1.2.0";
 	}
 def main()
 	{
@@ -258,6 +259,8 @@ def globalsPage(error_msg)
 				}
 			input "globalDisable", "bool", required: true, defaultValue: false,
 				title: "Disable All Functions. Default: Off/False"
+ 			input "globalForceSeconds", "number", required: false, range: "10..40", defaultValue: 15,
+ 				title: "Number of seconds allowed for Forced Arming window. Default: 15"
 //			input "globalKeypadControl", "bool", required: true, defaultValue: true, submitOnChange: true,
 //				title: "A real or simulated Keypad is used to arm and disarm Home Security Monitor (HSM). Default: On/True"
 			input "globalKeypadDevices", "capability.securityKeypad", required: false, multiple: true, submitOnChange: true,
@@ -412,8 +415,13 @@ def pageTwo()
 				}
 			}
 
+
 		section
 			{
+			def armWindow=15
+			if (globalForceSeconds)
+				armWindow=globalForceSeconds
+			paragraph "<b>Forced Arming Window is ${armWindow} seconds</b>"
 			if (globalKeypadDevices)
 				{
 				workMsg="Keypads used for arming and disarming ${globalKeypadDevices}"
@@ -1767,6 +1775,7 @@ def checkOpenContacts (contactList, notifyOptions, keypad)
 	def contactmsg=''
 	def duration = now() -lastDoorsDtim
 	def evt
+	def armWindow=15
 	if (settings.logDebugs) log.debug  "checkOpenContacts $contactList $notifyOptions $keypad lastDoorsDtim: $lastDoorsDtim Duration: $duration"
 	contactList.each
 		{
@@ -1777,7 +1786,9 @@ def checkOpenContacts (contactList, notifyOptions, keypad)
 				getChildDevice("$globalChildPrefix${it.id}").open()		//sync child device to real V1.0.4
 			if (contactmsg == '')
 				{
-				if (duration > 15000 || duration < 3000)
+				if (globalForceSeconds)
+					armWindow=globalForceSeconds
+				if (duration > (armWindow * 1000) || duration < 3000)
 					{
 					if (keypad)										//keypad is false when non keypad arming
 						{
@@ -1825,7 +1836,7 @@ def checkOpenContacts (contactList, notifyOptions, keypad)
 		{
 		contactmsg += ' is open.'
 		if (checkOpenReturn==false)
-			contactmsg += ' Rearming within 15 seconds will force arming'
+			contactmsg += " Rearming within ${armWindow} seconds will force arming"
 		notifyOptions.each
 			{
 			if (it=='Notification log')
@@ -2028,6 +2039,9 @@ def openPanicContact()
 def alertHandler(evt)
 	{
 	if (settings.logDebugs) log.debug ("alertHandler entered, event: ${evt.value} ${evt.jsonData} ${evt.data}")
+	def armWindow=15
+	if (globalForceSeconds)
+		armWindow=globalForceSeconds
 	def i = new Integer("0")
 	if (['intrusion-delay','intrusion-home-delay','intrusion-night-delay'].contains(evt.value))
 		{
@@ -2063,7 +2077,7 @@ def alertHandler(evt)
 		HeDoorsClose()											//triggers from any HSM arming other than Centralitex that
 		runInMillis(500, delaysetDisarmed)						//checks prior to arming
 //		runInMillis(1200, delayBeep)
-		runIn(15,HeDoorsReset)
+		runIn(armWindow,HeDoorsReset)
 		}
 /*	if (evt.value != 'rule')									//if rule use rule name minus red alert text
 		qssehe_alert(evt.value)									//update remote sse data
@@ -2082,6 +2096,9 @@ def alertHandler(evt)
 def HeDoorsClose()
 	{
 	def modeRequest = atomicState?.HeKeypadStatus
+	armWindow=15
+	if (globalForceSeconds)
+		armWindow=globalForceSeconds
 	if (settings.logDebugs) log.debug  "HeDoorsClose entered status: ${modeRequest}"
 	def contactList
 	def notifyOptions
@@ -2151,7 +2168,7 @@ def HeDoorsClose()
 	if (contactmsg != basemsg)
 		{
 //		atomicState.doorsdtim=0		//1.0.7 When using HE driver or non stops Modefix from executing checkOpenContacts
-		contactmsg += ' is open. Rearming within 15 seconds will force arming'
+		contactmsg += " is open. Rearming within ${armWindow} seconds will force arming"
 		notifyOptions.each
 			{
 			if (it=='Notification log')

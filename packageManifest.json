@@ -5,7 +5,7 @@
 	"dateReleased": "2020-07-17",
 	"documentationLink": "https://github.com/arnbme/nyckelharpa/blob/master/README.md",
 	"communityLink": "https://community.hubitat.com/t/release-nyckelharpa-an-hsm-extension/15062",
-	"releaseNotes": "Restore ability to beep a alarm device (siren) without a beep command during Entry Delay; Debug logging shuts off after 1 hour; General performance enhancements",
+	"releaseNotes": "Forced arming seconds is now a user adjustable input field",
 	"apps" : [
 		{
 			"id" : "cbd9fd70-d40e-4ebf-83f3-af48de7c155b",
@@ -14,7 +14,7 @@
 			"location": "https://raw.githubusercontent.com/arnbme/nyckelharpa/master/Nyckelharpa.groovy",
 			"required": true,
 			"oauth": false,
-			"version": "1.1.2"
+			"version": "1.2.0"
 		},
 		{
 			"id" : "ef77bcab-bf1f-42bf-8024-b5f395b42126",
