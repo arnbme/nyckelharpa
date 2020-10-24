@@ -14,6 +14,13 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *  Oct 24, 2020 v1.0.4 add 3400-D keypad 6 digit pin codes
+fingerprint profileId:"0104", endpointId:"01", inClusters:"0000,0001,0003,0020,0402,0500,0B05,FC05", outClusters:"0019,0501", model:"3400-D", manufacturer:"CentraLite"
+traceModel:3400-D
+traceSoftware Build Id:unknown 
+traceZCL version:01
+traceManufacturer:CentraLite
+ *	Jun 08, 2020 v1.0.3	allow temperature decimal digits 0, 1, 2 and adjust Celcius and Farenheit accordingly
  *	Apr 25, 2020 v1.0.2	add missing routine getArmCmd used only with logtrace and bad LCM pin
  * 	Apr 25, 2020 v1.0.2 fix for UEI keypad
  *							Use hardware command vs beep(0) for Off() command
@@ -142,8 +149,9 @@ metadata {
 		fingerprint endpointId: "01", profileId: "0104", deviceId: "0401", inClusters: "0000,0001,0003,0020,0402,0500,0501,0B05,FC04", outClusters: "0019,0501", manufacturer: "CentraLite", model: "3405-L", deviceJoinName: "Iris 3405-L Keypad"
  		fingerprint endpointId: "01", profileId: "0104", deviceId: "0401", inClusters: "0000,0001,0003,0020,0402,0500,0B05", outClusters: "0003,0019,0501", manufacturer: "Universal Electronics Inc", model: "URC4450BC0-X-R", deviceJoinName: "Xfinity XHK1-UE Keypad"
  		fingerprint endpointId: "01", profileId: "0104", deviceId: "0401", inClusters: "0000,0001,0003,0020,0402,0405,0500,0501,0B05,FC01,FC02", outClusters: " 0003,0019,0501", manufacturer: "iMagic by GreatStar", model: "1112-S", deviceJoinName: "Iris V3 1112-S Keypad"
-	}
-
+		fingerprint endpointId: "01", profileId: "0104", deviceId: "0401", inClusters: "0000,0001,0003,0020,0402,0500,0B05,FC05", outClusters: "0019,0501", manufacturer: "CentraLite", model: "3400-D", deviceJoinName: "Centralite 3400-D Keypad"
+		}
+		
 	preferences{
 		input ("version_donotuse", "text", title: "Version: ${version()}<br />(Do not set display only)", required: false )
 	    input ("lockManagerPins", "bool", title: "When Off/False<br />Use Nyckelharpa user pin manager. (Default)<br /><br />When On/True<br />Use Lock Manager Pins.", defaultValue: false)
@@ -152,13 +160,16 @@ metadata {
         if (device?.data?.model == '1112-S' || device?.data?.model== 'URC4450BC0-X-R')
         	input ("BatteryType", "enum", title: "Battery Type", required: true, options:["Alkaline", "Lithium", "Rechargeable"])
         input ("panicEnabled", "bool", title: "Enable Panic Key (when available) and Panic Pins. Default (True)", defaultValue: true)
-		input ("tempOffset", "number", title: "Enter an offset to adjust the reported temperature",
+		input ("tempOffset", "decimal", title: "Enter an offset (decimals accepted) to adjust the reported temperature",
 				defaultValue: 0, displayDuringSetup: false)
-		if (device?.data?.model == '1112-S' || device?.data?.model== '3405-L')
+ 		input "tempDecimals", "number", required: false, range: "0..2", defaultValue: 1,
+ 						title: "Temperature: number of decimals from 0 to 2. Default: 1"
+	
+		if (device?.data?.model == '1112-S' || device?.data?.model== '3405-L' || device?.data?.model== '3400-D')
 			{
 	        input ("altBeepEnable", "bool", title: "Enable old style beep sound Default (False). If no beep sound set on", defaultValue: false)
 			input ("beepLength", "number", title: "Enter length of old style beep in seconds. Iris V3 firmware locked at 1 beep.", defaultValue: 1, displayDuringSetup: false)
-			if (device?.data?.model== '3405-L')
+			if (device?.data?.model== '3405-L' || device?.data?.model== '3400-D')
 				{
 				input name: "pinOnArmAway", type: "bool", title: "Verify pin to arm away", defaultValue: false, description: ""
 				input name: "pinOnArmHome", type: "bool", title: "Verify pin to arm home/night", defaultValue: false, description: ""
@@ -169,7 +180,7 @@ metadata {
 		if (device?.data?.model != '1112-S')
         	input ("motionTime", "number", title: "Time in seconds for Motion to become Inactive (Default:10, 0=disabled)",	defaultValue: 10, displayDuringSetup: false)
         input ("showVolts", "bool", title: "Turn on to show actual battery voltage x 10 as %. Default (Off) is calculated percentage", defaultValue: false, displayDuringSetup: false)
-		if (device?.data?.model == '1112-S' || device?.data?.model == '3405-L')
+		if (device?.data?.model == '1112-S' || device?.data?.model == '3405-L' || device?.data?.model== '3400-D')
 	        input ("irisPartialSwitch", "bool", title: "When On/True Partial key arms Night, when Off/false: arms Home. Default (Off)", defaultValue: false, displayDuringSetup: false)
         input ("logEnable", "bool", title: "Log debugging messages", defaultValue: false, displayDuringSetup: false)
         input ("txtEnable", "bool", title: "Log trace messages", defaultValue: false, displayDuringSetup: false)
@@ -191,8 +202,8 @@ def ssekey(ssekey)
 
 def version()
 	{
-	updateDataValue("driverVersion", "1.0.2")	//Stores in device Data
-	return "1.0.2";
+	updateDataValue("driverVersion", "1.0.4")	//Stores in device Data
+	return "1.0.4";
 	}
 
 def installed() {
@@ -470,6 +481,7 @@ private parseReportAttributeMessage(String description) {
 }
 
 private parseTempAttributeMsg(message) {
+
 	byte[] temp = message.data[-2..-1].reverse()
 	createEvent(getTemperatureResult(getTemperature(temp.encodeHex() as String)))
 }
@@ -622,27 +634,36 @@ private getBatteryResult(rawValue) {
 
 private getTemperature(value) {
 	def celcius = Integer.parseInt(value, 16).shortValue() / 100
-//	log.debug "Celcius: $celcius Farenheit: ${celsiusToFahrenheit(celcius) as Integer}"
+//	logdebug "Celcius: $celcius Farenheit: ${celsiusToFahrenheit(celcius)} RawHex: $value"
 	if(getTemperatureScale() == "C"){
 		return celcius
 	} else {
-		return celsiusToFahrenheit(celcius) as Integer
+		return celsiusToFahrenheit(celcius)
 	}
 }
 
 private Map getTemperatureResult(value) {
-	logdebug 'TEMP'
+//	log.debug "getTemperatureResult $value"
+	def deg=value
+	def dec=1	//default number of decimals
 	def linkText = getLinkText(device)
-	if (tempOffset) {
-		def offset = tempOffset as int
-		def v = value as int
-		value = v + offset
-	}
-	def descriptionText = "${linkText} was ${value}°${temperatureScale}"
+	if (tempOffset)
+		deg+=tempOffset
+	if (tempDecimals)
+		dec=tempDecimals
+	if (dec == 1)
+		deg = Math.round(deg * 10 ) /10
+	else
+	if (dec == 2)
+		deg = Math.round(deg * 100 ) /100
+	else
+		deg = Math.round(deg)
+	def descriptionText = "${linkText} was ${deg}Â°${temperatureScale}"
 	return [
 		name: 'temperature',
-		value: value,
-		descriptionText: descriptionText
+		value: deg,
+		descriptionText: descriptionText,
+		unit: "Â°${temperatureScale}"
 	]
 }
 
@@ -921,7 +942,7 @@ def beep(def beepLength = settings.beepLength as Integer)
 		beepLength = 1
 		}
 	def len = zigbee.convertToHexString(beepLength, 2)
-	if (device.data.model == '1112-S' || device.data.model== '3405-L')
+	if (device.data.model == '1112-S' || device.data.model== '3405-L' || device.data.model== '3400-D')
 		{
 //		logdebug "its an Iris altBeepEnable: ${altBeepEnable}"
 		if (!altBeepEnable)
@@ -1078,7 +1099,10 @@ void setExitDelay(delay){
 
 private changeIsValid(codeMap,codeNumber,code,name){
     def result = true
-    def codeLength = device.currentValue("codeLength")?.toInteger() ?: 4
+    if (device?.data?.model == '3400-D')
+	    def codeLength = device.currentValue("codeLength")?.toInteger() ?: 6
+	else
+	    def codeLength = device.currentValue("codeLength")?.toInteger() ?: 4
     def maxCodes = device.currentValue("maxCodes")?.toInteger() ?: 20
     def isBadLength = codeLength != code.size()
     def isBadCodeNum = maxCodes < codeNumber
@@ -1146,10 +1170,19 @@ private updateEncryption(){
 }
 
 void setCodeLength(length){
-    String descriptionText = "${device.displayName} codeLength set to 4"
-    if (txtEnable) log.info "${descriptionText}"
-    sendEvent(name:"codeLength",value:"${4}",descriptionText:descriptionText)
-}
+	if (device?.data?.model == '3400-D')
+		{
+		String descriptionText = "${device.displayName} codeLength set to 6"
+		if (txtEnable) log.info "${descriptionText}"
+		sendEvent(name:"codeLength",value:"${6}",descriptionText:descriptionText)
+		}
+	else
+		{
+    	String descriptionText = "${device.displayName} codeLength set to 4"
+    	if (txtEnable) log.info "${descriptionText}"
+    	sendEvent(name:"codeLength",value:"${4}",descriptionText:descriptionText)
+		}	
+}		
 
 void setCode(codeNumber, code, name = null) {
     if (!name) name = "code #${codeNumber}"
@@ -1230,6 +1263,7 @@ def lmPins(descMap)
 			createLmCodeEntryEvent(asciiPin,nyckelArmRequest.substring(1),isValidPinV3(asciiPin, armRequest))
 		break
 		case '3405-L' :
+		case '3400-D' :
 			asciiPin = descMap.data[2..5].collect{ (char)Integer.parseInt(it, 16) }.join()
 			if (armRequest== '01' && irisPartialSwitch)
 				nyckelArmRequest='02'
@@ -1326,5 +1360,3 @@ def createLmCodeEntryEvent(keycode, armMode, lmPinMap) {
 	sendEvent(name: "codeEntered", value: keycode as String, data: lmPinMapx,
 				isStateChange: true, displayed: false)
 	}
-
-
