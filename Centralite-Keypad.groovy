@@ -1263,8 +1263,13 @@ def lmPins(descMap)
 			createLmCodeEntryEvent(asciiPin,nyckelArmRequest.substring(1),isValidPinV3(asciiPin, armRequest))
 		break
 		case '3405-L' :
-		case '3400-D' :
 			asciiPin = descMap.data[2..5].collect{ (char)Integer.parseInt(it, 16) }.join()
+			if (armRequest== '01' && irisPartialSwitch)
+				nyckelArmRequest='02'
+			createLmCodeEntryEvent(asciiPin,nyckelArmRequest.substring(1),isValidPinV2(asciiPin, armRequest))
+		break
+		case '3400-D' :
+			asciiPin = descMap.data[2..7].collect{ (char)Integer.parseInt(it, 16) }.join()
 			if (armRequest== '01' && irisPartialSwitch)
 				nyckelArmRequest='02'
 			createLmCodeEntryEvent(asciiPin,nyckelArmRequest.substring(1),isValidPinV2(asciiPin, armRequest))
