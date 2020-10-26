@@ -15,7 +15,6 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *  Oct 26, 2020 v1.0.4 reduce overhead by changeing logtrace to if (txtEnable) log.trace; logdebug to if (logEnable) log.debug  
- *  Oct 26, 2020 v1.0.4 Display Model Name in preferences 
  *  Oct 24, 2020 v1.0.4 add 3400-D keypad 6 digit pin codes
 fingerprint profileId:"0104", endpointId:"01", inClusters:"0000,0001,0003,0020,0402,0500,0B05,FC05", outClusters:"0019,0501", model:"3400-D", manufacturer:"CentraLite"
 traceModel:3400-D
@@ -156,7 +155,7 @@ metadata {
 		
 	preferences{
 		input ("version_donotuse", "text", title: "Version: ${version()}<br />(Do not set display only)", required: false )
-		input ("model_donotuse", "text", title: "Model: ${device?.data?.model}<br />(Do not set display only)", required: false )
+//		input ("model_donotuse", "text", title: "Model: ${device?.data?.model}<br />(Do not set display only)", required: false )
 	    input ("lockManagerPins", "bool", title: "When Off/False<br />Use Nyckelharpa user pin manager. (Default)<br /><br />When On/True<br />Use Lock Manager Pins.", defaultValue: false)
         input name: "optEncrypt", type: "bool", title: "Enable Lock Manager Code encryption", defaultValue: false, description: ""
 //		if (device?.data?.model.substring(0,3) !='340" throws error Cannot invoke method substring() on null object
