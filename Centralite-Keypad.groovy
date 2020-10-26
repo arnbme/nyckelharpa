@@ -14,6 +14,8 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *  Oct 26, 2020 v1.0.4 reduce overhead by changeing logtrace to if (txtEnable) log.trace; logdebug to if (logEnable) log.debug  
+ *  Oct 26, 2020 v1.0.4 Display Model Name in preferences 
  *  Oct 24, 2020 v1.0.4 add 3400-D keypad 6 digit pin codes
 fingerprint profileId:"0104", endpointId:"01", inClusters:"0000,0001,0003,0020,0402,0500,0B05,FC05", outClusters:"0019,0501", model:"3400-D", manufacturer:"CentraLite"
 traceModel:3400-D
@@ -21,7 +23,7 @@ traceSoftware Build Id:unknown
 traceZCL version:01
 traceManufacturer:CentraLite
  *	Jun 08, 2020 v1.0.3	allow temperature decimal digits 0, 1, 2 and adjust Celcius and Farenheit accordingly
- *	Apr 25, 2020 v1.0.2	add missing routine getArmCmd used only with logtrace and bad LCM pin
+ *	Apr 25, 2020 v1.0.2	add missing routine getArmCmd used only with if (txtEnable) log.trace   and bad LCM pin
  * 	Apr 25, 2020 v1.0.2 fix for UEI keypad
  *							Use hardware command vs beep(0) for Off() command
  * 	Apr 02, 2020 v1.0.1 Error missing SetExitDelay routine. Add setExitDelay routine for compatability with HE HSM not used by this module.
@@ -154,6 +156,7 @@ metadata {
 		
 	preferences{
 		input ("version_donotuse", "text", title: "Version: ${version()}<br />(Do not set display only)", required: false )
+		input ("model_donotuse", "text", title: "Model: ${device?.data?.model}<br />(Do not set display only)", required: false )
 	    input ("lockManagerPins", "bool", title: "When Off/False<br />Use Nyckelharpa user pin manager. (Default)<br /><br />When On/True<br />Use Lock Manager Pins.", defaultValue: false)
         input name: "optEncrypt", type: "bool", title: "Enable Lock Manager Code encryption", defaultValue: false, description: ""
 //		if (device?.data?.model.substring(0,3) !='340" throws error Cannot invoke method substring() on null object
@@ -186,7 +189,6 @@ metadata {
         input ("txtEnable", "bool", title: "Log trace messages", defaultValue: false, displayDuringSetup: false)
 //		paragraph "Centralitex Keypad Plus UEI Version ${version()}" Does not work in HE
 	}
-
 }
 
 //	Needed for Web Socket client
@@ -223,7 +225,7 @@ def updated() {
 
 def initialize()
 	{
-    logdebug "initialize() entered"
+    if (logEnable) log.debug  "initialize() entered"
 	sendEvent(name: "motion", value: "inactive", displayed: false)	//reset motion value
 	//Connect the webSocket
 /*	// disabled for live, enable for testing Socket connections
@@ -238,14 +240,14 @@ def initialize()
 	}
 
 def socket_sendMsg(s) {
-	logdebug "socket_sendMsg entered "+s		//convert whatever was passed to Json, then send
+	if (logEnable) log.debug  "socket_sendMsg entered "+s		//convert whatever was passed to Json, then send
     InterfaceUtils.sendWebSocketMessage(device, new groovy.json.JsonOutput().toJson(s))
 
 }
 
 def webSocketStatus(String status)
 	{
-    logdebug "webSocketStatus entered: ${status}"
+    if (logEnable) log.debug  "webSocketStatus entered: ${status}"
 
     if(status.startsWith('failure: '))
     	{
@@ -306,7 +308,7 @@ def reconnectWebSocket() {
 // parse hardware events into attributes,and process websocket messages
 def parse(String description)
 	{
-	logdebug "Parse entered ${description}";
+	if (logEnable) log.debug  "Parse entered ${description}";
 	if (description?.startsWith('{"type":'))		//intercept websocket messages
 		{
 		log.debug "WebSocket message: ${description}"
@@ -332,7 +334,7 @@ def parse(String description)
 				//------Read attributes responses------//
 				else if (message?.command == '01') {
 					if (message?.clusterId == '0402') {
-						logdebug "Device: read attribute response: "+description;
+						if (logEnable) log.debug  "Device: read attribute response: "+description;
 
 						results = parseTempAttributeMsg(message)
 					}}
@@ -376,7 +378,7 @@ def parse(String description)
 						else
 							{
 							results = handleArmRequest(message)
-							logtrace results
+							if (txtEnable) log.trace   results
 							}
 						}
 				}
@@ -385,7 +387,7 @@ def parse(String description)
 		}
 		//------IAS Zone Enroll request------//
 		else if (description?.startsWith('enroll request')) {
-			logtrace "Sending IAS enroll response..."
+			if (txtEnable) log.trace   "Sending IAS enroll response..."
 			results = zigbee.enrollResponse()
 		}
 		//------Read Attribute response------//
@@ -394,9 +396,9 @@ def parse(String description)
 		}
 		//------Temperature Report------//
 		else if (description?.startsWith('temperature: ')) {
-			logdebug "Got ST-style temperature report.."
+			if (logEnable) log.debug  "Got ST-style temperature report.."
 			results = createEvent(getTemperatureResult(zigbee.parseHATemperatureValue(description, "temperature: ", getTemperatureScale())))
-			logdebug results
+			if (logEnable) log.debug  results
 		}
 		else if (description?.startsWith('zone status ')) {
 			results = parseIasMessage(description)
@@ -407,7 +409,7 @@ def parse(String description)
 
 
 def configure() {
-    logtrace "--- Configure Called"
+    if (txtEnable) log.trace   "--- Configure Called"
     String hubZigbeeId = swapEndianHex(device.hub.zigbeeEui)
     def cmd = [
         //------IAS Zone/CIE setup------//
@@ -453,23 +455,23 @@ private formatLocalTime(time, format = "EEE, MMM d yyyy @ h:mm:ss.SSS a z") {
 
 private parseReportAttributeMessage(String description) {
 	descMap = zigbee.parseDescriptionAsMap(description)
-	//logdebug "Desc Map: $descMap"
+	//if (logEnable) log.debug  "Desc Map: $descMap"
 
 	def results = []
 
 	if (descMap.cluster == "0001" && descMap.attrId == "0020") {
-		logdebug "Received battery level report"
+		if (logEnable) log.debug  "Received battery level report"
 //		sendNotificationEvent ("Received battery level report descMap.value")
 		results = createEvent(getBatteryResult(Integer.parseInt(descMap.value, 16)))
 	}
     else if (descMap.cluster == "0001" && descMap.attrId == "0034")
     {
-    	logdebug "Received Battery Rated Voltage: ${descMap.value}"
+    	if (logEnable) log.debug  "Received Battery Rated Voltage: ${descMap.value}"
 //		sendNotificationEvent ("Received Battery Rated Voltage: descMap.value")
     }
     else if (descMap.cluster == "0001" && descMap.attrId == "0036")
     {
-    	logdebug "Received Battery Alarm Voltage: ${descMap.value}"
+    	if (logEnable) log.debug  "Received Battery Alarm Voltage: ${descMap.value}"
 //		sendNotificationEvent ("Received Battery Alarm Voltage: descMap.value")
     }
 	else if (descMap.cluster == "0402" && descMap.attrId == "0000") {
@@ -543,7 +545,7 @@ private Map getMotionResult(value) {
 }
 */
 def motionON() {
-  logdebug "--- Motion Detected"
+  if (logEnable) log.debug  "--- Motion Detected"
 
 	//-- Calculate Inactive timeout value
 	def motionTimeRun = (settings.motionTime?:0).toInteger()
@@ -551,13 +553,13 @@ def motionON() {
 	//-- If Inactive timeout was configured
 	if (motionTimeRun > 0) {
     	sendEvent(name: "motion", value: "active", displayed:true, isStateChange: true)
-		logdebug "--- Will become inactive in $motionTimeRun seconds"
+		if (logEnable) log.debug  "--- Will become inactive in $motionTimeRun seconds"
 		runIn(motionTimeRun, "motionOFF")
 	}
 }
 
 def motionOFF() {
-//	logdebug "--- Motion Inactive (OFF)"
+//	if (logEnable) log.debug  "--- Motion Inactive (OFF)"
     sendEvent(name: "motion", value: "inactive", displayed:true, isStateChange: true)
 }
 
@@ -566,7 +568,7 @@ def motionOFF() {
  * Do not use this routine with a real device (for now)
  */
 def panicContact() {
-	logdebug "PanicContact routine entered, Panic enabled: $panicEnabled"
+	if (logEnable) log.debug  "PanicContact routine entered, Panic enabled: $panicEnabled"
 	if (panicEnabled)
 		{
     	sendEvent(name: "contact", value: "open", displayed: true, isStateChange: true)
@@ -634,7 +636,7 @@ private getBatteryResult(rawValue) {
 
 private getTemperature(value) {
 	def celcius = Integer.parseInt(value, 16).shortValue() / 100
-//	logdebug "Celcius: $celcius Farenheit: ${celsiusToFahrenheit(celcius)} RawHex: $value"
+//	if (logEnable) log.debug  "Celcius: $celcius Farenheit: ${celsiusToFahrenheit(celcius)} RawHex: $value"
 	if(getTemperatureScale() == "C"){
 		return celcius
 	} else {
@@ -680,7 +682,7 @@ private handleArmRequest(message){
 		reqArmMode = '2'
 		}
 	//state.lastKeycode = keycode
-	logdebug "Received arm command with keycode/armMode: ${keycode}/${reqArmMode}"
+	if (logEnable) log.debug  "Received arm command with keycode/armMode: ${keycode}/${reqArmMode}"
 
 	//Acknowledge the command. This may not be *technically* correct, but it works
 	/*List cmds = [
@@ -704,7 +706,7 @@ private handleArmRequest(message){
 
 def armCode(message)
 	{
-	logtrace "armMode entered: message $message"
+	if (txtEnable) log.trace   "armMode entered: message $message"
 	def keycode = message.substring(1,5) as String
 	def armMode = message.substring(0,1)
 //	sendEvent used not in parse routine Nyckelharpa gets both events
@@ -717,28 +719,28 @@ def armCode(message)
 def pinStatusSet(pinStatus)
 	{
 //	set pinstatus for Maker API returned attributes used by simulated keypad
-	logtrace "pinStatusSet entered: message $message"
+	if (txtEnable) log.trace   "pinStatusSet entered: message $message"
 	sendEvent([name: "pinStatus", value: pinStatus, data: pinStatus,
 				isStateChange: true, displayed: false])
 	}
 
 def createCodeEntryEvent(keycode, armMode) {
-	logtrace "createCodeEntryEvent entered keycode: $keycode armMode: $armMode"
+	if (txtEnable) log.trace   "createCodeEntryEvent entered keycode: $keycode armMode: $armMode"
 	createEvent(name: "codeEntered", value: keycode as String, data: armMode as String,
 				isStateChange: true, displayed: false)
 	}
 
 private sendStatusToDevice(armModex='') {
-	logdebug 'Entering sendStatusToDevice armModex: '+armModex+', Device.armMode: '+device.currentValue('armMode',true)
+	if (logEnable) log.debug  'Entering sendStatusToDevice armModex: '+armModex+', Device.armMode: '+device.currentValue('armMode',true)
 	def armMode=null
 	if (armModex=='')
 		{
-//		logdebug "using device armMode"
+//		if (logEnable) log.debug  "using device armMode"
 		armMode = device.currentValue("armMode",true)
 		}
 	else
 		{
-//		logdebug "using passed armModex"
+//		if (logEnable) log.debug  "using passed armModex"
 		armMode = armModex
 		}
 	def status = ''
@@ -746,7 +748,7 @@ private sendStatusToDevice(armModex='') {
 	else if (armMode == 'armedAway') status = 3
 	else if (armMode == 'armedHome') status = 1
 	else if (armMode == 'armedNight') status = 2
-	else logdebug 'Invalid Arm Mode in sendStatusToDevice: '+armMode
+	else if (logEnable) log.debug  'Invalid Arm Mode in sendStatusToDevice: '+armMode
 
 	// If we're not in one of the 4 basic modes, don't update the status, don't want to override beep timings, exit delay is dependent on it being correct
 	if (status != '')
@@ -762,7 +764,7 @@ private sendStatusToDevice(armModex='') {
 
 private sendRawStatus(status, secs = 00) {
 	def seconds=secs as Integer
-	logdebug "sendRawStatus info ${zigbee.convertToHexString(status,2)}${zigbee.convertToHexString(seconds,2)} to device..."
+	if (logEnable) log.debug  "sendRawStatus info ${zigbee.convertToHexString(status,2)}${zigbee.convertToHexString(seconds,2)} to device..."
 
 
     // Seems to require frame control 9, which indicates a "Server to client" cluster specific command (which seems backward? I thought the keypad was the server)
@@ -771,7 +773,7 @@ private sendRawStatus(status, secs = 00) {
 
 	cmds
 //  def results = cmds?.collect{ new hubitat.device.HubAction(it,hubitat.device.Protocol.ZIGBEE) };
-//	logdebug "sendRawStatus results"+results
+//	if (logEnable) log.debug  "sendRawStatus results"+results
 //  return results
 }
 
@@ -781,7 +783,7 @@ def notifyPanelStatusChanged(status) {
 //------------------------//
 
 def setDisarmed() {
-	logdebug ('setDisarm entered')
+	if (logEnable) log.debug  ('setDisarm entered')
 	state.alert=false
 	setModeHelper("disarmed",0)
 	}
@@ -793,32 +795,32 @@ def setArmedNight(def delay=0) { setModeHelper("armedNight",delay) }
 //on Apr 19, 2019 Not using HSM commands
 def disarm(delay=0)
 	{
-	logdebug ('disarm entered')
+	if (logEnable) log.debug  ('disarm entered')
 //	if (device.currentValue('armMode',true) != 'disarmed')
 //		setModeHelper("disarmed",0)
 	}
 def armAway(def delay=0)
 	{
-	logdebug ('armAway entered')
+	if (logEnable) log.debug  ('armAway entered')
 //	if (device.currentValue('armMode',true) != 'armedAway')
 //		setModeHelper("armedAway",delay)
 	}
 def armHome(def delay=0)
 	{
-	logdebug ('armHome entered')
+	if (logEnable) log.debug  ('armHome entered')
 //	if (device.currentValue('armMode',true) != 'armedHome')
 //		setModeHelper("armedStay",delay)
 	}
 def armNight(def delay=0)
 	{
-	logdebug ('armNight entered')
+	if (logEnable) log.debug  ('armNight entered')
 //	if (device.currentValue('armMode',true) != 'armedNight')
 //		setModeHelper("armedNight",delay)
 	}
 
 def entry(delay=0)
 	{
-//	logdebug "entry entered delay: ${delay}"
+//	if (logEnable) log.debug  "entry entered delay: ${delay}"
 //	setEntryDelay(delay)	//disabled until I understand why this is issued when setting away from actiontiles
 //	v.0.2.5 not used by Nyckelharpa, but device should be removed from HSM, issue warning message
 //	log.warn "Centralitex DH says: Remove $device.displayName from HSM Configure Arming/Disarming/Cancel Options --> Use keypad(s) to arm/disarm"
@@ -886,7 +888,7 @@ def strobe()
 	}
 
 private setModeHelper(String armMode, delay) {
-	logdebug "In setmodehelper armMode: $armMode delay: $delay"
+	if (logEnable) log.debug  "In setmodehelper armMode: $armMode delay: $delay"
 	sendEvent(name: "armMode", value: armMode)
 	if (armMode != 'entryDelay')
 		{
@@ -906,13 +908,13 @@ private setKeypadArmMode(armMode){
 }
 
 def acknowledgeArmRequest(armMode='0'){
-	logtrace "entered acknowledgeArmRequest armMode: ${armMode}"
+	if (txtEnable) log.trace   "entered acknowledgeArmRequest armMode: ${armMode}"
 	List cmds = [
 				 "raw 0x501 {09 01 00 0${armMode}}",
 				 "send 0x${device.deviceNetworkId} 1 1", "delay 100"
 				]
 //	def results = cmds?.collect{ new hubitat.device.HubAction(it, hubitat.device.Protocol.ZIGBEE) }
-//	logtrace "Method: acknowledgeArmRequest(armMode): "+results
+//	if (txtEnable) log.trace   "Method: acknowledgeArmRequest(armMode): "+results
 //	return results
 	cmds
 
@@ -924,7 +926,7 @@ def sendInvalidKeycodeResponse(){
 				 "send 0x${device.deviceNetworkId} 1 1", "delay 100"
 				]
 
-	logtrace 'Method: sendInvalidKeycodeResponse(): '+cmds
+	if (txtEnable) log.trace   'Method: sendInvalidKeycodeResponse(): '+cmds
 //	return (collect{ new hubitat.device.HubAction(it, hubitat.device.Protocol.ZIGBEE) }) + sendStatusToDevice()
 	cmds
 	sendStatusToDevice()
@@ -936,7 +938,7 @@ def sendInvalidKeycodeResponse(){
  */
 def beep(def beepLength = settings.beepLength as Integer)
 	{
-	logdebug "beep entered: ${beepLength} ${altBeepEnable}"
+	if (logEnable) log.debug  "beep entered: ${beepLength} ${altBeepEnable}"
 	if ( beepLength == null )
 		{
 		beepLength = 1
@@ -944,7 +946,7 @@ def beep(def beepLength = settings.beepLength as Integer)
 	def len = zigbee.convertToHexString(beepLength, 2)
 	if (device.data.model == '1112-S' || device.data.model== '3405-L' || device.data.model== '3400-D')
 		{
-//		logdebug "its an Iris altBeepEnable: ${altBeepEnable}"
+//		if (logEnable) log.debug  "its an Iris altBeepEnable: ${altBeepEnable}"
 		if (!altBeepEnable)
 			{
 //			log.debug 'Using FC04 cluster beep'
@@ -977,10 +979,10 @@ private byte[] reverseArray(byte[] array) {
 //------------------------//
 
 private testCmd(cmd=5,time=15){
-	//logtrace zigbee.parse('catchall: 0104 0501 01 01 0140 00 4F2D 01 00 0000 07 00 ')
+	//if (txtEnable) log.trace   zigbee.parse('catchall: 0104 0501 01 01 0140 00 4F2D 01 00 0000 07 00 ')
 	//beep(10)
 	//test exit delay
-	//logdebug device.zigbeeId
+	//if (logEnable) log.debug  device.zigbeeId
 	//testingTesting()
 	//discoverCmds()
 	//zigbee.configureReporting(1,0x20,0x20,3600,43200,0x01)		//battery reporting
@@ -988,7 +990,7 @@ private testCmd(cmd=5,time=15){
 	//"send 0x${device.deviceNetworkId} 1 1"]
 	//zigbee.command(0x0003, 0x00, "0500") //Identify: blinks connection light
 
-	//logdebug 		//temperature reporting
+	//if (logEnable) log.debug  		//temperature reporting
 
 //	return zigbee.readAttribute(0x0020,0x01) +
 //		    zigbee.readAttribute(0x0020,0x02) +
@@ -1010,22 +1012,11 @@ private discoverCmds(){
 }
 
 private testingTesting() {
-	logdebug "Delay: "+device.currentState("armMode").toString()
+	if (logEnable) log.debug  "Delay: "+device.currentState("armMode").toString()
 	List cmds = ["raw 0x501 {09 01 04 050A}", 'delay 200',
 				 "send 0x${device.deviceNetworkId} 1 1", 'delay 500']
 	cmds
 }
-
-def logdebug(txt)
-	{
-   	if (logEnable)
-   		log.debug ("${txt}")
-    }
-def logtrace(txt)
-	{
-   	if (txtEnable)
-   		log.trace ("${txt}")
-    }
 
 /*		V026 logic used with Iris V3 to fix hardware motion message send loop
 		Copied from HE's Iris V3 DH. This device needs a response on motion
@@ -1033,7 +1024,7 @@ def logtrace(txt)
 
 private getMotionResult(value)
 	{
-    logdebug "getMotionResult: ${value} current: ${device?.currentValue('motion')}"
+    if (logEnable) log.debug  "getMotionResult: ${value} current: ${device?.currentValue('motion')}"
     if (device?.currentValue("motion") != "active")
     	{
         runIn(30,motionOFF)
@@ -1058,7 +1049,7 @@ private sendPanelResponse()
 	def resp = []
 	if (state?.alert)			//check if siren active, requires disarm to stop it
 		{
-		logdebug "sending Alert Response, Alert: ${state.alert}"
+		if (logEnable) log.debug  "sending Alert Response, Alert: ${state.alert}"
 		resp.add("he raw 0x${device.deviceNetworkId} 1 1 0x0501 {19 01 05 04 00 00 00}")	//Siren stays on, no hardware message loop
 		sendHubCommand(new hubitat.device.HubMultiAction(resp, hubitat.device.Protocol.ZIGBEE))
 		return
@@ -1068,10 +1059,10 @@ private sendPanelResponse()
 	if (status < 4)
 		{
 		if (status > 0 && now() < state.delayExpire?: 0)		//active entry delay and not disarmed?
-			logdebug "no response1: ${hsmstatus} status: ${status} ${intToHexStr(status)} state.delayExpire: ${state.delayExpire?: 0}"
+			if (logEnable) log.debug  "no response1: ${hsmstatus} status: ${status} ${intToHexStr(status)} state.delayExpire: ${state.delayExpire?: 0}"
 		else
 			{
-			logdebug "sending response: ${hsmstatus} status: ${status} ${intToHexStr(status)} state.delayExpire: ${state.delayExpire?: 0}"
+			if (logEnable) log.debug  "sending response: ${hsmstatus} status: ${status} ${intToHexStr(status)} state.delayExpire: ${state.delayExpire?: 0}"
 			state.delayExpire=0
 			resp.add("he raw 0x${device.deviceNetworkId} 1 1 0x0501 {19 01 05 ${intToHexStr(status)} 00 00 00}")
 			sendHubCommand(new hubitat.device.HubMultiAction(resp, hubitat.device.Protocol.ZIGBEE))
@@ -1080,7 +1071,7 @@ private sendPanelResponse()
 	else
 		{
 		state.delayExpire=0
-		logdebug "no response2: ${hsmstatus} status: ${status} ${intToHexStr(status)} state.delayExpire: ${state.delayExpire?: 0}"
+		if (logEnable) log.debug  "no response2: ${hsmstatus} status: ${status} ${intToHexStr(status)} state.delayExpire: ${state.delayExpire?: 0}"
 		}
 	}
 
@@ -1249,7 +1240,7 @@ private getDefaultLCdata(){
 //	This code handles the HE Pin processing
 def lmPins(descMap)
 	{
-	logdebug "lmPins entered ${device?.data?.model} ${descMap}"
+	if (logEnable) log.debug  "lmPins entered ${device?.data?.model} ${descMap}"
 	def armRequest = descMap.data[0]
 	def nyckelArmRequest=armRequest
 	def asciiPin = "0000"
@@ -1362,7 +1353,7 @@ def createLmCodeEntryEvent(keycode, armMode, lmPinMap) {
 //	Map data is sent, but it returns in Nyckelharpa as a JSON string that must be reformatted with Jsonslurper into a Map
 	def lmPinMapx=lmPinMap
 	lmPinMapx.armMode=armMode as String
-	logtrace "createLmCodeEntryEvent entered keycode: $keycode armMode: $armMode lmMap: $lmPinMap"
+	if (txtEnable) log.trace   "createLmCodeEntryEvent entered keycode: $keycode armMode: $armMode lmMap: $lmPinMap"
 	sendEvent(name: "codeEntered", value: keycode as String, data: lmPinMapx,
 				isStateChange: true, displayed: false)
 	}
