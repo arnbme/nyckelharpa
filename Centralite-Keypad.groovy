@@ -1099,10 +1099,11 @@ void setExitDelay(delay){
 
 private changeIsValid(codeMap,codeNumber,code,name){
     def result = true
+    def codeLength
     if (device?.data?.model == '3400-D')
-	    def codeLength = device.currentValue("codeLength")?.toInteger() ?: 6
+	    codeLength = device.currentValue("codeLength")?.toInteger() ?: 6
 	else
-	    def codeLength = device.currentValue("codeLength")?.toInteger() ?: 4
+	    codeLength = device.currentValue("codeLength")?.toInteger() ?: 4
     def maxCodes = device.currentValue("maxCodes")?.toInteger() ?: 20
     def isBadLength = codeLength != code.size()
     def isBadCodeNum = maxCodes < codeNumber
