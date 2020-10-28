@@ -14,6 +14,7 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *  Oct 28, 2020 v1.0.4 Add command model: change model for testing or if invalid  
  *  Oct 26, 2020 v1.0.4 reduce overhead by changeing logtrace to if (txtEnable) log.trace; logdebug to if (logEnable) log.debug  
  *  Oct 24, 2020 v1.0.4 add 3400-D keypad 6 digit pin codes
 fingerprint profileId:"0104", endpointId:"01", inClusters:"0000,0001,0003,0020,0402,0500,0B05,FC05", outClusters:"0019,0501", model:"3400-D", manufacturer:"CentraLite"
@@ -138,6 +139,7 @@ metadata {
 		command "acknowledgeArmRequest",['number']
 		command "panicContact"
 		command "version"
+		command "model",['Enter 3400, 3400-D, 3405-L, 1112-S, URC4450BC0-X-R']
 		command "ssekey",["string"]
 		command "armCode",["string"]
 		command "pinStatusSet",["string"]		//called by Nyckelharpa module
@@ -155,7 +157,6 @@ metadata {
 		
 	preferences{
 		input ("version_donotuse", "text", title: "Version: ${version()}<br />(Do not set display only)", required: false )
-//		input ("model_donotuse", "text", title: "Model: ${device?.data?.model}<br />(Do not set display only)", required: false )
 	    input ("lockManagerPins", "bool", title: "When Off/False<br />Use Nyckelharpa user pin manager. (Default)<br /><br />When On/True<br />Use Lock Manager Pins.", defaultValue: false)
         input name: "optEncrypt", type: "bool", title: "Enable Lock Manager Code encryption", defaultValue: false, description: ""
 //		if (device?.data?.model.substring(0,3) !='340" throws error Cannot invoke method substring() on null object
@@ -205,6 +206,19 @@ def version()
 	{
 	updateDataValue("driverVersion", "1.0.4")	//Stores in device Data
 	return "1.0.4";
+	}
+
+//	Command model Change model for testing or incorrect, 
+void model(modelName)
+	{
+	def deviceModels=['3400', '3400-D', '3405-L','1112-S','URC4450BC0-X-R']
+	if (deviceModels.contains(modelName))
+		{
+		updateDataValue("model", modelName)
+		setCodeLength(0)				//routine sets correct lenght based on model
+		}
+	else
+		log.warn "Centralite Keypad invalid model name: $modelName, must be $deviceModels"  
 	}
 
 def installed() {
