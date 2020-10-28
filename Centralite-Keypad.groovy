@@ -14,6 +14,7 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *  Oct 28, 2020 v1.0.4 Add command testPin: allows testing by entering mode and pin, follows device pin type setting  
  *  Oct 28, 2020 v1.0.4 Add command model: change model for testing or if invalid  
  *  Oct 26, 2020 v1.0.4 reduce overhead by changeing logtrace to if (txtEnable) log.trace; logdebug to if (logEnable) log.debug  
  *  Oct 24, 2020 v1.0.4 add 3400-D keypad 6 digit pin codes
@@ -140,6 +141,7 @@ metadata {
 		command "panicContact"
 		command "version"
 		command "model",['Enter 3400, 3400-D, 3405-L, 1112-S, URC4450BC0-X-R']
+		command "testPin",['Enter single digit number 0-disArm, 1-armHome, 2-armNight, 3-armAway','numeric pin']
 		command "ssekey",["string"]
 		command "armCode",["string"]
 		command "pinStatusSet",["string"]		//called by Nyckelharpa module
@@ -1249,6 +1251,16 @@ private getDefaultLCdata(){
             ,codeNumber: -1
     ]
 }
+
+//	This routine allows testing pin from a device command
+def testPin(armRequest, asciiPin)
+	{
+	if (lockManagerPins)		//use HE lock manager pin codes
+		createLmCodeEntryEvent(asciiPin,armRequest,isValidPin(asciiPin, '0'+armRequest))
+	else
+		createCodeEntryEvent(asciiPin, armRequest)		
+	}
+
 
 //	This code handles the HE Pin processing
 def lmPins(descMap)
