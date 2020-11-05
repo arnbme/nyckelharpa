@@ -680,7 +680,7 @@ private Map getTemperatureResult(value) {
 		name: 'temperature',
 		value: deg,
 		descriptionText: descriptionText,
-		unit: "Â°${temperatureScale}"
+		unit: "°${temperatureScale}"
 	]
 }
 
