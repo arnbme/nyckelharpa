@@ -14,6 +14,7 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *  Dec 14, 2020 v1.0.5 Add attribute lastCodeName last arm/disarm name 3400/Uei; Last disarm name for all others see all inValidPin routines  
  *  Oct 28, 2020 v1.0.4 Add command testPin: allows testing by entering mode and pin, follows device pin type setting  
  *  Oct 28, 2020 v1.0.4 Add command model: change model for testing or if invalid  
  *  Oct 26, 2020 v1.0.4 reduce overhead by changeing logtrace to if (txtEnable) log.trace; logdebug to if (logEnable) log.debug  
@@ -126,6 +127,7 @@ metadata {
 		attribute "armMode", "String"
         attribute "lastUpdate", "String"
         attribute "pinStatus", "String"
+        attribute "lastCodeName", "STRING"
 
 		command "setDisarmed"
 		command "setArmedAway"
@@ -206,8 +208,8 @@ def ssekey(ssekey)
 
 def version()
 	{
-	updateDataValue("driverVersion", "1.0.4")	//Stores in device Data
-	return "1.0.4";
+	updateDataValue("driverVersion", "1.0.5")	//Stores in device Data
+	return "1.0.5";
 	}
 
 //	Command model Change model for testing or incorrect, 
@@ -675,7 +677,7 @@ private Map getTemperatureResult(value) {
 		deg = Math.round(deg * 100 ) /100
 	else
 		deg = Math.round(deg)
-	def descriptionText = "${linkText} was ${deg}Â°${temperatureScale}"
+	def descriptionText = "${linkText} was ${deg}°${temperatureScale}"
 	return [
 		name: 'temperature',
 		value: deg,
@@ -1310,8 +1312,8 @@ private isValidPinV3(code, armRequest)
             data.codeNumber = lockCode.key
             data.name = lockCode.value.name
             data.code = code
-//          descriptionText = "${device.displayName} was disarmed by ${data.name}"
-//          sendEvent(name: "lastCodeName", value: data.name, descriptionText: descriptionText, isStateChange: true)
+			descriptionText = "${device.displayName} was disarmed by ${data.name}"
+			sendEvent(name: "lastCodeName", value: data.name, descriptionText: descriptionText, isStateChange: true)
         	}
         else
         	{
@@ -1337,6 +1339,8 @@ private isValidPinV2(code, armRequest)
 			data.codeNumber = lockCode.key
 			data.name = lockCode.value.name
 			data.code = code
+			descriptionText = "${device.displayName} was disarmed by ${data.name}"
+			sendEvent(name: "lastCodeName", value: data.name, descriptionText: descriptionText, isStateChange: true)
 			}
 		else
 			{
@@ -1357,6 +1361,11 @@ private isValidPin(code, armRequest)
 		data.codeNumber = lockCode.key
 		data.name = lockCode.value.name
 		data.code = code
+		if (armRequest == "00")
+			descriptionText = "${device.displayName} was disarmed by ${data.name}"
+		else
+			descriptionText = "${device.displayName} was armed by ${data.name}"
+		sendEvent(name: "lastCodeName", value: data.name, descriptionText: descriptionText, isStateChange: true)
 		}
 	else
 		{
