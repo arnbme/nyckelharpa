@@ -14,7 +14,8 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
- *  Dec 14, 2020 v1.0.5 Add attribute lastCodeName last arm/disarm name 3400/Uei; Last disarm name for all others see all inValidPin routines  
+ *  Dec 14, 2020 v1.0.5 Add attribute lastCodeName last arm/disarm name 3400/Uei; Last disarm name for all others see all isValidPin routines  
+ *  							Add command nyckelharpaValidPin called my Nyckelharpa to set lastCodeName  
  *  Oct 28, 2020 v1.0.4 Add command testPin: allows testing by entering mode and pin, follows device pin type setting  
  *  Oct 28, 2020 v1.0.4 Add command model: change model for testing or if invalid  
  *  Oct 26, 2020 v1.0.4 reduce overhead by changeing logtrace to if (txtEnable) log.trace; logdebug to if (logEnable) log.debug  
@@ -151,6 +152,7 @@ metadata {
 //		HSM commands
 		command "armNight"						//not set as part of device capabilities
 		command "entry"								//Feb 03, 2020 V0.2.5
+		command "nyckelharpaValidPin",["ArmCode 00, 01, 02, 03","UserName"]		//called by Nyckelharpa module to set lastCodeName with nyckelharpa pins V105
 
 		fingerprint endpointId: "01", profileId: "0104", deviceId: "0401", inClusters: "0000,0001,0003,0020,0402,0500,0B05", outClusters: "0019,0501", manufacturer: "CentraLite", model: "3400", deviceJoinName: "Xfinity 3400-X Keypad"
 		fingerprint endpointId: "01", profileId: "0104", deviceId: "0401", inClusters: "0000,0001,0003,0020,0402,0500,0501,0B05,FC04", outClusters: "0019,0501", manufacturer: "CentraLite", model: "3405-L", deviceJoinName: "Iris 3405-L Keypad"
@@ -1374,6 +1376,16 @@ private isValidPin(code, armRequest)
 		}
     return data
   	}
+
+void nyckelharpaValidPin(armRequest='00', userName='userTesting')
+//	Called by nyckelharpa module to set lastCodeName in device settings attribute
+	{
+	if (armRequest == "00")
+		descriptionText = "${device.displayName} was disarmed by ${userName}"
+	else
+		descriptionText = "${device.displayName} was armed by ${userName}"
+	sendEvent(name: "lastCodeName", value: userName, descriptionText: descriptionText, isStateChange: true)
+	}
 
 def getArmCmd(armMode){
     switch (armMode){
