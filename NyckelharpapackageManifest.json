@@ -1,0 +1,57 @@
+{
+	"packageName": "Nyckelharpa HSM Extension",
+	"minimumHEVersion": "2.1.9",
+	"author": "Arn Burkhoff",
+	"dateReleased": "2020-07-17",
+	"documentationLink": "https://github.com/arnbme/nyckelharpa/blob/master/README.md",
+	"communityLink": "https://community.hubitat.com/t/release-nyckelharpa-an-hsm-extension/15062",
+	"releaseNotes": "Device attribute lastCodeName now updated with last accepted userName data; support proprietary Centralite 3400-D keypad with six digit pins",
+	"apps" : [
+		{
+			"id" : "cbd9fd70-d40e-4ebf-83f3-af48de7c155b",
+			"name": "Nyckelharpa",
+			"namespace": "arnbme",
+			"location": "https://raw.githubusercontent.com/arnbme/nyckelharpa/master/Nyckelharpa.groovy",
+			"required": true,
+			"oauth": false,
+			"version": "1.2.1"
+		},
+		{
+			"id" : "ef77bcab-bf1f-42bf-8024-b5f395b42126",
+			"name": "Nyckelharpa ModeFix",
+			"namespace": "arnbme",
+			"location": "https://raw.githubusercontent.com/arnbme/nyckelharpa/master/Nyckelharpa%20Modefix.groovy",
+			"required": true,
+			"oauth": false,
+			"version": "1.0.2"
+		},
+		{
+			"id" : "d9158cb4-6faa-4bde-a600-90681c776465",
+			"name": "Nyckelharpa Talker",
+			"namespace": "arnbme",
+			"location": "https://raw.githubusercontent.com/arnbme/nyckelharpa/master/Nyckelharpa%20Talker.groovy",
+			"required": false,
+			"oauth": false,
+			"version": "1.0.3"
+		},
+		{
+			"id" : "265caaf4-9f04-4a94-9943-f23a334a8caa",
+			"name": "Nyckelharpa User",
+			"namespace": "arnbme",
+			"location": "https://raw.githubusercontent.com/arnbme/nyckelharpa/master/Nyckelharpa%20User.groovy",
+			"required": false,
+			"oauth": false,
+			"version": "0.0.2"
+		}
+	],
+	"drivers" : [
+		{
+			"id": "2c956706-b3fc-4863-9d7d-fad7168b6c93",
+			"name": "Centralitex Keypad",
+			"namespace": "mitchpond",
+			"location": "https://raw.githubusercontent.com/arnbme/nyckelharpa/master/Centralite-Keypad.groovy",
+			"required": false,
+			"version": "1.0.5"
+		}
+	]
+}

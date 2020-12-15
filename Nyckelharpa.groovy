@@ -22,7 +22,8 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
- *  Aug 16, 2020 v1.2.0	Make force arming timing seconds window an external input field, globalForceSeconds, default 15
+ *  Dec 15, 2020 v1.2.1 When using Nyckelharpa pins set lastCodeName in device attributes
+ *  Aug 16, 2020 v1.2.0  Make force arming timing seconds window an external input field, globalForceSeconds, default 15
  *  Jul 16, 2020 v1.1.2	Revise Version check logic: Use Gitub Hubitat Package Manager file vs arnb.org file
  *  Jul 15, 2020 v1.1.1	Create simulation of Hubitat unsupported SmartThings device.command([delay: millis]), see delayCommand method
  *  					Restore ability to chirp a siren, or other device driver lacking a beep command
@@ -163,7 +164,7 @@ preferences {
 
 def version()
 	{
-	return "1.2.0";
+	return "1.2.1";
 	}
 def main()
 	{
@@ -1087,7 +1088,8 @@ def keypadCodeHandler(evt)
 			return
 			}
 		}
-	keypad.acknowledgeArmRequest(modeEntered) 		//keypad demands a followup light setting or all lights blink
+	keypad.acknowledgeArmRequest(modeEntered) 		//keypad demands a followup light setting or all lights blin
+	keypad.nyckelharpaValidPin('0'+modeEntered, userName) //Post lastCodeName field when using Nyckelharpa pins
 //	acknowledgeArmRequest(modeEntered,keypad);			//Used with Internet keypad only
 //	atomicState.badpins=0		//reset badpin count
 	def HSMarmModes=['disarm','armHome','armNight','armAway']
@@ -1130,7 +1132,7 @@ def keypadCodeHandler(evt)
 			doPinNotifications("Process Piston returned bad data: ${damap}",itext)
 		}
 */	}
-
+	
 def acknowledgeArmRequest(armMode,keypad)
 //	Post the status of the pin to the shmdelay_oauth db table
 	{
