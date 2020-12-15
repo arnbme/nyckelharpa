@@ -22,6 +22,12 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *  Aug 16, 2020 v1.2.0	Make force arming timing seconds window an external input field, globalForceSeconds, default 15
+ *  Jul 16, 2020 v1.1.2	Revise Version check logic: Use Gitub Hubitat Package Manager file vs arnb.org file
+ *  Jul 15, 2020 v1.1.1	Create simulation of Hubitat unsupported SmartThings device.command([delay: millis]), see delayCommand method
+ *  					Restore ability to chirp a siren, or other device driver lacking a beep command
+ *                      Restore 2 second delay for alarmDevices with beep command
+ *  Jun 22, 2020 v1.1.0	add 'settings.' to many settings references hopefully reducing some Groovy overhead
  *  Jun 20, 2020 v1.0.9	Eliminte logdebugs routine to reduce overhead. Test flag and issue log.debug instead
  *  Jun 18, 2020 v1.0.8	Fix major issues with 1.0.7
  *							add subscribe to hsmSetArm to make arming from non-keypad sources function correctly
@@ -157,7 +163,7 @@ preferences {
 
 def version()
 	{
-	return "1.0.9";
+	return "1.2.1";
 	}
 def main()
 	{
@@ -253,6 +259,8 @@ def globalsPage(error_msg)
 				}
 			input "globalDisable", "bool", required: true, defaultValue: false,
 				title: "Disable All Functions. Default: Off/False"
+ 			input "globalForceSeconds", "number", required: false, range: "10..40", defaultValue: 15,
+ 				title: "Number of seconds allowed for Forced Arming window. Default: 15"
 //			input "globalKeypadControl", "bool", required: true, defaultValue: true, submitOnChange: true,
 //				title: "A real or simulated Keypad is used to arm and disarm Home Security Monitor (HSM). Default: On/True"
 			input "globalKeypadDevices", "capability.securityKeypad", required: false, multiple: true, submitOnChange: true,
@@ -407,8 +415,13 @@ def pageTwo()
 				}
 			}
 
+
 		section
 			{
+			def armWindow=15
+			if (globalForceSeconds)
+				armWindow=globalForceSeconds
+			paragraph "<b>Forced Arming Window is ${armWindow} seconds</b>"
 			if (globalKeypadDevices)
 				{
 				workMsg="Keypads used for arming and disarming ${globalKeypadDevices}"
@@ -542,7 +555,7 @@ def initialize()
 		runIn(3600,logsOff)			// turns off debug logging after 60 min
 	else
 		unschedule(logsOff)
-	if (!globalDisable)
+	if (!settings.globalDisable)
 		{
 		subscribe(globalKeypadDevices, 'codeEntered',  keypadCodeHandler)		//issued by Centralitex Keypad driver
 		subscribe(globalKeypadDevices, 'armingIn',  armingInHeCodeHandler)		//issued by HE Keypad drivers on pin entry
@@ -562,7 +575,7 @@ def initialize()
 //	subscribe(location, "hsmStatus", verify_version)	//kill for now
 //	verify_version("dummy_evt")
 
- 	if (globalOtherContacts)
+ 	if (settings.globalOtherContacts)
 		{
 		subscribe(globalOtherContacts,"contact", MonitorDoorHandler)
 		globalHomeContacts?.each
@@ -576,10 +589,10 @@ def initialize()
  *		Maintain Child Devices
  *			One for each unique contact device, plus a panic contact device
  */
-	if (!globalChildPrefix)
+	if (!settings.globalChildPrefix)
 		{return}
 	state.configured = true			//locks the device prefix value so it cant be changed
- 	if (globalAwayContacts)
+ 	if (settings.globalAwayContacts)
 		{
 		subscribe(globalAwayContacts,"contact", DoorHandler)
 		globalAwayContacts?.each
@@ -595,7 +608,7 @@ def initialize()
 			addNewChildDevice(it, 'Virtual Contact Sensor')
 			}
 		}
- 	if (globalNightContacts)
+ 	if (settings.globalNightContacts)
 		{
 		subscribe(globalNightContacts,"contact", DoorHandler)
 		globalNightContacts?.each
@@ -671,7 +684,7 @@ def armingInHeCodeHandler(evt)
 //	get arming mode from the keypad
 //	HSM seems to propogate the keypad entry to each keypad defined in HSM as arming/disarm device, hense the test for same arm state
 //  attempting to use type physical or digital failed to work since HSM seems to get this wrong
-	if (globalDisable)
+	if (settings.globalDisable)
 		{return false}			//just in case
 	def keypad = evt.getDevice();
 	def lclMap=new JsonSlurper().parseText(evt.data)
@@ -685,14 +698,14 @@ def armingInHeCodeHandler(evt)
 
 def armingNonKeypadHandler(evt)
 	{
-	if (globalDisable)
+	if (settings.globalDisable)
 		{return false}			//just in case
-	if (settings.logDebugs) log.debug  "armingNonKeypadHandler entered Value: ${evt.value}"
-	Map hemode = [disarm: 'disarmed', armAway: 'armed away', armHome: 'armed home', armNight: 'armed night']
-	def newMode= hemode[evt.value]
+	def newMode= [disarm: 'disarmed', armAway: 'armed away', armHome: 'armed home', armNight: 'armed night',disarmAll: 'disarmed',][evt.value]
+	if (settings.logDebugs) log.debug  "armingNonKeypadHandler entered Value: ${evt.value} newMode: $newMode"
 	if (newMode != atomicState?.HeKeypadStatus)				//system issues duplicates
 		{
-		atomicState.HeKeypadStatus = hemode[evt.value]		//save state for alert routine
+		if (newMode >"")
+			atomicState.HeKeypadStatus = newMode		//save state for alert routine if not null
 //		if (evt.value == 'disarmed' && globalKeypadDevices)	//should not be needed from non-keypad source
 //			globalKeypadDevices.off()
 		atomicState.doorsdtim=0					//NonKeypad Arming issue stop Modefix from executing checkOpenContacts
@@ -717,7 +730,7 @@ def keypadCodeHandler(evt)
 	{
 //	User entered a code on a keypad
 	if (settings.logDebugs) log.debug  "keypadCodeHandler entered ${evt.value} ${evt.data}"
-	if (globalDisable)
+	if (settings.globalDisable)
 		{return false}			//just in case
 	def keypad = evt.getDevice();
 //	log.debug "keypadCodeHandler called: $evt by device : ${keypad.displayName} ${keypad.getId('motionTime')}"
@@ -1074,7 +1087,8 @@ def keypadCodeHandler(evt)
 			return
 			}
 		}
-	keypad.acknowledgeArmRequest(modeEntered) 		//keypad demands a followup light setting or all lights blink
+	keypad.acknowledgeArmRequest(modeEntered) 		//keypad demands a followup light setting or all lights blin
+	keypad.nyckelharpaValidPin('0'+modeEntered, userName) //Post lastUserName field when using Nyckelharpa pins
 //	acknowledgeArmRequest(modeEntered,keypad);			//Used with Internet keypad only
 //	atomicState.badpins=0		//reset badpin count
 	def HSMarmModes=['disarm','armHome','armNight','armAway']
@@ -1117,7 +1131,11 @@ def keypadCodeHandler(evt)
 			doPinNotifications("Process Piston returned bad data: ${damap}",itext)
 		}
 */	}
-
+void testnyckelharpaValidPin(armMode,userName)
+	{
+	log.debug "testnyckelharpaValidPin armMode: ${armMode}  userName:${userName}"
+	}
+	
 def acknowledgeArmRequest(armMode,keypad)
 //	Post the status of the pin to the shmdelay_oauth db table
 	{
@@ -1762,6 +1780,7 @@ def checkOpenContacts (contactList, notifyOptions, keypad)
 	def contactmsg=''
 	def duration = now() -lastDoorsDtim
 	def evt
+	def armWindow=15
 	if (settings.logDebugs) log.debug  "checkOpenContacts $contactList $notifyOptions $keypad lastDoorsDtim: $lastDoorsDtim Duration: $duration"
 	contactList.each
 		{
@@ -1772,7 +1791,9 @@ def checkOpenContacts (contactList, notifyOptions, keypad)
 				getChildDevice("$globalChildPrefix${it.id}").open()		//sync child device to real V1.0.4
 			if (contactmsg == '')
 				{
-				if (duration > 15000 || duration < 3000)
+				if (globalForceSeconds)
+					armWindow=globalForceSeconds
+				if (duration > (armWindow * 1000) || duration < 3000)
 					{
 					if (keypad)										//keypad is false when non keypad arming
 						{
@@ -1820,7 +1841,7 @@ def checkOpenContacts (contactList, notifyOptions, keypad)
 		{
 		contactmsg += ' is open.'
 		if (checkOpenReturn==false)
-			contactmsg += ' Rearming within 15 seconds will force arming'
+			contactmsg += " Rearming within ${armWindow} seconds will force arming"
 		notifyOptions.each
 			{
 			if (it=='Notification log')
@@ -1866,7 +1887,8 @@ def getAtomicdoorsdtim()
 def killAtomicdoorsdtim()
 	{
 //	if (settings.logDebugs) log.debug  "killAtomicdoorsdtim was entered"
-	atomicState.doorsdtim=now()-600000			//now - 10minutes
+//	atomicState.doorsdtim=now()-600000			//now - 10minutes deprecated V1.1.0
+	atomicState.doorsdtim=0
 	}
 
 
@@ -2022,6 +2044,10 @@ def openPanicContact()
 def alertHandler(evt)
 	{
 	if (settings.logDebugs) log.debug ("alertHandler entered, event: ${evt.value} ${evt.jsonData} ${evt.data}")
+	def armWindow=15
+	if (globalForceSeconds)
+		armWindow=globalForceSeconds
+	def i = new Integer("0")
 	if (['intrusion-delay','intrusion-home-delay','intrusion-night-delay'].contains(evt.value))
 		{
 		if (globalKeypadDevices)
@@ -2036,16 +2062,18 @@ def alertHandler(evt)
 				{
 				if (it.hasCommand("beep"))
 					{
-//					it.beep([delay: 2000])		//have to figure out how to do this type of delay in HE
-					it.beep()
+	//				it.beep([delay: 2000])			//This was how it was done in SmartThings, fails in Hubitat
+					runIn (2,delayCommand,[data: [inputSetting: 'globalAlarmDevices', command: 'beep', i: $i], overwrite: false])
 					}
-/*				else
+				else
 					{
-					it.off([delay: 2500])		//double off the siren to hopefully shut it, same issue here in HE
-					it.siren([delay: 2000])		// Apr 5, 2020 figured it out but siren does not shut off
-					it.off([delay: 2250])
+					runInMillis (2000,'delayCommand', [data: [inputSetting: 'globalAlarmDevices', i: i, command: 'on'], overwrite: false])
+					runInMillis (3000,'delayCommand', [data: [inputSetting: 'globalAlarmDevices', i: i, command: 'off'], overwrite: false])
+//					second off is insurance just incase a hardware timing issue does not silence a siren (Issue with GoControl siren)
+					runInMillis (4000,'delayCommand', [data: [inputSetting: 'globalAlarmDevices', i: i, command: 'off'], overwrite: false])
 					}
-*/				}
+				i++
+				}
 			}
 		}
 	else
@@ -2054,9 +2082,9 @@ def alertHandler(evt)
 		HeDoorsClose()											//triggers from any HSM arming other than Centralitex that
 		runInMillis(500, delaysetDisarmed)						//checks prior to arming
 //		runInMillis(1200, delayBeep)
-		runIn(15,HeDoorsReset)
+		runIn(armWindow,HeDoorsReset)
 		}
-	if (evt.value != 'rule')									//if rule use rule name minus red alert text
+/*	if (evt.value != 'rule')									//if rule use rule name minus red alert text
 		qssehe_alert(evt.value)									//update remote sse data
 	else
 		{
@@ -2064,7 +2092,7 @@ def alertHandler(evt)
 		def mask=/([^<]*)</					//format descriptionText=Panic<span style="color:red"> ALERT!</span>
 		if ((matcher = evt?.descriptionText =~ mask))
 			qssehe_alert(matcher[0][1])
-		}
+		} */
 	}
 
 /*
@@ -2073,6 +2101,9 @@ def alertHandler(evt)
 def HeDoorsClose()
 	{
 	def modeRequest = atomicState?.HeKeypadStatus
+	armWindow=15
+	if (globalForceSeconds)
+		armWindow=globalForceSeconds
 	if (settings.logDebugs) log.debug  "HeDoorsClose entered status: ${modeRequest}"
 	def contactList
 	def notifyOptions
@@ -2142,7 +2173,7 @@ def HeDoorsClose()
 	if (contactmsg != basemsg)
 		{
 //		atomicState.doorsdtim=0		//1.0.7 When using HE driver or non stops Modefix from executing checkOpenContacts
-		contactmsg += ' is open. Rearming within 15 seconds will force arming'
+		contactmsg += " is open. Rearming within ${armWindow} seconds will force arming"
 		notifyOptions.each
 			{
 			if (it=='Notification log')
@@ -2170,6 +2201,16 @@ def HeDoorsClose()
 				}
 			}
 		}
+	}
+
+//	V1.1.1 part of simulation for Smarthings command([delay:millis]) not supported by Hubitat
+void delayCommand(data)
+	{
+	if (settings.logDebugs) log.debug "Nyckelharpa delayCommand entered ${data} ${data.inputSetting} ${data.i} ${data.command}"
+	if (data.i)
+		settings."${data.inputSetting}"[data.i]."${data.command}"()
+	else
+		settings."${data.inputSetting}"."${data.command}"()
 	}
 
 //V1.0.3
@@ -2259,19 +2300,25 @@ def delaysetDisarmed()
 
 /*	Highly modified Version check code from CobraMax
  *	https://github.com/CobraVmax/Hubitat/tree/master/Update%20Code
+ *  Jul 16, 2020 change to use Hubitat Package Manager file and a bit of HPM logic
  */
 def genVersionMsg(appVersions)
 	{
 	def jsonData
 	def err=false
 	def wkMsg=""
-//	Get remote manually maintained JSON file containing: module name : current version number
-//	was a separate routine but could not figure out how to return an error in json format
-	def paramsUD = [uri: "https://www.arnb.org/shmdelay/versions.json"]
+	def manifestMap = [:]
+//	def paramsUD = [uri: "https://www.arnb.org/shmdelay/versions.json"]	//deprecated Jul 16, 2020
+	def params = [
+		uri: "https://raw.githubusercontent.com/arnbme/nyckelharpa/master/packageManifest.json",
+		requestContentType: "application/json",
+		contentType: "application/json",
+		textParser: true,
+		timeout: 300]
    	try {
-        httpGet(paramsUD)
-        	{ respUD ->
-				jsonData=respUD.data
+        httpGet(params)
+        	{ resp ->
+        	jsonData = new groovy.json.JsonSlurper().parseText(resp.data.text)
 			}
 		}
 	catch (e)
@@ -2284,15 +2331,17 @@ def genVersionMsg(appVersions)
 		wkMsg="\nError getting version file, please contact app author "+err
 	else
 		{
-	//	def appVersions=getAppVersions()		//needed at beginning, so passed it instead
-	//	log.debug jsonData
-	//	log.debug appVersions
-		def part
+		for (app in jsonData.apps) {
+			manifestMap << ["${app.name}":app.version]
+			}
+		for (driver in jsonData.drivers) {
+			manifestMap << ["${driver.name}":driver.version]
+			}
 		appVersions.each
 			{
 			itstr=it as String
 			part=itstr.split("[=]")
-			wkMsg+=versionCheck(part[0], jsonData, part[1])
+			wkMsg+=versionCheck(part[0], manifestMap, part[1])
 			}
 		}
 	return wkMsg
@@ -2327,20 +2376,30 @@ def getAppVersions()
 	return map
 	}
 
-def versionCheck(moduleName, jsonData, currentVer)
+def versionCheck(moduleName, manifestMap, currentVer)
 	{
-	def newVer
+	if (settings.logDebugs) log.debug "version check entered $moduleName $manifestMap $currentVer"
 	def appText='Module'
-	newVer = (jsonData.versions.Application."${moduleName}") as String
-	if (newVer==null)
-		{
-		newVer = (jsonData.versions.Driver."${moduleName}") as String
-		appText='Driver'
-		if (newVer==null)
-			return "\n<b>$moduleName missing on Json file, contact app author</b>"
-		}
+	def newVer
 
-//	currentVer = appVersions."${moduleNameJson}"	remnant from prior incarnation of versionCheck
+//	fugly but I dont have the groovy chops to make this pretty, an it's not used in a mission critical area
+//	and def newVer= manifestMap[moduleName] does not work, likely due to space in the module name
+
+	manifestMap.find
+		{
+		itstr=it as String
+		part=itstr.split("[=]")
+		if (part[0]==moduleName)
+			{
+			newVer=part[1]
+			return true
+			}
+		else
+			return false
+		}
+	if (newVer==null)
+		return "\n<b>$moduleName missing from HPM manifest, contact this app's author</b>"
+
 	if (settings.logDebugs) log.debug  "versionsCheck processing module: $moduleName targetVer: $newVer actualVer: $currentVer"
 
 	if(currentVer == null)
