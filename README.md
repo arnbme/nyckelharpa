@@ -163,7 +163,7 @@ Global Settings is reached by: clicking Apps in the menu, then click the Nyckelh
 <a name="adjustHSM"></a>
 ## 7. Forced Arming, Adjust HSM Settings.
 
-Forced Arming is a two step process: An standard initial HSM arming that fails normally, followed by a second arming within 15 seconds that forces HSM to arm. It works from any arming source, including: keypads, locks, dashboards, and the HSM app
+Forced Arming is a two step process: An standard initial HSM arming that fails normally, followed by a second arming within globally defined arming window seconds (default 15) that forces HSM to arm. It works from any arming source, including: keypads, locks, dashboards, and the HSM app
 
 1. Required Basic Setup: 
 * Follow instructions in Section 6 above, generating the NCKL-child-contact-sensors 
