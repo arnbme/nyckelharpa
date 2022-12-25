@@ -34,7 +34,7 @@ All features are optional, you may use whatever app features you choose. For Exa
 
 * HSM arming when a contact is open, with easy user control<br /> 
 Why is this needed? HSM does not arm the system when arming alerts are implemented, and a contact is open. Examples:<br /><br />It's 1AM, you want to arm the system for night, but a contact is broken.<br /><br />You are away from home, forgot to arm the system, and when you try, oops the back door is open.<br /><br /> 
-Note: the app was created prior to HSM allowing arming with an open contact. HSM will not function if this HSM option is used.
+Note: the app was created prior to HSM allowing arming with an open contact. Nyckelharpa arming logic will fail when this HSM option is used.
 * Adjusts Hubitat's mode when HSM's arm state changes. (HSM adjusts HSM's arm state when the mode changes)
 * Provides an easy to use security related message control center with output to TTS, Speakers, and Notification devices such as: Hubitat PhoneApp and Pushover
 
